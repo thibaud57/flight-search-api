@@ -1,6 +1,6 @@
 # CHANGELOG - flight-search-api
 
-**Dernière mise à jour** : 16 novembre 2025
+**Dernière mise à jour** : 16/11/2025
 
 Toutes les modifications notables de ce projet seront documentées dans ce fichier.
 
@@ -100,6 +100,6 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 **Branche** : `feature/research-stack`
 **Objectif** : Établir base de connaissance technique avant développement MVP
 
-**Prochaine étape** : Phase 1.7 - Merge recherche (tag `v0.1.0-research`)
+**Prochaine étape** : Phase 2 - Setup Environnement Python
 
 ---

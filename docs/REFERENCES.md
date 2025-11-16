@@ -2,7 +2,7 @@
 
 Documentation technique complète pour toutes les technologies utilisées dans le projet.
 
-**Dernière validation** : 16 novembre 2025
+**Dernière mise à jour** : 16/11/2025
 
 ---
 
