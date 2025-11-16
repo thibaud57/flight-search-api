@@ -13,7 +13,7 @@
 
 ### 0.1 Structure documentation vide
 - [x] Créer `docs/`
-- [x] Créer `docs/references/`
+- [x] Créer `docs/references/` (pour les fichiers de doc technique selon contexte projet)
 - [x] Créer `.claude/CLAUDE.md`
 - [x] Créer `docs/ARCHITECTURE.md`
 - [x] Créer `docs/PLANNING.md`
@@ -25,25 +25,34 @@
 
 📝 **Output** : Structure docs modulaire prête à remplir
 
-### 0.2 Conventions Git
-- [ ] Documenter stratégie branches (master/develop/feature)
-- [ ] Documenter Conventional Commits (feat, fix, docs, etc.)
-- [ ] Documenter pre-commit checks (ruff, mypy, pytest)
-- [ ] Documenter workflow Pull Request
-- [ ] Compléter `.claude/CLAUDE.md` - Section Git
-- [ ] Commit : `docs: add git conventions to CLAUDE.md`
+### 0.2 Conventions Git & Release Workflow
+- [x] Documenter stratégie branches (master/develop/feature)
+- [x] Documenter Conventional Commits (feat, fix, docs, etc.)
+- [x] Documenter pre-commit checks (ruff, mypy, pytest)
+- [x] Documenter workflow Pull Request
+- [x] Compléter `.claude/CLAUDE.md` - Section Git
+- [x] Créer `docs/references/github-actions.md` :
+      - Syntaxe GitHub Actions (on, jobs, steps, runs-on)
+      - Workflow examples (CI/CD, Release automation)
+      - Secrets management (GITHUB_TOKEN, custom secrets)
+      - Triggers (push, pull_request, tags)
+      → https://docs.github.com/en/actions
+- [x] Compléter `docs/REFERENCES.md` comme index avec lien vers fichier modulaire
+- [x] Créer `.github/workflows/release.yml` :
+      - Trigger : tag v*
+      - Auto-create GitHub Release
+      - Include CHANGELOG.md content
+- [x] Commit : `docs: add git conventions and release workflow`
 
-📝 **Output** : `.claude/CLAUDE.md` - Section Git
+📝 **Output** : `.claude/CLAUDE.md` (Git), `docs/references/github-actions.md`, `.github/workflows/release.yml`
 
-### 0.3 Merge setup initial
-- [ ] Push branche : `git push origin feature/initial-setup`
-- [ ] Créer Pull Request sur GitHub : `feature/initial-setup` → `develop`
-- [ ] (Manuel) Merger la PR sur GitHub
-- [ ] Pull develop en local : `git checkout develop && git pull`
+### 0.3 Mise à jour CHANGELOG
+- [x] Ajouter entrée v0.0.0-setup dans `docs/CHANGELOG.md`
+- [x] Commit : `docs: update changelog for setup phase`
 
-📝 **Output** : Setup initial mergé dans develop
+📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-**Note** : Pas de tag ni de CHANGELOG à ce stade - la documentation des versions commence en Phase 1
+**Fin de phase** : Push branche → PR → Merge develop (pas de tag - versions démarrent Phase 1)
 
 ---
 
@@ -88,7 +97,7 @@
       → https://tenacity.readthedocs.io/
 - [x] `dokploy.md` : Dockerfile best practices, env vars
       → https://docs.dokploy.com/
-- [x] Créer `docs/REFERENCES.md` comme index avec liens vers fichiers modulaires
+- [x] Compléter `docs/REFERENCES.md` comme index avec liens vers fichiers modulaires
 - [x] Commit : `docs: add technical references`
 
 📝 **Output** : `docs/REFERENCES.md` (index) + `docs/references/*.md` (9 fichiers)
@@ -114,31 +123,26 @@
 📝 **Output** : `.claude/CLAUDE.md` - Section Standards
 
 ### 1.4 Architecture & Décisions (ADR)
-- [ ] Créer diagrammes (composants, séquence)
-- [ ] Documenter flow de données (Requête HTTP → Services internes → Response JSON)
-- [ ] Rédiger ADR #001 : Crawl4AI+Proxies vs SerpAPI (coût, flexibilité, maintenance)
-- [ ] Rédiger ADR #002 : Decodo vs Oxylabs (prix, pool IP, France targeting)
-- [ ] Rédiger ADR #003 : Top 10 en mémoire (pas de DB)
-- [ ] Rédiger ADR #004 : Tenacity pour retry
-- [ ] Rédiger ADR #005 : Captcha handling strategy (proxies rotation + detection, pas de résolution dans MVP)
-- [ ] Rédiger ADR #006 : JsonCssExtractionStrategy vs LLMExtractionStrategy (coût, performance)
-- [ ] Compléter `docs/ARCHITECTURE.md` avec ADR intégrés
-- [ ] Commit : `docs: add ARCHITECTURE and ADR`
+- [x] Créer diagrammes (composants, séquence)
+- [x] Documenter flow de données (Requête HTTP → Services internes → Response JSON)
+- [x] Rédiger ADR #001 : Crawl4AI+Proxies vs SerpAPI (coût, flexibilité, maintenance)
+- [x] Rédiger ADR #002 : Decodo vs Oxylabs (prix, pool IP, France targeting)
+- [x] Rédiger ADR #003 : Top 10 en mémoire (pas de DB)
+- [x] Rédiger ADR #004 : Tenacity pour retry
+- [x] Rédiger ADR #005 : Captcha handling strategy (proxies rotation + detection, pas de résolution dans MVP)
+- [x] Rédiger ADR #006 : JsonCssExtractionStrategy vs LLMExtractionStrategy (coût, performance)
+- [x] Compléter `docs/ARCHITECTURE.md` avec ADR intégrés
+- [x] Commit : `docs: add ARCHITECTURE and ADR`
 
 📝 **Output** : `docs/ARCHITECTURE.md`
 
 ### 1.5 Mise à jour CHANGELOG
-- [ ] Ajouter entrée v0.1.0-research dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for research phase`
+- [x] Ajouter entrée v0.1.0-research dans `docs/CHANGELOG.md`
+- [x] Commit : `docs: update changelog for research phase`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-### 1.7 Merge recherche
-- [ ] Push branche : `git push origin feature/research-stack`
-- [ ] Créer Pull Request sur GitHub : `feature/research-stack` → `develop`
-- [ ] (Manuel) Merger la PR sur GitHub
-- [ ] Pull develop en local : `git checkout develop && git pull`
-- [ ] Tag : `git tag v0.1.0-research && git push origin v0.1.0-research`
+**Fin de phase** : Push branche → PR → Merge develop → Tag v0.1.0-research
 
 ---
 
@@ -190,12 +194,7 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-### 2.5 Merge structure
-- [ ] Push branche : `git push origin feature/project-structure`
-- [ ] Créer Pull Request sur GitHub : `feature/project-structure` → `develop`
-- [ ] (Manuel) Merger la PR sur GitHub
-- [ ] Pull develop en local : `git checkout develop && git pull`
-- [ ] Tag : `git tag v0.2.0-structure && git push origin v0.2.0-structure`
+**Fin de phase** : Push branche → PR → Merge develop → Tag v0.2.0-structure
 
 ---
 
@@ -253,12 +252,22 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-### 3.6 Merge config
-- [ ] Push branche : `git push origin feature/config-build`
-- [ ] Créer Pull Request sur GitHub : `feature/config-build` → `develop`
-- [ ] (Manuel) Merger la PR sur GitHub
-- [ ] Pull develop en local : `git checkout develop && git pull`
-- [ ] Tag : `git tag v0.3.0-build && git push origin v0.3.0-build`
+### 3.6 CI Quality Checks
+- [ ] Créer `.github/workflows/ci.yml` :
+      - Trigger : PR + push sur develop/master
+      - Setup : Python 3.13, cache uv dependencies (actions/cache)
+      - Install : uv sync --all-extras && crawl4ai-setup (installe Playwright)
+      - Jobs : lint (ruff check), format (ruff format --check), typecheck (mypy), tests (pytest tests/unit/)
+      - Coverage : pytest --cov=app --cov-report=xml
+      - Fail-fast : false (exécuter tous les checks même si l'un échoue)
+      - Upload coverage : codecov/codecov-action (optionnel)
+- [ ] Ajouter badge CI dans README.md
+- [ ] Tester workflow en local : `act pull_request` (optionnel)
+- [ ] Commit : `ci: add quality checks workflow`
+
+📝 **Output** : Pipeline CI pour qualité code (tests unitaires uniquement, tests intégration manuels)
+
+**Fin de phase** : Push branche → PR → Merge develop → Tag v0.3.0-build
 
 ---
 
@@ -317,12 +326,7 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-### 4.8 Merge planning
-- [ ] Push branche : `git push origin feature/planning-specs`
-- [ ] Créer Pull Request sur GitHub : `feature/planning-specs` → `develop`
-- [ ] (Manuel) Merger la PR sur GitHub
-- [ ] Pull develop en local : `git checkout develop && git pull`
-- [ ] Tag : `git tag v0.4.0-planning && git push origin v0.4.0-planning`
+**Fin de phase** : Push branche → PR → Merge develop → Tag v0.4.0-planning
 
 ---
 
@@ -405,12 +409,7 @@
 
 📝 **Output** : API MVP complète et testée (sans résolution captcha)
 
-### 5.12 Merge implementation
-- [ ] Push branche : `git push origin feature/implementation`
-- [ ] Créer Pull Request sur GitHub : `feature/implementation` → `develop`
-- [ ] (Manuel) Merger la PR sur GitHub
-- [ ] Pull develop en local : `git checkout develop && git pull`
-- [ ] Tag : `git tag v0.5.0-mvp && git push origin v0.5.0-mvp`
+**Fin de phase** : Push branche → PR → Merge develop → Tag v0.5.0-mvp
 
 ---
 
@@ -449,13 +448,9 @@
 - [ ] Créer Pull Request sur GitHub : `develop` → `master` (Release v1.0.0)
 - [ ] (Manuel) Merger la PR sur GitHub
 - [ ] Pull master en local : `git checkout master && git pull`
-- [ ] Tag : `git tag v1.0.0 && git push origin v1.0.0`
+- [ ] Tag : `git tag v1.0.0 && git push origin v1.0.0` (déclenche workflow release.yml)
 
-### 6.4 Release GitHub
-- [ ] Créer release sur GitHub avec tag v1.0.0
-- [ ] Copier CHANGELOG v1.0.0 dans release notes
-
-📝 **Output** : Release v1.0.0 publique (MVP sans résolution captcha)
+📝 **Output** : Release v1.0.0 publique sur GitHub (automatique via workflow)
 
 ---
 
@@ -472,7 +467,7 @@
       - DECODO_PROXY_HOST
       - PROXY_ROTATION_ENABLED
       - CAPTCHA_DETECTION_ENABLED
-- [ ] Déclencher build automatique (push sur main)
+- [ ] Déclencher build automatique (push sur master)
 - [ ] Vérifier deployment : `curl https://ton-domaine.com/health`
 - [ ] Tester endpoint complet avec n8n
 - [ ] Monitorer logs : captcha rate, proxy costs, success rate
@@ -560,8 +555,7 @@
 - [ ] Créer Pull Request sur GitHub : `develop` → `master` (Release v1.1.0)
 - [ ] (Manuel) Merger la PR sur GitHub
 - [ ] Pull master en local : `git checkout master && git pull`
-- [ ] Tag : `git tag v1.1.0 && git push origin v1.1.0`
-- [ ] Créer release GitHub v1.1.0 avec CHANGELOG
+- [ ] Tag : `git tag v1.1.0 && git push origin v1.1.0` (déclenche workflow release.yml)
 
 ### 7.9 Déploiement
 - [ ] Ajouter TWOCAPTCHA_API_KEY dans Dokploy
@@ -594,7 +588,7 @@
 ### Git workflow
 - Toujours travailler sur feature branches
 - Workflow Pull Requests (documenté en Phase 1.5)
-- Release : develop → main avec tag via PR
+- Release : develop → master avec tag via PR
 
 ### Stack Crawl4AI + Proxies
 

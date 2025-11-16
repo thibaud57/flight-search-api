@@ -2,7 +2,7 @@
 
 Documentation technique complète pour toutes les technologies utilisées dans le projet.
 
-**Date de dernière mise à jour** : 16 novembre 2025
+**Dernière mise à jour** : 16/11/2025
 
 ---
 
@@ -11,6 +11,12 @@ Documentation technique complète pour toutes les technologies utilisées dans l
 La documentation technique est organisée en fichiers séparés pour optimiser la gestion du contexte LLM et faciliter la navigation.
 
 ### Références Disponibles
+
+0. **[GitHub Actions](references/github-actions.md)** - CI/CD et automatisation
+   - Syntaxe GitHub Actions (on, jobs, steps, runs-on)
+   - Workflow examples (CI Quality Checks, Release Automation)
+   - Secrets Management (GITHUB_TOKEN, custom secrets)
+   - Triggers (push, pull_request, tags)
 
 1. **[FastAPI](references/fastapi.md)** - Framework web asynchrone
    - Dependency Injection
@@ -69,6 +75,7 @@ La documentation technique est organisée en fichiers séparés pour optimiser l
 
 | Technologie | Documentation Principale |
 |-------------|--------------------------|
+| GitHub Actions | https://docs.github.com/en/actions |
 | FastAPI | https://fastapi.tiangolo.com/ |
 | Pydantic v2 | https://docs.pydantic.dev/latest/ |
 | Crawl4AI | https://docs.crawl4ai.com/ |
@@ -88,5 +95,3 @@ Cette organisation modulaire permet :
 - ✅ Navigation plus rapide dans les IDEs
 - ✅ Meilleure gestion Git (historique, conflits)
 - ✅ Maintenance facilitée
-
-**Dernière validation** : 16 novembre 2025

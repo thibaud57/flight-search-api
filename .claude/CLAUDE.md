@@ -407,4 +407,379 @@ _À compléter en Phase 2.3_
 
 ## 📦 Git
 
-_À compléter en Phase 0.2 et Phase 1.5_
+### 1. Stratégie de Branches
+
+**Modèle GitFlow simplifié** :
+
+```
+master (production)
+  ↑
+develop (intégration)
+  ↑
+feature/* (développement)
+```
+
+**Branches principales** :
+
+- **`master`** : Code en production, stable, uniquement via merge de `develop`
+  - Protégée : pas de push direct
+  - Chaque merge = nouvelle version taggée (v1.0.0, v1.1.0, etc.)
+
+- **`develop`** : Branche d'intégration, prête pour release
+  - Merge depuis branches `feature/*` via Pull Requests
+  - Tests CI doivent passer avant merge
+  - Base pour créer nouvelles features
+
+**Branches de travail** :
+
+- **`feature/*`** : Développement de fonctionnalités
+  - Nomenclature : `feature/nom-descriptif` (kebab-case)
+  - Créées depuis `develop`
+  - Mergées dans `develop` via PR
+  - Supprimées après merge
+
+**Exemples** :
+```bash
+# Créer feature depuis develop
+git checkout develop
+git pull origin develop
+git checkout -b feature/initial-setup
+
+# Après développement : Push + PR vers develop
+git push -u origin feature/initial-setup
+# Créer PR sur GitHub/GitLab : feature/initial-setup → develop
+
+# Après merge : Nettoyer
+git checkout develop
+git pull origin develop
+git branch -d feature/initial-setup
+```
+
+**Workflow Release** :
+1. Développement sur `feature/*`
+2. Merge `feature/*` → `develop` (via PR)
+3. Quand `develop` prête : Merge `develop` → `master`
+4. Tag version sur `master` (ex: `v1.0.0`)
+5. GitHub Actions crée Release automatiquement
+
+---
+
+### 2. Conventional Commits
+
+**Format obligatoire** :
+
+```
+<type>(<scope>): <description>
+
+[body optionnel]
+
+[footer optionnel]
+```
+
+**Types standards** :
+
+- **`feat`** : Nouvelle fonctionnalité
+  - Exemple : `feat(api): add multi-city search endpoint`
+  - Incrémente version MINOR (v0.1.0 → v0.2.0)
+
+- **`fix`** : Correction de bug
+  - Exemple : `fix(parser): handle missing price field`
+  - Incrémente version PATCH (v0.1.0 → v0.1.1)
+
+- **`docs`** : Documentation uniquement
+  - Exemple : `docs: add crawl4ai usage examples`
+  - Pas d'impact version (dev phases)
+
+- **`refactor`** : Refactoring sans changement fonctionnel
+  - Exemple : `refactor(crawler): extract proxy config to separate class`
+
+- **`test`** : Ajout/modification tests
+  - Exemple : `test(parser): add edge cases for date parsing`
+
+- **`chore`** : Maintenance (deps, config, build)
+  - Exemple : `chore: update dependencies`
+
+- **`ci`** : Modifications CI/CD
+  - Exemple : `ci: add caching for uv dependencies`
+
+- **`perf`** : Amélioration performance
+  - Exemple : `perf(crawler): reduce memory usage in batch processing`
+
+**Règles projet** :
+
+✅ **Description impérative** : "add feature" (pas "added" ou "adds")
+✅ **Minuscules** : `feat(api):` (pas `Feat(API):`)
+✅ **Scope optionnel** : Composant affecté (api, parser, crawler, docs)
+✅ **Max 72 caractères** pour la première ligne
+✅ **Breaking changes** : Ajouter `!` après type/scope + footer `BREAKING CHANGE:`
+
+**Exemples validés** :
+
+```bash
+# Feature simple
+git commit -m "feat(api): add flight search endpoint"
+
+# Fix avec scope
+git commit -m "fix(parser): handle null departure time"
+
+# Breaking change
+git commit -m "feat(api)!: change response format to include metadata
+
+BREAKING CHANGE: Response structure changed from flat array to object with metadata field"
+
+# Documentation
+git commit -m "docs(plan): add Phase 0.3 CHANGELOG update"
+
+# Refactoring
+git commit -m "refactor(crawler): extract retry logic to decorator"
+```
+
+**Anti-patterns** :
+
+❌ `git commit -m "fixed bug"` (pas de type)
+❌ `git commit -m "Feat: Added feature"` (majuscule, past tense)
+❌ `git commit -m "update code"` (trop vague)
+❌ `git commit -m "feat(api): added new endpoint for searching flights with multiple destinations and returning top 10 results"` (trop long)
+
+---
+
+### 3. Pre-commit Checks
+
+**Exécution avant chaque commit** :
+
+```bash
+# Exécuter manuellement (recommandé pendant dev)
+ruff check . && ruff format . && mypy app/ && pytest tests/unit/
+
+# Si succès → commit autorisé
+# Si échec → corriger avant commit
+```
+
+**Checks obligatoires** :
+
+1. **Ruff Lint** : `ruff check .`
+   - Vérifie erreurs code (pycodestyle, pyflakes, naming, etc.)
+   - Auto-fix disponible : `ruff check . --fix`
+   - Doit passer sans erreur (warnings tolérés selon config)
+
+2. **Ruff Format** : `ruff format .`
+   - Formate code selon standards (line length 88, quotes doubles)
+   - Auto-applique formatage (pas juste check)
+   - Doit passer sans changement après formatage
+
+3. **Mypy Type Check** : `mypy app/`
+   - Vérifie cohérence types (strict mode)
+   - Détecte erreurs potentielles à runtime
+   - Doit passer sans erreur (0 issues)
+
+4. **Tests Unitaires** : `pytest tests/unit/`
+   - Exécute tests rapides (pas d'intégration)
+   - Coverage minimum 80% (Phase 3+)
+   - Doit passer 100% des tests
+
+**Workflow local** :
+
+```bash
+# 1. Développer feature
+# ... édition code ...
+
+# 2. Avant commit : Exécuter checks
+ruff check . --fix          # Auto-fix lint
+ruff format .               # Auto-format
+mypy app/                   # Type check
+pytest tests/unit/          # Tests rapides
+
+# 3. Si tous passent : Commit
+git add .
+git commit -m "feat(api): add endpoint"
+
+# 4. Push
+git push origin feature/ma-feature
+```
+
+**Automation (Phase 3.6+)** :
+
+- **CI GitHub Actions** : Exécute automatiquement sur PR
+- **Bloque merge** si checks échouent
+- **Pas de pre-commit hook local** (éviter friction dev)
+- **Responsabilité développeur** : Exécuter avant push
+
+**Gestion erreurs** :
+
+```bash
+# Ruff lint échoue
+ruff check .
+# → Corriger manuellement OU
+ruff check . --fix  # Auto-fix si possible
+
+# Mypy échoue
+mypy app/
+# → Corriger annotations types
+# → Vérifier imports manquants
+
+# Tests échouent
+pytest tests/unit/ -v
+# → Debug test spécifique
+# → Corriger régression
+```
+
+**Règles projet** :
+
+✅ Exécuter checks **avant chaque commit** (discipline)
+✅ Ne **jamais** commit si checks échouent
+✅ Utiliser `--fix` pour ruff (gain temps)
+✅ CI bloque PR si checks échouent (safety net)
+❌ Ne **pas** forcer commit avec `--no-verify` (sauf urgence justifiée)
+
+---
+
+### 4. Workflow Pull Request
+
+**Processus complet** :
+
+```
+1. Développement local (feature/*)
+   ↓
+2. Push branche
+   ↓
+3. Créer Pull Request → develop
+   ↓
+4. CI GitHub Actions (lint, format, typecheck, tests)
+   ↓
+5. Review (optionnel pour solo dev)
+   ↓
+6. Merge squash → develop
+   ↓
+7. Supprimer branche feature
+```
+
+**Étapes détaillées** :
+
+**1. Créer Pull Request** :
+
+```bash
+# Après push feature
+git push -u origin feature/initial-setup
+
+# Sur GitHub/GitLab :
+# - Base : develop
+# - Compare : feature/initial-setup
+# - Titre : Même convention que commit (ex: "feat(api): add search endpoint")
+# - Description : Lister changements principaux
+```
+
+**Template PR recommandé** :
+
+```markdown
+## Description
+
+Implémente endpoint de recherche multi-destinations
+
+## Changements
+
+- ✅ Ajout route POST /api/v1/flights/search
+- ✅ Validation Pydantic SearchRequest
+- ✅ Intégration AsyncWebCrawler
+- ✅ Tests unitaires (12 tests, 95% coverage)
+
+## Checklist
+
+- [x] Tests passent localement
+- [x] Ruff lint + format OK
+- [x] Mypy type check OK
+- [x] Documentation mise à jour
+
+## Testing
+
+```bash
+pytest tests/unit/test_search.py -v
+```
+
+## Related Issues
+
+Closes #123
+```
+
+**2. CI Validation automatique** :
+
+- **Déclenché par** : Ouverture PR + chaque push sur branche
+- **Jobs exécutés** :
+  - `lint` : ruff check
+  - `format` : ruff format --check
+  - `typecheck` : mypy app/
+  - `test` : pytest tests/unit/ --cov
+- **Statut visible** : ✅ ou ❌ sur PR
+- **Merge bloqué** si CI échoue
+
+**3. Review (optionnel)** :
+
+- **Solo dev** : Auto-review rapide (vérifier diff)
+- **Team** : Assigner reviewer, attendre approval
+- **Critères** :
+  - Code respecte standards projet
+  - Tests couvrent cas principaux
+  - Pas de régression
+  - Documentation à jour
+
+**4. Merge Strategy** :
+
+**Squash Merge (recommandé)** :
+
+```
+# Tous commits feature → 1 commit sur develop
+# Commit message = titre PR
+# Historique develop propre
+```
+
+**Workflow GitHub** :
+1. Cliquer "Squash and merge"
+2. Vérifier message commit (convention respectée)
+3. Confirmer merge
+4. Branche feature supprimée automatiquement
+
+**Après merge** :
+
+```bash
+# Revenir sur develop local
+git checkout develop
+git pull origin develop
+
+# Supprimer branche locale (si pas auto)
+git branch -d feature/initial-setup
+
+# Créer nouvelle feature
+git checkout -b feature/next-task
+```
+
+**Gestion conflits** :
+
+```bash
+# Si develop a avancé pendant dev feature
+git checkout feature/ma-feature
+git fetch origin
+git rebase origin/develop
+
+# Résoudre conflits si nécessaire
+# ... édition manuelle ...
+git add .
+git rebase --continue
+
+# Force push (rebase réécrit historique)
+git push --force-with-lease origin feature/ma-feature
+```
+
+**Règles projet** :
+
+✅ **1 PR = 1 feature logique** (pas de mega-PR)
+✅ **Titre PR = Conventional Commit** format
+✅ **CI doit passer** avant merge (obligatoire)
+✅ **Squash merge** pour historique propre
+✅ **Supprimer branche** après merge (cleanup)
+❌ **Jamais merge** si CI échoue
+❌ **Jamais commit** directement sur develop/master
+
+**Cas particuliers** :
+
+- **Hotfix urgent** : Créer `hotfix/*` depuis master, merge direct master + cherry-pick develop
+- **Documentation seule** : `docs/*` peut skip certains tests
+- **WIP PR** : Préfixer titre `WIP:` pour indiquer travaux en cours (draft PR)

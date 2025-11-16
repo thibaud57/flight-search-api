@@ -1,6 +1,6 @@
 # Matrice de Compatibilité - flight-search-api
 
-**Date de dernière mise à jour** : 16 novembre 2025
+**Dernière mise à jour** : 16/11/2025
 
 ## Vue d'ensemble
 
@@ -447,6 +447,3 @@ python -c "import crawl4ai; print(crawl4ai.__version__)"
 - Temps migration : 2-5 jours
 - Support long terme : 5 ans (Python 3.13)
 
----
-
-**Dernière validation** : 16 novembre 2025

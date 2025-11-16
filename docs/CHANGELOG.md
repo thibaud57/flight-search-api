@@ -1,9 +1,53 @@
 # CHANGELOG - flight-search-api
 
+**Dernière mise à jour** : 16/11/2025
+
 Toutes les modifications notables de ce projet seront documentées dans ce fichier.
 
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
+
+---
+
+## [v0.0.0-setup] - 2025-11-16
+
+### Added
+
+**Infrastructure & Documentation Initiale**
+- Structure documentation modulaire dans `docs/` :
+  - `REFERENCES.md` : Index références techniques avec lien vers `github-actions.md`
+  - `ARCHITECTURE.md` : Diagrammes et ADR (prêt pour complétion Phase 1)
+  - `VERSIONS.md` : Matrice compatibilité (prêt pour complétion Phase 1)
+  - `CHANGELOG.md` : Historique modifications (format Keep a Changelog)
+- Standards développement dans `.claude/CLAUDE.md` :
+  - Stratégie branches Git (master/develop/feature, GitFlow simplifié)
+  - Conventional Commits (feat, fix, docs, refactor, test, chore, ci, perf)
+  - Pre-commit checks (ruff, mypy, pytest)
+  - Workflow Pull Request (squash merge, CI validation)
+- Référence technique `docs/references/github-actions.md` :
+  - Syntaxe complète GitHub Actions (on, jobs, steps, runs-on)
+  - Workflow examples (CI Quality Checks, Release Automation)
+  - Secrets management (GITHUB_TOKEN, custom secrets)
+  - Triggers (push, pull_request, tags)
+- Workflow CI/CD `.github/workflows/release.yml` :
+  - Trigger automatique sur tags `v*`
+  - Création GitHub Release avec extraction CHANGELOG.md
+  - Support prerelease (versions avec `-` comme v0.1.0-alpha)
+
+**Git Setup**
+- Branche `develop` créée comme branche d'intégration
+- Branche `master` (production, protégée)
+- Convention nommage branches : `feature/nom-descriptif` (kebab-case)
+
+### Notes
+
+**Phase** : Setup Infrastructure
+**Branche** : `feature/initial-setup`
+**Objectif** : Établir fondations Git, CI/CD et documentation avant développement
+
+**Pas de tag** : Les versions démarrent en Phase 1 (v0.1.0-research)
+
+**Prochaine étape** : Phase 1 - Recherche & Documentation
 
 ---
 
@@ -56,8 +100,6 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 **Branche** : `feature/research-stack`
 **Objectif** : Établir base de connaissance technique avant développement MVP
 
-**Prochaine étape** : Phase 1.7 - Merge recherche (tag `v0.1.0-research`)
+**Prochaine étape** : Phase 2 - Setup Environnement Python
 
 ---
-
-_Changelog créé le 16 novembre 2025_
