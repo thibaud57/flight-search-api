@@ -101,15 +101,15 @@
 **Note** : Si features additionnelles nécessaires pendant l'implémentation, créer nouveau fichier dans `docs/references/` et mettre à jour l'index REFERENCES.md.
 
 ### 1.3 Standards Python modernes
-- [ ] Python 3.13 type hints (PEP 695)
-- [ ] Ruff configuration (rules, pyproject.toml)
-- [ ] Mypy strict mode
-- [ ] Async patterns (crawl4ai, error handling)
-- [ ] Structured logging (JSON, contexte)
-- [ ] Docstrings pragmatiques (PEP 257 : 1 ligne par défaut)
-- [ ] Compléter `.claude/CLAUDE.md` - Section Standards
-- [ ] Ajouter règle anti-pattern : commentaires inline interdits
-- [ ] Commit : `docs: add Python standards to CLAUDE.md`
+- [x] Python 3.13 type hints (PEP 695)
+- [x] Ruff configuration (rules, pyproject.toml)
+- [x] Mypy strict mode
+- [x] Async patterns (crawl4ai, error handling)
+- [x] Structured logging (JSON, contexte)
+- [x] Docstrings pragmatiques (PEP 257 : 1 ligne par défaut)
+- [x] Compléter `.claude/CLAUDE.md` - Section Standards
+- [x] Ajouter règle anti-pattern : commentaires inline interdits
+- [x] Commit : `docs: add Python standards to CLAUDE.md`
 
 📝 **Output** : `.claude/CLAUDE.md` - Section Standards
 
