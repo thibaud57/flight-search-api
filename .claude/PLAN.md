@@ -2,7 +2,9 @@
 
 ## Phase 0 : Setup Documentation & Git
 
-**Objectif** : Initialiser la structure documentation (Git déjà connecté)
+**Objectif** : Initialiser la structure documentation et conventions Git
+
+**Branche** : `feature/initial-setup`
 
 **Prérequis (DÉJÀ FAIT)** :
 - ✅ Repo GitHub créé et cloné
@@ -27,11 +29,21 @@
 - [ ] Documenter stratégie branches (master/develop/feature)
 - [ ] Documenter Conventional Commits (feat, fix, docs, etc.)
 - [ ] Documenter pre-commit checks (ruff, mypy, pytest)
-- [ ] Documenter workflow développement
+- [ ] Documenter workflow Pull Request
 - [ ] Compléter `.claude/CLAUDE.md` - Section Git
 - [ ] Commit : `docs: add git conventions to CLAUDE.md`
 
 📝 **Output** : `.claude/CLAUDE.md` - Section Git
+
+### 0.3 Merge setup initial
+- [ ] Push branche : `git push origin feature/initial-setup`
+- [ ] Créer Pull Request sur GitHub : `feature/initial-setup` → `develop`
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull develop en local : `git checkout develop && git pull`
+
+📝 **Output** : Setup initial mergé dans develop
+
+**Note** : Pas de tag ni de CHANGELOG à ce stade - la documentation des versions commence en Phase 1
 
 ---
 
