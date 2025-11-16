@@ -46,6 +46,12 @@
 
 📝 **Output** : `.claude/CLAUDE.md` (Git), `docs/references/github-actions.md`, `.github/workflows/release.yml`
 
+### 0.3 Mise à jour CHANGELOG
+- [ ] Ajouter entrée v0.0.0-setup dans `docs/CHANGELOG.md`
+- [ ] Commit : `docs: update changelog for setup phase`
+
+📝 **Output** : `docs/CHANGELOG.md` mis à jour
+
 **Fin de phase** : Push branche → PR → Merge develop (pas de tag - versions démarrent Phase 1)
 
 ---
