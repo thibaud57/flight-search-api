@@ -100,7 +100,7 @@
 - [x] Compléter `docs/REFERENCES.md` comme index avec liens vers fichiers modulaires
 - [x] Commit : `docs: add technical references`
 
-📝 **Output** : `docs/REFERENCES.md` (index) + `docs/references/*.md` (9 fichiers)
+📝 **Output** : `docs/REFERENCES.md` (index) + `docs/references/*.md` (10 fichiers : 9 de Phase 1.2 + github-actions.md de Phase 0.2)
 
 **Avantages structure modulaire** :
 - Chargement ciblé des références nécessaires (~44% économie tokens)
@@ -634,58 +634,67 @@
 ```
 flight-search-api/
 ├── .claude/
+│   ├── commands/
+│   │   └── execute-plan-phase.md
 │   ├── CLAUDE.md      # Standards, conventions
 │   └── PLAN.md        # Ce plan
+├── .github/
+│   └── workflows/
+│       ├── ci.yml          # Quality checks (Phase 3.6)
+│       └── release.yml     # Release automation (Phase 0.2)
 ├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── PLANNING.md
-│   ├── REFERENCES.md   # Index léger avec liens
 │   ├── references/     # Documentation technique modulaire
-│   │   ├── fastapi.md
-│   │   ├── pydantic-v2.md
-│   │   ├── crawl4ai.md
-│   │   ├── decodo-proxies.md
-│   │   ├── google-flights.md
 │   │   ├── anti-detection.md
 │   │   ├── captcha-detection.md
-│   │   ├── tenacity.md
-│   │   └── dokploy.md
-│   ├── VERSIONS.md
-│   └── CHANGELOG.md
+│   │   ├── crawl4ai.md
+│   │   ├── decodo-proxies.md
+│   │   ├── dokploy.md
+│   │   ├── fastapi.md
+│   │   ├── github-actions.md
+│   │   ├── google-flights.md
+│   │   ├── pydantic-v2.md
+│   │   └── tenacity.md
+│   ├── ARCHITECTURE.md
+│   ├── CHANGELOG.md
+│   ├── PLANNING.md
+│   ├── REFERENCES.md   # Index léger avec liens
+│   └── VERSIONS.md
 ├── app/
 │   ├── api/
 │   │   └── routes.py
+│   ├── core/
+│   │   ├── config.py
+│   │   └── logger.py
 │   ├── models/
 │   │   ├── request.py
 │   │   └── response.py
 │   ├── services/
 │   │   ├── combination_generator.py
-│   │   ├── proxy_service.py
 │   │   ├── crawler_service.py
 │   │   ├── flight_parser.py
+│   │   ├── proxy_service.py
 │   │   ├── search_service.py
 │   │   └── (captcha_solver.py - Phase 7 optionnelle)
-│   ├── core/
-│   │   ├── config.py
-│   │   └── logger.py
 │   ├── utils/
 │   └── main.py
 ├── tests/
-│   ├── unit/
-│   │   ├── test_models.py
-│   │   ├── test_config.py
-│   │   ├── test_combination_generator.py
-│   │   ├── test_proxy_service.py
-│   │   ├── test_crawler_service.py
-│   │   ├── test_flight_parser.py
-│   │   ├── test_search_service.py
-│   │   └── (test_captcha_solver.py - Phase 7)
-│   └── integration/
-│       ├── test_health.py
-│       └── test_api_routes.py
+│   ├── integration/
+│   │   ├── test_api_routes.py
+│   │   └── test_health.py
+│   └── unit/
+│       ├── test_combination_generator.py
+│       ├── test_config.py
+│       ├── test_crawler_service.py
+│       ├── test_flight_parser.py
+│       ├── test_models.py
+│       ├── test_proxy_service.py
+│       ├── test_search_service.py
+│       └── (test_captcha_solver.py - Phase 7)
+├── .dockerignore
+├── .env.example
+├── .gitignore
 ├── Dockerfile
 ├── pyproject.toml
-├── .env.example
 └── README.md
 ```
 
