@@ -1,5 +1,7 @@
 # CHANGELOG - flight-search-api
 
+**Dernière mise à jour** : 16 novembre 2025
+
 Toutes les modifications notables de ce projet seront documentées dans ce fichier.
 
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
@@ -44,6 +46,8 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 **Objectif** : Établir fondations Git, CI/CD et documentation avant développement
 
 **Pas de tag** : Les versions démarrent en Phase 1 (v0.1.0-research)
+
+**Prochaine étape** : Phase 1 - Recherche & Documentation
 
 ---
 
@@ -99,5 +103,3 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 **Prochaine étape** : Phase 1.7 - Merge recherche (tag `v0.1.0-research`)
 
 ---
-
-**Dernière mise à jour** : 16 novembre 2025
