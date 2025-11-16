@@ -12,6 +12,12 @@ La documentation technique est organisée en fichiers séparés pour optimiser l
 
 ### Références Disponibles
 
+0. **[GitHub Actions](references/github-actions.md)** - CI/CD et automatisation
+   - Syntaxe GitHub Actions (on, jobs, steps, runs-on)
+   - Workflow examples (CI Quality Checks, Release Automation)
+   - Secrets Management (GITHUB_TOKEN, custom secrets)
+   - Triggers (push, pull_request, tags)
+
 1. **[FastAPI](references/fastapi.md)** - Framework web asynchrone
    - Dependency Injection
    - Async Routes
@@ -69,6 +75,7 @@ La documentation technique est organisée en fichiers séparés pour optimiser l
 
 | Technologie | Documentation Principale |
 |-------------|--------------------------|
+| GitHub Actions | https://docs.github.com/en/actions |
 | FastAPI | https://fastapi.tiangolo.com/ |
 | Pydantic v2 | https://docs.pydantic.dev/latest/ |
 | Crawl4AI | https://docs.crawl4ai.com/ |
