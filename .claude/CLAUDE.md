@@ -383,25 +383,965 @@ def extract_price(html: str) -> float:
 
 ## 📁 Organisation Fichiers
 
-_À compléter en Phase 2.3_
+### Structure Arborescence
+
+```
+flight-search-api/
+├── .claude/
+│   ├── commands/
+│   │   └── execute-plan-phase.md
+│   ├── CLAUDE.md           # Standards, conventions (ce fichier)
+│   └── PLAN.md             # Plan d'action détaillé
+│
+├── .github/
+│   └── workflows/
+│       ├── ci.yml          # Quality checks (Phase 3.6)
+│       └── release.yml     # Release automation (Phase 0.2)
+│
+├── docs/
+│   ├── references/         # Documentation technique modulaire
+│   │   ├── anti-detection.md
+│   │   ├── captcha-detection.md
+│   │   ├── crawl4ai.md
+│   │   ├── decodo-proxies.md
+│   │   ├── dokploy.md
+│   │   ├── fastapi.md
+│   │   ├── github-actions.md
+│   │   ├── google-flights.md
+│   │   ├── pydantic-v2.md
+│   │   └── tenacity.md
+│   ├── ARCHITECTURE.md     # Architecture + ADR
+│   ├── CHANGELOG.md        # Historique versions
+│   ├── PLANNING.md         # Specs détaillées (Phase 4)
+│   ├── REFERENCES.md       # Index références
+│   └── VERSIONS.md         # Matrice compatibilité
+│
+├── app/
+│   ├── api/
+│   │   └── routes.py       # Endpoints FastAPI
+│   ├── core/
+│   │   ├── config.py       # Pydantic Settings
+│   │   └── logger.py       # Structured logging
+│   ├── models/
+│   │   ├── request.py      # SearchRequest, Flight, DateRange
+│   │   └── response.py     # SearchResponse, FlightResult, SearchStats
+│   ├── services/
+│   │   ├── combination_generator.py    # Génère permutations multi-city
+│   │   ├── crawler_service.py          # Crawl4AI + retry logic
+│   │   ├── flight_parser.py            # JsonCssExtractionStrategy
+│   │   ├── proxy_service.py            # Decodo config + rotation
+│   │   ├── search_service.py           # Orchestration + Top 10 ranking
+│   │   └── (captcha_solver.py)         # Phase 7 optionnelle
+│   ├── utils/              # Helpers génériques
+│   └── main.py             # FastAPI app entry point
+│
+├── tests/
+│   ├── integration/
+│   │   ├── test_api_routes.py
+│   │   └── test_health.py
+│   └── unit/
+│       ├── test_combination_generator.py
+│       ├── test_config.py
+│       ├── test_crawler_service.py
+│       ├── test_flight_parser.py
+│       ├── test_models.py
+│       ├── test_proxy_service.py
+│       ├── test_search_service.py
+│       └── (test_captcha_solver.py)    # Phase 7
+│
+├── .dockerignore
+├── .env.example            # Template variables env
+├── .gitignore
+├── Dockerfile              # Multi-stage optimisé Dokploy
+├── pyproject.toml          # Dependencies + tools config
+└── README.md
+```
+
+### Principes Organisation
+
+**Séparation des responsabilités** :
+- `app/api/` : Couche HTTP (routes, validation)
+- `app/core/` : Configuration et logging
+- `app/models/` : Schémas Pydantic (request/response)
+- `app/services/` : Logique métier (scraping, parsing, orchestration)
+- `app/utils/` : Helpers réutilisables
+
+**Documentation modulaire** :
+- `docs/references/` : Docs techniques par technologie (10 fichiers)
+- `docs/REFERENCES.md` : Index léger avec liens
+- Avantage : Chargement ciblé (~44% économie tokens)
+
+**Tests miroir** :
+- Structure `tests/` reflète `app/`
+- `unit/` : Tests isolés avec mocks
+- `integration/` : Tests end-to-end avec TestClient
+
+**Configuration centralisée** :
+- `pyproject.toml` : Dependencies + ruff + mypy + pytest
+- `.env.example` : Template variables (jamais committer `.env`)
+- `.github/workflows/` : CI/CD automation
 
 ---
 
 ## 🔄 Workflow Développement
 
-_À compléter en Phase 2.3_
+### Installation & Setup
+
+**Prérequis** :
+- Python 3.13.1+
+- [uv](https://github.com/astral-sh/uv) (package manager moderne)
+- Docker (optionnel, pour build image)
+
+**Installation dépendances** :
+```bash
+# Installation projet + deps dev
+uv sync --all-extras
+
+# Post-install : Setup Playwright (automatique via crawl4ai-setup)
+crawl4ai-setup
+```
+
+**Note** : `crawl4ai-setup` installe automatiquement Playwright et ses dépendances système. Pas besoin d'installation manuelle de Playwright.
+
+### Commandes Développement
+
+**Lancer l'application** :
+```bash
+# Mode développement (hot-reload)
+fastapi dev app/main.py
+
+# Mode production
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+**Quality Checks** (à exécuter avant commit) :
+```bash
+# Lint + Auto-fix
+ruff check . --fix
+
+# Format
+ruff format .
+
+# Type check
+mypy app/
+
+# Tests unitaires
+pytest tests/unit/ -v
+
+# All-in-one pre-commit
+ruff check . --fix && ruff format . && mypy app/ && pytest tests/unit/
+```
+
+**Tests** :
+```bash
+# Tests unitaires uniquement
+pytest tests/unit/ -v
+
+# Tests intégration uniquement
+pytest tests/integration/ -v
+
+# Tous les tests
+pytest -v
+
+# Avec coverage
+pytest --cov=app --cov-report=html
+# Rapport généré dans htmlcov/index.html
+
+# Test spécifique
+pytest tests/unit/test_models.py::test_search_request_validation -v
+```
+
+**Docker** :
+```bash
+# Build image
+docker build -t flight-search-api .
+
+# Run container
+docker run -p 8000:8000 --env-file .env flight-search-api
+
+# Run avec override env vars
+docker run -p 8000:8000 \
+  -e LOG_LEVEL=DEBUG \
+  -e DECODO_USERNAME=customer-XXX-country-FR \
+  flight-search-api
+```
+
+### Workflow Feature Development
+
+**Étape 1 : Créer branche feature**
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b feature/nom-descriptif
+```
+
+**Étape 2 : Développer avec TDD**
+```bash
+# 1. Écrire tests d'abord
+vim tests/unit/test_nouveau_service.py
+
+# 2. Run tests (doivent échouer)
+pytest tests/unit/test_nouveau_service.py -v
+
+# 3. Implémenter feature
+vim app/services/nouveau_service.py
+
+# 4. Run tests (doivent passer)
+pytest tests/unit/test_nouveau_service.py -v
+
+# 5. Refactor si nécessaire
+```
+
+**Étape 3 : Vérifications locales**
+```bash
+# Quality checks complets
+ruff check . --fix && ruff format . && mypy app/ && pytest -v
+
+# Si tout passe → Commit
+git add .
+git commit -m "feat(services): add nouveau service"
+```
+
+**Étape 4 : Push + Pull Request**
+```bash
+# Push branche
+git push -u origin feature/nom-descriptif
+
+# Créer PR sur GitHub : feature/nom-descriptif → develop
+# CI s'exécute automatiquement (lint, format, typecheck, tests)
+# Merger après validation CI
+```
+
+**Étape 5 : Cleanup après merge**
+```bash
+git checkout develop
+git pull origin develop
+git branch -d feature/nom-descriptif
+```
+
+### Variables Environnement
+
+**Fichier `.env` local** (créer depuis `.env.example`) :
+```bash
+cp .env.example .env
+vim .env  # Remplir avec vraies valeurs
+```
+
+**Variables requises** :
+```bash
+# Logging
+LOG_LEVEL=INFO  # DEBUG en dev, INFO en prod
+
+# Decodo Proxies
+DECODO_USERNAME=customer-{api_key}-country-FR
+DECODO_PASSWORD=your_password
+DECODO_PROXY_HOST=pr.decodo.com:8080
+
+# Features
+PROXY_ROTATION_ENABLED=true
+CAPTCHA_DETECTION_ENABLED=true
+
+# Optionnel (Phase 7)
+# CAPTCHA_SOLVING_ENABLED=false
+# TWOCAPTCHA_API_KEY=your_2captcha_key
+```
+
+**⚠️ Sécurité** :
+- ❌ **JAMAIS** committer `.env` (déjà dans `.gitignore`)
+- ✅ Utiliser `.env.example` comme template
+- ✅ Secrets stockés dans Dokploy UI pour production
+
+### Debugging
+
+**Logs structurés** :
+```python
+# Dans le code
+logger.info(
+    "Flight search started",
+    extra={
+        "search_id": search_id,
+        "destinations": destinations
+    }
+)
+
+# Output JSON
+{"asctime": "2025-11-16T10:30:00", "name": "flight-search-api", "levelname": "INFO", "message": "Flight search started", "search_id": "abc123", "destinations": ["Paris", "Tokyo"]}
+```
+
+**Activer DEBUG logs** :
+```bash
+LOG_LEVEL=DEBUG fastapi dev app/main.py
+```
+
+**Breakpoints** (avec debugpy si besoin) :
+```python
+# Ajouter dans le code
+import debugpy
+debugpy.listen(5678)
+debugpy.wait_for_client()
+```
+
+### Troubleshooting Commun
+
+**Erreur `crawl4ai-setup` échoue** :
+- Vérifier connexion internet (télécharge Playwright browsers)
+- Espace disque suffisant (~500MB)
+- Permissions écriture dans cache directory
+
+**Tests échouent avec `ModuleNotFoundError`** :
+```bash
+# Réinstaller deps
+uv sync --all-extras
+```
+
+**Mypy erreurs après ajout nouvelle lib** :
+```bash
+# Ajouter override dans pyproject.toml
+[[tool.mypy.overrides]]
+module = ["nouvelle_lib.*"]
+ignore_missing_imports = true
+```
+
+**Docker build lent** :
+```bash
+# Utiliser build cache
+docker build --cache-from flight-search-api:latest -t flight-search-api .
+```
 
 ---
 
 ## 🧪 Tests
 
-_À compléter en Phase 2.3_
+### Stratégie Tests
+
+**Approche TDD** (Test-Driven Development) :
+1. Écrire tests d'abord (red)
+2. Implémenter feature minimale (green)
+3. Refactorer (refactor)
+
+**Pyramide Tests** :
+```
+        /\
+       /  \      10% - E2E (integration)
+      /    \
+     /------\    30% - Integration (API routes)
+    /        \
+   /----------\  60% - Unit (services, models, utils)
+  /__________\
+```
+
+### Types de Tests
+
+**1. Tests Unitaires** (`tests/unit/`)
+
+**Caractéristiques** :
+- Testent 1 fonction/classe isolée
+- Utilisent mocks pour dépendances externes
+- Rapides (<1s pour 100 tests)
+- Coverage minimum 80%
+
+**Mocking Strategy** :
+```python
+# Mock Crawl4AI
+from unittest.mock import AsyncMock, MagicMock
+
+@pytest.fixture
+def mock_crawler():
+    crawler = AsyncMock()
+    crawler.arun.return_value = MagicMock(
+        html="<html>Mock HTML</html>",
+        success=True
+    )
+    return crawler
+
+# Mock Decodo Proxies
+@pytest.fixture
+def mock_proxy_config():
+    return ProxyConfig(
+        host="pr.decodo.com",
+        port=8080,
+        username="customer-XXX-country-FR",
+        password="test_password"
+    )
+
+# Mock HTML Google Flights
+@pytest.fixture
+def mock_google_flights_html():
+    return """
+    <div class="flight-card">
+        <span class="price-value">1250.00</span>
+        <span class="airline-name">Air France</span>
+        <time class="departure-time">2025-06-01T10:30:00</time>
+    </div>
+    """
+```
+
+**Exemples Tests** :
+```python
+# tests/unit/test_models.py
+def test_search_request_validation():
+    request = SearchRequest(
+        destinations=["Paris", "Tokyo"],
+        date_range=DateRange(start="2025-06-01", end="2025-06-15")
+    )
+    assert len(request.destinations) == 2
+
+def test_search_request_invalid_dates():
+    with pytest.raises(ValidationError):
+        SearchRequest(
+            destinations=["Paris"],
+            date_range=DateRange(start="2025-06-15", end="2025-06-01")
+        )
+
+# tests/unit/test_crawler_service.py
+@pytest.mark.asyncio
+async def test_crawl_with_captcha_detection(mock_crawler, mock_proxy_config):
+    html_with_captcha = "<html><div id='recaptcha'>Captcha</div></html>"
+    mock_crawler.arun.return_value.html = html_with_captcha
+
+    service = CrawlerService(crawler=mock_crawler, proxy_service=mock_proxy_config)
+    with pytest.raises(CaptchaDetectedError):
+        await service.crawl_google_flights("https://example.com")
+```
+
+**2. Tests Intégration** (`tests/integration/`)
+
+**Caractéristiques** :
+- Testent interactions entre composants
+- Utilisent TestClient FastAPI
+- Pas de mocks pour services internes
+- Mocks uniquement pour Crawl4AI/Decodo (dépendances externes)
+
+**Exemples Tests** :
+```python
+# tests/integration/test_api_routes.py
+from fastapi.testclient import TestClient
+
+def test_search_flights_endpoint(client: TestClient, mock_crawler):
+    response = client.post("/api/v1/search-flights", json={
+        "destinations": ["Paris", "Tokyo"],
+        "date_range": {"start": "2025-06-01", "end": "2025-06-15"}
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert "results" in data
+    assert len(data["results"]) <= 10
+
+def test_health_endpoint(client: TestClient):
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+```
+
+**3. Tests End-to-End** (manuels, pas de CI)
+
+**Caractéristiques** :
+- Testent flow complet avec vraies dépendances
+- Utilisent vraie clé Decodo (bandwidth coûteux)
+- Exécutés manuellement avant release
+- Pas dans CI (coût + lenteur)
+
+**Exemple** :
+```bash
+# .env avec vraies clés
+DECODO_USERNAME=customer-REAL_KEY-country-FR
+DECODO_PASSWORD=real_password
+
+# Run app
+fastapi dev app/main.py
+
+# Test manuel
+curl -X POST http://localhost:8000/api/v1/search-flights \
+  -H "Content-Type: application/json" \
+  -d '{
+    "destinations": ["Paris", "Tokyo"],
+    "date_range": {"start": "2025-06-01", "end": "2025-06-15"}
+  }'
+
+# Vérifier logs : captcha detection, proxy rotation, parsing success
+```
+
+### Commandes Pytest
+
+**Exécution Tests** :
+```bash
+# Tests unitaires (rapides, CI)
+pytest tests/unit/ -v
+
+# Tests intégration (moyens, CI)
+pytest tests/integration/ -v
+
+# Tous les tests
+pytest -v
+
+# Tests parallèles (speedup 4x)
+pytest -n auto -v
+
+# Test spécifique
+pytest tests/unit/test_models.py::test_search_request_validation -v
+
+# Tests avec pattern
+pytest -k "captcha" -v
+```
+
+**Coverage** :
+```bash
+# Coverage HTML (interactif)
+pytest --cov=app --cov-report=html
+open htmlcov/index.html
+
+# Coverage terminal
+pytest --cov=app --cov-report=term-missing
+
+# Coverage avec seuil minimum
+pytest --cov=app --cov-fail-under=80
+
+# Coverage XML (pour CI/Codecov)
+pytest --cov=app --cov-report=xml
+```
+
+**Options Utiles** :
+```bash
+# Stop au premier échec
+pytest -x
+
+# Verbose avec output complet
+pytest -vv
+
+# Afficher print() statements
+pytest -s
+
+# Reruns pour tests flaky
+pytest --reruns 3
+
+# Markers (catégories tests)
+pytest -m "slow"  # Tests marqués @pytest.mark.slow
+pytest -m "not slow"  # Exclure tests lents
+```
+
+### Configuration Pytest
+
+**`pyproject.toml`** :
+```toml
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=app",
+    "--cov-report=term-missing:skip-covered",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+asyncio_mode = "auto"
+```
+
+### Fixtures Communs
+
+**`tests/conftest.py`** (partagé entre tous les tests) :
+```python
+import pytest
+from fastapi.testclient import TestClient
+from unittest.mock import AsyncMock, MagicMock
+
+from app.main import app
+
+@pytest.fixture
+def client():
+    """TestClient FastAPI pour tests intégration."""
+    return TestClient(app)
+
+@pytest.fixture
+def mock_crawler():
+    """Mock AsyncWebCrawler."""
+    crawler = AsyncMock()
+    crawler.arun.return_value = MagicMock(
+        html="<html>Mock</html>",
+        success=True
+    )
+    return crawler
+
+@pytest.fixture
+def mock_google_flights_html():
+    """HTML Google Flights valide pour parsing."""
+    return """
+    <div class="flight-card">
+        <span class="price-value">1250.00</span>
+    </div>
+    """
+```
+
+### Bonnes Pratiques
+
+**Naming** :
+- Fichiers : `test_*.py`
+- Classes : `TestClassName`
+- Fonctions : `test_descriptive_name`
+
+**Structure Test** :
+```python
+def test_feature():
+    # Arrange (setup)
+    input_data = {"key": "value"}
+
+    # Act (exécution)
+    result = function_to_test(input_data)
+
+    # Assert (vérification)
+    assert result == expected_value
+```
+
+**Async Tests** :
+```python
+@pytest.mark.asyncio
+async def test_async_function():
+    result = await async_function()
+    assert result is not None
+```
+
+**Parametrized Tests** (DRY) :
+```python
+@pytest.mark.parametrize("input,expected", [
+    ("Paris", "PAR"),
+    ("Tokyo", "TYO"),
+    ("New York", "NYC"),
+])
+def test_city_to_code(input, expected):
+    assert city_to_code(input) == expected
+```
+
+**Tests Exception** :
+```python
+def test_raises_validation_error():
+    with pytest.raises(ValidationError) as exc_info:
+        invalid_function()
+    assert "error detail" in str(exc_info.value)
+```
+
+### CI Integration
+
+**GitHub Actions** (`.github/workflows/ci.yml`) :
+```yaml
+- name: Run tests
+  run: |
+    pytest tests/unit/ --cov=app --cov-report=xml --cov-fail-under=80
+
+- name: Upload coverage
+  uses: codecov/codecov-action@v3
+  with:
+    files: ./coverage.xml
+```
+
+**Règles** :
+- ✅ Tests unitaires obligatoires (CI bloque si échec)
+- ✅ Coverage minimum 80% (Phase 3+)
+- ❌ Tests intégration en local uniquement (coût Decodo)
+- ❌ Tests E2E manuels (pré-release)
 
 ---
 
 ## 🐳 Docker
 
-_À compléter en Phase 2.3_
+### Dockerfile Multi-Stage
+
+**Structure** (Phase 3.2) :
+
+```dockerfile
+# Stage 1: Builder
+FROM python:3.13-slim AS builder
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Install dependencies
+WORKDIR /app
+COPY pyproject.toml ./
+RUN uv sync --no-dev
+
+# Install Playwright via crawl4ai-setup
+RUN uv run crawl4ai-setup
+
+# Stage 2: Runtime
+FROM python:3.13-slim
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser
+
+# Copy deps from builder
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
+
+# Copy application code
+WORKDIR /app
+COPY app/ ./app/
+
+# Set user
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD python -c "import requests; requests.get('http://localhost:8000/health')"
+
+# Run app
+CMD ["/app/.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+**Optimisations** :
+- ✅ Multi-stage build (réduction taille image ~60%)
+- ✅ Cache uv dependencies (build incrémentiel rapide)
+- ✅ Non-root user (sécurité)
+- ✅ Healthcheck natif
+- ✅ Playwright installé via `crawl4ai-setup`
+
+### Commandes Docker
+
+**Build** :
+```bash
+# Build standard
+docker build -t flight-search-api .
+
+# Build avec cache
+docker build --cache-from flight-search-api:latest -t flight-search-api .
+
+# Build avec tag version
+docker build -t flight-search-api:v1.0.0 .
+
+# Build sans cache (clean build)
+docker build --no-cache -t flight-search-api .
+```
+
+**Run** :
+```bash
+# Run avec .env file
+docker run -p 8000:8000 --env-file .env flight-search-api
+
+# Run avec env vars inline
+docker run -p 8000:8000 \
+  -e LOG_LEVEL=INFO \
+  -e DECODO_USERNAME=customer-XXX-country-FR \
+  -e DECODO_PASSWORD=password \
+  flight-search-api
+
+# Run en background (detached)
+docker run -d -p 8000:8000 --name flight-api flight-search-api
+
+# Run avec volumes (développement)
+docker run -p 8000:8000 -v $(pwd)/app:/app/app flight-search-api
+```
+
+**Gestion Containers** :
+```bash
+# Lister containers actifs
+docker ps
+
+# Logs container
+docker logs flight-api
+
+# Logs en temps réel
+docker logs -f flight-api
+
+# Stop container
+docker stop flight-api
+
+# Remove container
+docker rm flight-api
+
+# Remove image
+docker rmi flight-search-api
+```
+
+**Debugging** :
+```bash
+# Shell interactif dans container
+docker exec -it flight-api /bin/bash
+
+# Health check manuel
+docker exec flight-api curl http://localhost:8000/health
+
+# Inspecter container
+docker inspect flight-api
+```
+
+### Docker Compose (développement)
+
+**`docker-compose.yml`** (optionnel, Phase 3+) :
+```yaml
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app/app  # Hot-reload en dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+**Commandes** :
+```bash
+# Up
+docker-compose up
+
+# Up en background
+docker-compose up -d
+
+# Rebuild
+docker-compose up --build
+
+# Logs
+docker-compose logs -f
+
+# Down
+docker-compose down
+```
+
+### Optimisations Avancées
+
+**1. Layer Caching** :
+```dockerfile
+# COPY dependencies avant code (cache optimal)
+COPY pyproject.toml ./
+RUN uv sync --no-dev
+
+# COPY code en dernier (changements fréquents)
+COPY app/ ./app/
+```
+
+**2. Image Size Reduction** :
+```dockerfile
+# Utiliser alpine pour taille minimale (optionnel)
+FROM python:3.13-alpine AS builder
+
+# Multi-stage pour exclure build tools
+# Runtime image contient uniquement .venv + code
+```
+
+**3. Security** :
+```dockerfile
+# Non-root user obligatoire
+USER appuser
+
+# Scan vulnérabilités
+docker scan flight-search-api
+```
+
+**4. Build Args** (pour CI/CD) :
+```dockerfile
+ARG VERSION=dev
+LABEL version=$VERSION
+
+# Build
+docker build --build-arg VERSION=v1.0.0 -t flight-search-api:v1.0.0 .
+```
+
+### Déploiement Dokploy
+
+**Configuration Dokploy** :
+
+1. **Connecter Repo GitHub** :
+   - URL : `https://github.com/username/flight-search-api`
+   - Branch : `master`
+   - Auto-deploy sur push
+
+2. **Variables Environnement** (UI Dokploy) :
+   ```
+   LOG_LEVEL=INFO
+   DECODO_USERNAME=customer-XXX-country-FR
+   DECODO_PASSWORD=***
+   DECODO_PROXY_HOST=pr.decodo.com:8080
+   PROXY_ROTATION_ENABLED=true
+   CAPTCHA_DETECTION_ENABLED=true
+   ```
+
+3. **Build Settings** :
+   - Dockerfile path : `./Dockerfile`
+   - Port : `8000`
+   - Health check : `/health`
+
+4. **Resources** :
+   - CPU : 1 vCPU
+   - RAM : 1 GB (minimum pour Playwright)
+   - Storage : 5 GB
+
+**Logs Dokploy** :
+```bash
+# Via UI Dokploy
+# Logs → flight-search-api → View Logs
+
+# Filtrer par level
+# Search: "levelname": "ERROR"
+
+# Monitoring
+# Métriques CPU/RAM/Network
+```
+
+### Troubleshooting Docker
+
+**Erreur `crawl4ai-setup` échoue** :
+```bash
+# Vérifier espace disque dans container
+docker exec flight-api df -h
+
+# Augmenter ressources Docker Desktop
+# Settings → Resources → Memory: 4GB minimum
+```
+
+**Image trop grosse** :
+```bash
+# Analyser layers
+docker history flight-search-api
+
+# Utiliser dive pour inspection détaillée
+dive flight-search-api
+```
+
+**Build lent** :
+```bash
+# Utiliser BuildKit (plus rapide)
+DOCKER_BUILDKIT=1 docker build -t flight-search-api .
+
+# Cache externe (CI/CD)
+docker buildx build --cache-from type=registry,ref=user/app:cache \
+  --cache-to type=registry,ref=user/app:cache -t flight-search-api .
+```
+
+**Container crash au démarrage** :
+```bash
+# Logs détaillés
+docker logs flight-api
+
+# Override entrypoint pour debug
+docker run -it --entrypoint /bin/bash flight-search-api
+```
+
+### Best Practices
+
+**DO** :
+- ✅ Multi-stage builds (réduction taille)
+- ✅ Non-root user (sécurité)
+- ✅ Health checks (monitoring)
+- ✅ `.dockerignore` (exclure .git, tests, etc.)
+- ✅ Layer caching optimal (deps avant code)
+
+**DON'T** :
+- ❌ Secrets hardcodés dans Dockerfile
+- ❌ Root user en production
+- ❌ Image sans health check
+- ❌ Build sans cache (lenteur CI/CD)
+- ❌ Image alpine pour Python (compatibilité)
 
 ---
 
