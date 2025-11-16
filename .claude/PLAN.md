@@ -249,8 +249,12 @@
 ### 3.6 CI Quality Checks
 - [ ] Créer `.github/workflows/ci.yml` :
       - Trigger : PR + push sur develop/master
+      - Setup : Python 3.13, cache uv dependencies (actions/cache)
+      - Install : uv sync --all-extras && crawl4ai-setup (installe Playwright)
       - Jobs : lint (ruff check), format (ruff format --check), typecheck (mypy), tests (pytest tests/unit/)
-      - Coverage : pytest --cov=app
+      - Coverage : pytest --cov=app --cov-report=xml
+      - Fail-fast : false (exécuter tous les checks même si l'un échoue)
+      - Upload coverage : codecov/codecov-action (optionnel)
 - [ ] Ajouter badge CI dans README.md
 - [ ] Tester workflow en local : `act pull_request` (optionnel)
 - [ ] Commit : `ci: add quality checks workflow`
