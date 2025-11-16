@@ -100,4 +100,4 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
-_Changelog créé le 16 novembre 2025_
+**Dernière mise à jour** : 16 novembre 2025
