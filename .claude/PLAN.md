@@ -11,16 +11,27 @@
 
 ### 0.1 Structure documentation vide
 - [x] Créer `docs/`
+- [x] Créer `docs/references/`
 - [x] Créer `.claude/CLAUDE.md`
-- [x] Créer `docs/architecture.md`
+- [x] Créer `docs/ARCHITECTURE.md`
 - [x] Créer `docs/PLANNING.md`
-- [x] Créer `docs/REFERENCES.md`
+- [x] Créer `docs/REFERENCES.md` (index léger)
 - [x] Créer `docs/VERSIONS.md`
 - [x] Créer `docs/CHANGELOG.md`
 - [x] Commit : `docs: create documentation structure`
 - [x] Créer branche develop et push
 
-📝 **Output** : Structure docs prête à remplir
+📝 **Output** : Structure docs modulaire prête à remplir
+
+### 0.2 Conventions Git
+- [ ] Documenter stratégie branches (master/develop/feature)
+- [ ] Documenter Conventional Commits (feat, fix, docs, etc.)
+- [ ] Documenter pre-commit checks (ruff, mypy, pytest)
+- [ ] Documenter workflow développement
+- [ ] Compléter `.claude/CLAUDE.md` - Section Git
+- [ ] Commit : `docs: add git conventions to CLAUDE.md`
+
+📝 **Output** : `.claude/CLAUDE.md` - Section Git
 
 ---
 
@@ -31,45 +42,51 @@
 **Branche** : `feature/research-stack`
 
 ### 1.1 Recherche versions & compatibilité
-- [ ] Python 3.13 stabilité et compatibilité écosystème
-- [ ] FastAPI 0.121.2 (breaking changes, Pydantic v2)
-- [ ] Pydantic v2.10+ (migration depuis v1)
-- [ ] tenacity 9.0+ (retry strategies)
-- [ ] crawl4ai 0.7+ (async crawler, stealth mode, Playwright intégré)
-- [ ] Vérification matrice compatibilité croisée
-- [ ] Créer `docs/VERSIONS.md` avec tableau + notes
-- [ ] Commit : `docs: add versions compatibility matrix`
+- [x] Python 3.13 stabilité et compatibilité écosystème
+- [x] FastAPI 0.121.2 (breaking changes, Pydantic v2)
+- [x] Pydantic v2.10+ (migration depuis v1)
+- [x] tenacity 9.0+ (retry strategies)
+- [x] crawl4ai 0.7+ (async crawler, stealth mode, Playwright intégré)
+- [x] Vérification matrice compatibilité croisée
+- [x] Compléter `docs/VERSIONS.md` avec tableau + notes
+- [x] Commit : `docs: add versions compatibility matrix`
 
 📝 **Output** : `docs/VERSIONS.md`
 
 **Note** : Playwright est installé automatiquement par `crawl4ai-setup`, pas besoin de l'installer séparément.
 
 ### 1.2 Documentation technique ciblée
-- [ ] FastAPI : Dependency Injection, async routes, TestClient
+- [x] Créer fichiers de référence modulaires dans `docs/references/` :
+- [x] `fastapi.md` : Dependency Injection, async routes, TestClient
       → https://fastapi.tiangolo.com/
-- [ ] Pydantic v2 : Settings, validation, field_validator
+- [x] `pydantic-v2.md` : Settings, validation, field_validator
       → https://docs.pydantic.dev/latest/
-- [ ] Crawl4AI : AsyncWebCrawler, BrowserConfig, JsonCssExtractionStrategy (extraction CSS)
+- [x] `crawl4ai.md` : AsyncWebCrawler, BrowserConfig, JsonCssExtractionStrategy (extraction CSS)
       → https://docs.crawl4ai.com/
-- [ ] Decodo Proxies : Residential rotation, France targeting, authentication, bandwidth optimization
+- [x] `decodo-proxies.md` : Residential rotation, France targeting, authentication, bandwidth optimization
       → https://help.decodo.com/docs/introduction
         **Note** : Format auth = username: customer-{api_key}-country-FR, password: your_password
-- [ ] Google Flights URL structure : Multi-city params, date formats, currency/locale (France)
+- [x] `google-flights.md` : Multi-city params, date formats, currency/locale (France)
       → (reverse engineering via browser DevTools)
-- [ ] Anti-détection : Stealth mode Crawl4AI, user-agent rotation, proxy rotation
+- [x] `anti-detection.md` : Stealth mode Crawl4AI, user-agent rotation, proxy rotation
       → https://docs.crawl4ai.com/core/browser-config/
-- [ ] Captcha detection : Patterns HTML (reCAPTCHA, hCaptcha), retry strategy avec rotation IP
+- [x] `captcha-detection.md` : Patterns HTML (reCAPTCHA, hCaptcha), retry strategy avec rotation IP
       → (patterns de détection, pas de résolution dans MVP)
-- [ ] Tenacity : @retry decorator, wait strategies, async
+- [x] `tenacity.md` : @retry decorator, wait strategies, async
       → https://tenacity.readthedocs.io/
-- [ ] Dokploy : Dockerfile best practices, env vars
+- [x] `dokploy.md` : Dockerfile best practices, env vars
       → https://docs.dokploy.com/
-- [ ] Créer `docs/REFERENCES.md` avec extraits + liens
-- [ ] Commit : `docs: add technical references`
+- [x] Créer `docs/REFERENCES.md` comme index avec liens vers fichiers modulaires
+- [x] Commit : `docs: add technical references`
 
-📝 **Output** : `docs/REFERENCES.md`
+📝 **Output** : `docs/REFERENCES.md` (index) + `docs/references/*.md` (9 fichiers)
 
-**Note** : Si features additionnelles nécessaires pendant l'implémentation, les documenter dans un ADR et mettre à jour REFERENCES.md.
+**Avantages structure modulaire** :
+- Chargement ciblé des références nécessaires (~44% économie tokens)
+- Navigation rapide dans IDE
+- Meilleure gestion Git (historique, conflits)
+
+**Note** : Si features additionnelles nécessaires pendant l'implémentation, créer nouveau fichier dans `docs/references/` et mettre à jour l'index REFERENCES.md.
 
 ### 1.3 Standards Python modernes
 - [ ] Python 3.13 type hints (PEP 695)
@@ -93,22 +110,12 @@
 - [ ] Rédiger ADR #004 : Tenacity pour retry
 - [ ] Rédiger ADR #005 : Captcha handling strategy (proxies rotation + detection, pas de résolution dans MVP)
 - [ ] Rédiger ADR #006 : JsonCssExtractionStrategy vs LLMExtractionStrategy (coût, performance)
-- [ ] Créer `docs/architecture.md` avec ADR intégrés
-- [ ] Commit : `docs: add architecture and ADR`
+- [ ] Compléter `docs/ARCHITECTURE.md` avec ADR intégrés
+- [ ] Commit : `docs: add ARCHITECTURE and ADR`
 
-📝 **Output** : `docs/architecture.md`
+📝 **Output** : `docs/ARCHITECTURE.md`
 
-### 1.5 Conventions Git
-- [ ] Documenter stratégie branches (master/develop/feature)
-- [ ] Documenter Conventional Commits (feat, fix, docs, etc.)
-- [ ] Documenter pre-commit checks (ruff, mypy, pytest)
-- [ ] Documenter workflow développement
-- [ ] Compléter `.claude/CLAUDE.md` - Section Git
-- [ ] Commit : `docs: add git conventions to CLAUDE.md`
-
-📝 **Output** : `.claude/CLAUDE.md` - Section Git
-
-### 1.6 Mise à jour CHANGELOG
+### 1.5 Mise à jour CHANGELOG
 - [ ] Ajouter entrée v0.1.0-research dans `docs/CHANGELOG.md`
 - [ ] Commit : `docs: update changelog for research phase`
 
@@ -157,7 +164,7 @@
 - [ ] Vérifier section Standards (déjà fait Phase 1.3)
 - [ ] Ajouter section Organisation fichiers (arborescence)
 - [ ] Vérifier section Anti-patterns
-- [ ] Vérifier section Git (déjà fait Phase 1.5)
+- [ ] Vérifier section Git (déjà fait Phase 0.2)
 - [ ] Ajouter section Workflow développement
 - [ ] Ajouter section Tests (pytest commands)
 - [ ] Ajouter section Docker (build/run)
@@ -489,7 +496,7 @@
 - [ ] Estimation coûts : nombre captchas/mois × $0.001-0.003
 - [ ] Comparer avec coût des recherches perdues
 - [ ] Valider ROI positif
-- [ ] Ajouter à `docs/REFERENCES.md`
+- [ ] Créer `docs/references/2captcha.md` et mettre à jour l'index REFERENCES.md
 
 ### 7.3 Intégration 2Captcha
 - [ ] Ajouter `2captcha-python` à pyproject.toml
@@ -525,7 +532,7 @@
 ### 7.6 Documentation
 - [ ] Mettre à jour README : section Captcha Solving
 - [ ] Mettre à jour PLANNING.md : stratégie captcha complète
-- [ ] Ajouter ADR #007 dans architecture.md
+- [ ] Ajouter ADR #007 dans ARCHITECTURE.md
 - [ ] Commit : `docs: add captcha solving documentation`
 
 ### 7.7 Mise à jour CHANGELOG
@@ -624,9 +631,19 @@ flight-search-api/
 │   ├── CLAUDE.md      # Standards, conventions
 │   └── PLAN.md        # Ce plan
 ├── docs/
-│   ├── architecture.md
+│   ├── ARCHITECTURE.md
 │   ├── PLANNING.md
-│   ├── REFERENCES.md
+│   ├── REFERENCES.md   # Index léger avec liens
+│   ├── references/     # Documentation technique modulaire
+│   │   ├── fastapi.md
+│   │   ├── pydantic-v2.md
+│   │   ├── crawl4ai.md
+│   │   ├── decodo-proxies.md
+│   │   ├── google-flights.md
+│   │   ├── anti-detection.md
+│   │   ├── captcha-detection.md
+│   │   ├── tenacity.md
+│   │   └── dokploy.md
 │   ├── VERSIONS.md
 │   └── CHANGELOG.md
 ├── app/
