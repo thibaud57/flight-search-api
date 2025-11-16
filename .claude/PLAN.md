@@ -47,8 +47,8 @@
 📝 **Output** : `.claude/CLAUDE.md` (Git), `docs/references/github-actions.md`, `.github/workflows/release.yml`
 
 ### 0.3 Mise à jour CHANGELOG
-- [ ] Ajouter entrée v0.0.0-setup dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for setup phase`
+- [x] Ajouter entrée v0.0.0-setup dans `docs/CHANGELOG.md`
+- [x] Commit : `docs: update changelog for setup phase`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
