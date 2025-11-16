@@ -153,38 +153,38 @@
 **Branche** : `feature/project-structure`
 
 ### 2.1 Création structure complète
-- [ ] Créer fichiers racine : `README.md`, `.gitignore`, `.dockerignore`, `Dockerfile`, `pyproject.toml`, `.env.example`
-- [ ] Créer structure `app/` avec tous dossiers et fichiers
-- [ ] Créer structure `tests/` avec unit/ et integration/
-- [ ] Ajouter docstrings TODO dans tous fichiers Python
-- [ ] Commit : `chore: create project structure skeleton`
+- [x] Créer fichiers racine : `README.md`, `.gitignore`, `.dockerignore`, `Dockerfile`, `pyproject.toml`, `.env.example`
+- [x] Créer structure `app/` avec tous dossiers et fichiers
+- [x] Créer structure `tests/` avec unit/ et integration/
+- [x] Ajouter docstrings TODO dans tous fichiers Python
+- [x] Commit : `chore: create project structure skeleton`
 
 📝 **Output** : Arborescence complète avec fichiers vides + TODO
 
 ### 2.2 Configuration fichiers système
-- [ ] Remplir `.gitignore` (Python, tests, IDEs, env, Docker, OS)
-- [ ] Remplir `.dockerignore`
-- [ ] Créer `.env.example` avec variables :
+- [x] Remplir `.gitignore` (Python, tests, IDEs, env, Docker, OS)
+- [x] Remplir `.dockerignore`
+- [x] Créer `.env.example` avec variables :
       - LOG_LEVEL=INFO
       - DECODO_USERNAME=customer-XXXX-country-FR
       - DECODO_PASSWORD=your_password
       - DECODO_PROXY_HOST=pr.decodo.com:8080
       - PROXY_ROTATION_ENABLED=true
       - CAPTCHA_DETECTION_ENABLED=true
-- [ ] Commit : `chore: add system configuration files`
+- [x] Commit : `chore: add system configuration files`
 
 📝 **Output** : Fichiers config système prêts
 
 ### 2.3 Compléter CLAUDE.md
-- [ ] Vérifier section Contexte projet
-- [ ] Vérifier section Standards (déjà fait Phase 1.3)
-- [ ] Ajouter section Organisation fichiers (arborescence)
-- [ ] Vérifier section Anti-patterns
-- [ ] Vérifier section Git (déjà fait Phase 0.2)
-- [ ] Ajouter section Workflow développement
-- [ ] Ajouter section Tests (pytest commands)
-- [ ] Ajouter section Docker (build/run)
-- [ ] Commit si modifs : `docs: finalize CLAUDE.md`
+- [x] Vérifier section Contexte projet
+- [x] Vérifier section Standards (déjà fait Phase 1.3)
+- [x] Ajouter section Organisation fichiers (arborescence)
+- [x] Vérifier section Anti-patterns
+- [x] Vérifier section Git (déjà fait Phase 0.2)
+- [x] Ajouter section Workflow développement
+- [x] Ajouter section Tests (pytest commands)
+- [x] Ajouter section Docker (build/run)
+- [x] Commit si modifs : `docs: finalize CLAUDE.md`
 
 📝 **Output** : `.claude/CLAUDE.md` complet
 
@@ -587,7 +587,7 @@
 
 ### Git workflow
 - Toujours travailler sur feature branches
-- Workflow Pull Requests (documenté en Phase 1.5)
+- Workflow Pull Requests (documenté en Phase 0.2)
 - Release : develop → master avec tag via PR
 
 ### Stack Crawl4AI + Proxies
