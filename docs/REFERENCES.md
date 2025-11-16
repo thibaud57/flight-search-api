@@ -2,8 +2,6 @@
 
 Documentation technique complète pour toutes les technologies utilisées dans le projet.
 
-**Date de dernière mise à jour** : 16 novembre 2025
-
 ---
 
 ## Structure de la Documentation

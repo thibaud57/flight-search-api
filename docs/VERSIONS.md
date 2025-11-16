@@ -1,7 +1,5 @@
 # Matrice de Compatibilité - flight-search-api
 
-**Date de dernière mise à jour** : 16 novembre 2025
-
 ## Vue d'ensemble
 
 | Technologie | Version Recommandée | Python 3.13 | Statut Production | Notes Critiques |
