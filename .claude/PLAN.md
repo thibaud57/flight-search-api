@@ -26,23 +26,23 @@
 📝 **Output** : Structure docs modulaire prête à remplir
 
 ### 0.2 Conventions Git & Release Workflow
-- [ ] Documenter stratégie branches (master/develop/feature)
-- [ ] Documenter Conventional Commits (feat, fix, docs, etc.)
-- [ ] Documenter pre-commit checks (ruff, mypy, pytest)
-- [ ] Documenter workflow Pull Request
-- [ ] Compléter `.claude/CLAUDE.md` - Section Git
-- [ ] Créer `docs/references/github-actions.md` :
+- [x] Documenter stratégie branches (master/develop/feature)
+- [x] Documenter Conventional Commits (feat, fix, docs, etc.)
+- [x] Documenter pre-commit checks (ruff, mypy, pytest)
+- [x] Documenter workflow Pull Request
+- [x] Compléter `.claude/CLAUDE.md` - Section Git
+- [x] Créer `docs/references/github-actions.md` :
       - Syntaxe GitHub Actions (on, jobs, steps, runs-on)
       - Workflow examples (CI/CD, Release automation)
       - Secrets management (GITHUB_TOKEN, custom secrets)
       - Triggers (push, pull_request, tags)
       → https://docs.github.com/en/actions
-- [ ] Mettre à jour `docs/REFERENCES.md` pour inclure github-actions.md
-- [ ] Créer `.github/workflows/release.yml` :
+- [x] Compléter `docs/REFERENCES.md` comme index avec lien vers fichier modulaire
+- [x] Créer `.github/workflows/release.yml` :
       - Trigger : tag v*
       - Auto-create GitHub Release
       - Include CHANGELOG.md content
-- [ ] Commit : `docs: add git conventions and release workflow`
+- [x] Commit : `docs: add git conventions and release workflow`
 
 📝 **Output** : `.claude/CLAUDE.md` (Git), `docs/references/github-actions.md`, `.github/workflows/release.yml`
 
@@ -97,7 +97,7 @@
       → https://tenacity.readthedocs.io/
 - [x] `dokploy.md` : Dockerfile best practices, env vars
       → https://docs.dokploy.com/
-- [x] Créer `docs/REFERENCES.md` comme index avec liens vers fichiers modulaires
+- [x] Compléter `docs/REFERENCES.md` comme index avec liens vers fichiers modulaires
 - [x] Commit : `docs: add technical references`
 
 📝 **Output** : `docs/REFERENCES.md` (index) + `docs/references/*.md` (9 fichiers)
