@@ -32,9 +32,11 @@
 - [ ] Documenter workflow Pull Request
 - [ ] Compléter `.claude/CLAUDE.md` - Section Git
 - [ ] Créer `docs/references/github-actions.md` :
-      - Syntaxe GitHub Actions
-      - Workflow examples
-      - Secrets management
+      - Syntaxe GitHub Actions (on, jobs, steps, runs-on)
+      - Workflow examples (CI/CD, Release automation)
+      - Secrets management (GITHUB_TOKEN, custom secrets)
+      - Triggers (push, pull_request, tags)
+      → https://docs.github.com/en/actions
 - [ ] Mettre à jour `docs/REFERENCES.md` pour inclure github-actions.md
 - [ ] Créer `.github/workflows/release.yml` :
       - Trigger : tag v*
