@@ -10,15 +10,15 @@
 - ✅ Créer dossier .claude (où figure le plan)
 
 ### 0.1 Structure documentation vide
-- [ ] Créer `docs/`
-- [ ] Créer `.claude/CLAUDE.md`
-- [ ] Créer `docs/architecture.md`
-- [ ] Créer `docs/PLANNING.md`
-- [ ] Créer `docs/REFERENCES.md`
-- [ ] Créer `docs/VERSIONS.md`
-- [ ] Créer `docs/CHANGELOG.md`
-- [ ] Commit : `docs: create documentation structure`
-- [ ] Push main et créer branche develop
+- [x] Créer `docs/`
+- [x] Créer `.claude/CLAUDE.md`
+- [x] Créer `docs/architecture.md`
+- [x] Créer `docs/PLANNING.md`
+- [x] Créer `docs/REFERENCES.md`
+- [x] Créer `docs/VERSIONS.md`
+- [x] Créer `docs/CHANGELOG.md`
+- [x] Commit : `docs: create documentation structure`
+- [x] Créer branche develop et push
 
 📝 **Output** : Structure docs prête à remplir
 
@@ -99,7 +99,7 @@
 📝 **Output** : `docs/architecture.md`
 
 ### 1.5 Conventions Git
-- [ ] Documenter stratégie branches (main/develop/feature)
+- [ ] Documenter stratégie branches (master/develop/feature)
 - [ ] Documenter Conventional Commits (feat, fix, docs, etc.)
 - [ ] Documenter pre-commit checks (ruff, mypy, pytest)
 - [ ] Documenter workflow développement
@@ -115,9 +115,11 @@
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
 ### 1.7 Merge recherche
-- [ ] Merger `feature/research-stack` dans `develop`
-- [ ] Tag `v0.1.0-research`
-- [ ] Push develop + tags
+- [ ] Push branche : `git push origin feature/research-stack`
+- [ ] Créer Pull Request sur GitHub : `feature/research-stack` → `develop`
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull develop en local : `git checkout develop && git pull`
+- [ ] Tag : `git tag v0.1.0-research && git push origin v0.1.0-research`
 
 ---
 
@@ -170,9 +172,11 @@
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
 ### 2.5 Merge structure
-- [ ] Merger `feature/project-structure` dans `develop`
-- [ ] Tag `v0.2.0-structure`
-- [ ] Push develop + tags
+- [ ] Push branche : `git push origin feature/project-structure`
+- [ ] Créer Pull Request sur GitHub : `feature/project-structure` → `develop`
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull develop en local : `git checkout develop && git pull`
+- [ ] Tag : `git tag v0.2.0-structure && git push origin v0.2.0-structure`
 
 ---
 
@@ -231,9 +235,11 @@
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
 ### 3.6 Merge config
-- [ ] Merger `feature/config-build` dans `develop`
-- [ ] Tag `v0.3.0-build`
-- [ ] Push develop + tags
+- [ ] Push branche : `git push origin feature/config-build`
+- [ ] Créer Pull Request sur GitHub : `feature/config-build` → `develop`
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull develop en local : `git checkout develop && git pull`
+- [ ] Tag : `git tag v0.3.0-build && git push origin v0.3.0-build`
 
 ---
 
@@ -293,9 +299,11 @@
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
 ### 4.8 Merge planning
-- [ ] Merger `feature/planning-specs` dans `develop`
-- [ ] Tag `v0.4.0-planning`
-- [ ] Push develop + tags
+- [ ] Push branche : `git push origin feature/planning-specs`
+- [ ] Créer Pull Request sur GitHub : `feature/planning-specs` → `develop`
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull develop en local : `git checkout develop && git pull`
+- [ ] Tag : `git tag v0.4.0-planning && git push origin v0.4.0-planning`
 
 ---
 
@@ -379,9 +387,11 @@
 📝 **Output** : API MVP complète et testée (sans résolution captcha)
 
 ### 5.12 Merge implementation
-- [ ] Merger `feature/implementation` dans `develop`
-- [ ] Tag `v0.5.0-mvp`
-- [ ] Push develop + tags
+- [ ] Push branche : `git push origin feature/implementation`
+- [ ] Créer Pull Request sur GitHub : `feature/implementation` → `develop`
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull develop en local : `git checkout develop && git pull`
+- [ ] Tag : `git tag v0.5.0-mvp && git push origin v0.5.0-mvp`
 
 ---
 
@@ -412,11 +422,15 @@
 
 📝 **Output** : CHANGELOG.md complet
 
-### 6.3 Merge documentation
-- [ ] Merger `feature/documentation` dans `develop`
-- [ ] Merger `develop` dans `main`
-- [ ] Tag `v1.0.0`
-- [ ] Push main + develop + tags
+### 6.3 Release v1.0.0
+- [ ] Push branche : `git push origin feature/documentation`
+- [ ] Créer Pull Request sur GitHub : `feature/documentation` → `develop`
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull develop en local : `git checkout develop && git pull`
+- [ ] Créer Pull Request sur GitHub : `develop` → `master` (Release v1.0.0)
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull master en local : `git checkout master && git pull`
+- [ ] Tag : `git tag v1.0.0 && git push origin v1.0.0`
 
 ### 6.4 Release GitHub
 - [ ] Créer release sur GitHub avec tag v1.0.0
@@ -518,13 +532,17 @@
 - [ ] Ajouter entrée v1.1.0-captcha dans `docs/CHANGELOG.md`
 - [ ] Commit : `docs: update changelog for captcha solving phase`
 
-### 7.8 Merge & release
-- [ ] Merger `feature/captcha-solving` dans `develop`
-- [ ] Tests complets sur develop
-- [ ] Merger `develop` dans `main`
-- [ ] Tag `v1.1.0`
-- [ ] Push main + develop + tags
-- [ ] Release GitHub v1.1.0
+### 7.8 Release v1.1.0
+- [ ] Push branche : `git push origin feature/captcha-solving`
+- [ ] Créer Pull Request sur GitHub : `feature/captcha-solving` → `develop`
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull develop en local : `git checkout develop && git pull`
+- [ ] Tests complets sur develop : `pytest -v && ruff check . && mypy app/`
+- [ ] Créer Pull Request sur GitHub : `develop` → `master` (Release v1.1.0)
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull master en local : `git checkout master && git pull`
+- [ ] Tag : `git tag v1.1.0 && git push origin v1.1.0`
+- [ ] Créer release GitHub v1.1.0 avec CHANGELOG
 
 ### 7.9 Déploiement
 - [ ] Ajouter TWOCAPTCHA_API_KEY dans Dokploy
@@ -556,8 +574,8 @@
 
 ### Git workflow
 - Toujours travailler sur feature branches
-- Merger dans develop
-- Release : develop → main avec tag
+- Workflow Pull Requests (documenté en Phase 1.5)
+- Release : develop → main avec tag via PR
 
 ### Stack Crawl4AI + Proxies
 
