@@ -16,7 +16,7 @@
 - [x] Créer `docs/references/` (pour les fichiers de doc technique selon contexte projet)
 - [x] Créer `.claude/CLAUDE.md`
 - [x] Créer `docs/ARCHITECTURE.md`
-- [x] Créer `docs/PLANNING.md`
+- [x] Créer `docs/SPECS.md`
 - [x] Créer `docs/REFERENCES.md` (index léger)
 - [x] Créer `docs/VERSIONS.md`
 - [x] Créer `docs/CHANGELOG.md`
@@ -273,23 +273,23 @@
 
 ---
 
-## Phase 4 : Planning détaillé développement
+## Phase 4 : Spécifications techniques détaillées
 
 **Objectif** : Écrire les specs précises avant de coder
 
-**Branche** : `feature/planning-specs`
+**Branche** : `feature/technical-specs`
 
 ### 4.1 Spécifications Models
 - [ ] Specs SearchRequest (Flight, DateRange, validation)
 - [ ] Specs SearchResponse (FlightResult, SearchStats)
 - [ ] Liste tests unitaires
-- [ ] Ajouter à `docs/PLANNING.md`
+- [ ] Ajouter à `docs/SPECS.md`
 
 ### 4.2 Spécifications Configuration & Logging
 - [ ] Specs Settings class (Pydantic Settings)
 - [ ] Specs logger setup (JSON structuré)
 - [ ] Liste tests
-- [ ] Ajouter à `docs/PLANNING.md`
+- [ ] Ajouter à `docs/SPECS.md`
 
 ### 4.3 Spécifications Services
 - [ ] Specs CombinationGenerator (algorithme itertools.product)
@@ -298,14 +298,14 @@
 - [ ] Specs FlightParserService (JsonCssExtractionStrategy, parsing vols/prix/horaires)
 - [ ] Specs SearchService (orchestration : CombinationGenerator → CrawlerService → FlightParser → Top 10 ranking)
 - [ ] Liste tests pour chaque service
-- [ ] Ajouter à `docs/PLANNING.md`
+- [ ] Ajouter à `docs/SPECS.md`
 
 ### 4.4 Spécifications API Routes
 - [ ] Specs endpoint POST /api/v1/search-flights
 - [ ] Validation request (Pydantic)
 - [ ] Error handling (400, 500, 207)
 - [ ] Tests intégration (happy path + errors)
-- [ ] Ajouter à `docs/PLANNING.md`
+- [ ] Ajouter à `docs/SPECS.md`
 
 ### 4.5 Stratégie tests
 - [ ] Liste complète tests unitaires par composant
@@ -314,13 +314,13 @@
 - [ ] Tests captcha detection et retry logic
 - [ ] Tests proxy rotation et fallback
 - [ ] Coverage target : 80%
-- [ ] Ajouter à `docs/PLANNING.md`
+- [ ] Ajouter à `docs/SPECS.md`
 
-### 4.6 Finalisation PLANNING.md
+### 4.6 Finalisation SPECS.md
 - [ ] Vérifier cohérence globale
-- [ ] Commit : `docs: add detailed development planning`
+- [ ] Commit : `docs: add detailed technical specifications`
 
-📝 **Output** : `docs/PLANNING.md` ultra-détaillé
+📝 **Output** : `docs/SPECS.md` ultra-détaillé
 
 ### 4.7 Mise à jour CHANGELOG
 - [ ] Ajouter entrée v0.4.0-planning dans `docs/CHANGELOG.md`
@@ -541,7 +541,7 @@
 
 ### 7.6 Documentation
 - [ ] Mettre à jour README : section Captcha Solving
-- [ ] Mettre à jour PLANNING.md : stratégie captcha complète
+- [ ] Mettre à jour SPECS.md : stratégie captcha complète
 - [ ] Ajouter ADR #007 dans ARCHITECTURE.md
 - [ ] Commit : `docs: add captcha solving documentation`
 
@@ -659,7 +659,7 @@ flight-search-api/
 │   │   └── tenacity.md
 │   ├── ARCHITECTURE.md
 │   ├── CHANGELOG.md
-│   ├── PLANNING.md
+│   ├── SPECS.md
 │   ├── REFERENCES.md   # Index léger avec liens
 │   └── VERSIONS.md
 ├── app/

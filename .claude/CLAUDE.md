@@ -257,7 +257,7 @@ flight-search-api/
 │   │   └── tenacity.md
 │   ├── ARCHITECTURE.md     # Architecture + ADR
 │   ├── CHANGELOG.md        # Historique versions
-│   ├── PLANNING.md         # Specs détaillées (Phase 4)
+│   ├── SPECS.md            # Spécifications techniques détaillées (Phase 4)
 │   ├── REFERENCES.md       # Index références
 │   └── VERSIONS.md         # Matrice compatibilité
 │

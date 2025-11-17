@@ -206,7 +206,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 **Note importante** : Step "Tests with coverage" temporairement désactivé dans CI workflow (aucun test unitaire n'existe encore). À réactiver lors de Phase 5.1 (implémentation TDD services).
 
-**Prochaine étape** : Phase 4 - Planning Détaillé Développement (PLANNING.md avec specs détaillées services)
+**Prochaine étape** : Phase 4 - Spécifications Techniques Détaillées (SPECS.md avec specs services, models, API)
 
 ---
 
