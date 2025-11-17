@@ -442,20 +442,21 @@ Permet à EXPLORE de découvrir automatiquement.
    - Sub-agents ne connaissent que leur input/output
    - Instructions génériques et réutilisables
 
-### Phase 4 : Audit & Validation (EN COURS)
+### Phase 4 : Audit & Validation (COMPLÉTÉ)
 
-8. ⏳ **Audit Agents (Best Practices)**
+8. ✅ **Audit Agents (Best Practices)** - Commit `572146b`
    - Référence : https://code.claude.com/docs/en/sub-agents
-   - Vérifier responsabilités claires et bien définies
-   - Vérifier isolation contexte (agents ne connaissent que leur prompt)
-   - Vérifier mission claire et scope limité
-   - Checklist conformité best practices
+   - ✅ Isolation contexte : variables context-agnostic
+   - ✅ Suppression références orchestration externe
+   - ✅ Réduction verbosité 50-65% (best practices)
+   - ✅ Instructions directes vs pseudo-code
+   - ✅ 1 exemple par agent (vs 2-3)
 
-9. ⏳ **Audit Commande execute-plan-phase**
+9. ✅ **Audit Commande execute-plan-phase** - Commit `572146b`
    - Référence : https://code.claude.com/docs/en/slash-commands
-   - Vérifier conformité standards slash commands
-   - Vérifier argument-hint, allowed-tools, description
-   - Vérifier gestion erreurs et edge cases
+   - ✅ Conformité metadata, validation args, gestion erreurs
+   - ✅ Alignement variables avec agents corrigés
+   - ✅ TodoWrite usage correct
 
 10. ⏳ **Simulation End-to-End Système Complet**
     - Test Phase 1.2 (VERSIONS.md)
