@@ -2,7 +2,9 @@
 
 ## Phase 0 : Setup Documentation & Git
 
-**Objectif** : Initialiser la structure documentation (Git déjà connecté)
+**Objectif** : Initialiser la structure documentation et conventions Git
+
+**Branche** : `feature/initial-setup`
 
 **Prérequis (DÉJÀ FAIT)** :
 - ✅ Repo GitHub créé et cloné
@@ -10,17 +12,47 @@
 - ✅ Créer dossier .claude (où figure le plan)
 
 ### 0.1 Structure documentation vide
-- [ ] Créer `docs/`
-- [ ] Créer `.claude/CLAUDE.md`
-- [ ] Créer `docs/architecture.md`
-- [ ] Créer `docs/PLANNING.md`
-- [ ] Créer `docs/REFERENCES.md`
-- [ ] Créer `docs/VERSIONS.md`
-- [ ] Créer `docs/CHANGELOG.md`
-- [ ] Commit : `docs: create documentation structure`
-- [ ] Push main et créer branche develop
+- [x] Créer `docs/`
+- [x] Créer `docs/references/` (pour les fichiers de doc technique selon contexte projet)
+- [x] Créer `.claude/CLAUDE.md`
+- [x] Créer `docs/ARCHITECTURE.md`
+- [x] Créer `docs/PLANNING.md`
+- [x] Créer `docs/REFERENCES.md` (index léger)
+- [x] Créer `docs/VERSIONS.md`
+- [x] Créer `docs/CHANGELOG.md`
+- [x] Commit : `docs: create documentation structure`
+- [x] Créer branche develop et push
 
-📝 **Output** : Structure docs prête à remplir
+📝 **Output** : Structure docs modulaire prête à remplir
+
+### 0.2 Conventions Git & Release Workflow
+- [x] Documenter stratégie branches (master/develop/feature)
+- [x] Documenter Conventional Commits (feat, fix, docs, etc.)
+- [x] Documenter pre-commit checks (ruff, mypy, pytest)
+- [x] Documenter workflow Pull Request
+- [x] Compléter `.claude/CLAUDE.md` - Section Git
+- [x] Créer `docs/references/github-actions.md` :
+      - Syntaxe GitHub Actions (on, jobs, steps, runs-on)
+      - Workflow examples (CI/CD, Release automation)
+      - Secrets management (GITHUB_TOKEN, custom secrets)
+      - Triggers (push, pull_request, tags)
+      → https://docs.github.com/en/actions
+- [x] Compléter `docs/REFERENCES.md` comme index avec lien vers fichier modulaire
+- [x] Créer `.github/workflows/release.yml` :
+      - Trigger : tag v*
+      - Auto-create GitHub Release
+      - Include CHANGELOG.md content
+- [x] Commit : `docs: add git conventions and release workflow`
+
+📝 **Output** : `.claude/CLAUDE.md` (Git), `docs/references/github-actions.md`, `.github/workflows/release.yml`
+
+### 0.3 Mise à jour CHANGELOG
+- [x] Ajouter entrée v0.0.0-setup dans `docs/CHANGELOG.md`
+- [x] Commit : `docs: update changelog for setup phase`
+
+📝 **Output** : `docs/CHANGELOG.md` mis à jour
+
+**Fin de phase** : Push branche → PR → Merge develop (pas de tag - versions démarrent Phase 1)
 
 ---
 
@@ -31,93 +63,86 @@
 **Branche** : `feature/research-stack`
 
 ### 1.1 Recherche versions & compatibilité
-- [ ] Python 3.13 stabilité et compatibilité écosystème
-- [ ] FastAPI 0.121.2 (breaking changes, Pydantic v2)
-- [ ] Pydantic v2.10+ (migration depuis v1)
-- [ ] tenacity 9.0+ (retry strategies)
-- [ ] crawl4ai 0.7+ (async crawler, stealth mode, Playwright intégré)
-- [ ] Vérification matrice compatibilité croisée
-- [ ] Créer `docs/VERSIONS.md` avec tableau + notes
-- [ ] Commit : `docs: add versions compatibility matrix`
+- [x] Python 3.13 stabilité et compatibilité écosystème
+- [x] FastAPI 0.121.2 (breaking changes, Pydantic v2)
+- [x] Pydantic v2.10+ (migration depuis v1)
+- [x] tenacity 9.0+ (retry strategies)
+- [x] crawl4ai 0.7+ (async crawler, stealth mode, Playwright intégré)
+- [x] Vérification matrice compatibilité croisée
+- [x] Compléter `docs/VERSIONS.md` avec tableau + notes
+- [x] Commit : `docs: add versions compatibility matrix`
 
 📝 **Output** : `docs/VERSIONS.md`
 
 **Note** : Playwright est installé automatiquement par `crawl4ai-setup`, pas besoin de l'installer séparément.
 
 ### 1.2 Documentation technique ciblée
-- [ ] FastAPI : Dependency Injection, async routes, TestClient
+- [x] Créer fichiers de référence modulaires dans `docs/references/` :
+- [x] `fastapi.md` : Dependency Injection, async routes, TestClient
       → https://fastapi.tiangolo.com/
-- [ ] Pydantic v2 : Settings, validation, field_validator
+- [x] `pydantic-v2.md` : Settings, validation, field_validator
       → https://docs.pydantic.dev/latest/
-- [ ] Crawl4AI : AsyncWebCrawler, BrowserConfig, JsonCssExtractionStrategy (extraction CSS)
+- [x] `crawl4ai.md` : AsyncWebCrawler, BrowserConfig, JsonCssExtractionStrategy (extraction CSS)
       → https://docs.crawl4ai.com/
-- [ ] Decodo Proxies : Residential rotation, France targeting, authentication, bandwidth optimization
+- [x] `decodo-proxies.md` : Residential rotation, France targeting, authentication, bandwidth optimization
       → https://help.decodo.com/docs/introduction
         **Note** : Format auth = username: customer-{api_key}-country-FR, password: your_password
-- [ ] Google Flights URL structure : Multi-city params, date formats, currency/locale (France)
+- [x] `google-flights.md` : Multi-city params, date formats, currency/locale (France)
       → (reverse engineering via browser DevTools)
-- [ ] Anti-détection : Stealth mode Crawl4AI, user-agent rotation, proxy rotation
+- [x] `anti-detection.md` : Stealth mode Crawl4AI, user-agent rotation, proxy rotation
       → https://docs.crawl4ai.com/core/browser-config/
-- [ ] Captcha detection : Patterns HTML (reCAPTCHA, hCaptcha), retry strategy avec rotation IP
+- [x] `captcha-detection.md` : Patterns HTML (reCAPTCHA, hCaptcha), retry strategy avec rotation IP
       → (patterns de détection, pas de résolution dans MVP)
-- [ ] Tenacity : @retry decorator, wait strategies, async
+- [x] `tenacity.md` : @retry decorator, wait strategies, async
       → https://tenacity.readthedocs.io/
-- [ ] Dokploy : Dockerfile best practices, env vars
+- [x] `dokploy.md` : Dockerfile best practices, env vars
       → https://docs.dokploy.com/
-- [ ] Créer `docs/REFERENCES.md` avec extraits + liens
-- [ ] Commit : `docs: add technical references`
+- [x] Compléter `docs/REFERENCES.md` comme index avec liens vers fichiers modulaires
+- [x] Commit : `docs: add technical references`
 
-📝 **Output** : `docs/REFERENCES.md`
+📝 **Output** : `docs/REFERENCES.md` (index) + `docs/references/*.md` (10 fichiers : 9 de Phase 1.2 + github-actions.md de Phase 0.2)
 
-**Note** : Si features additionnelles nécessaires pendant l'implémentation, les documenter dans un ADR et mettre à jour REFERENCES.md.
+**Avantages structure modulaire** :
+- Chargement ciblé des références nécessaires (~44% économie tokens)
+- Navigation rapide dans IDE
+- Meilleure gestion Git (historique, conflits)
+
+**Note** : Si features additionnelles nécessaires pendant l'implémentation, créer nouveau fichier dans `docs/references/` et mettre à jour l'index REFERENCES.md.
 
 ### 1.3 Standards Python modernes
-- [ ] Python 3.13 type hints (PEP 695)
-- [ ] Ruff configuration (rules, pyproject.toml)
-- [ ] Mypy strict mode
-- [ ] Async patterns (crawl4ai, error handling)
-- [ ] Structured logging (JSON, contexte)
-- [ ] Docstrings pragmatiques (PEP 257 : 1 ligne par défaut)
-- [ ] Compléter `.claude/CLAUDE.md` - Section Standards
-- [ ] Ajouter règle anti-pattern : commentaires inline interdits
-- [ ] Commit : `docs: add Python standards to CLAUDE.md`
+- [x] Python 3.13 type hints (PEP 695)
+- [x] Ruff configuration (rules, pyproject.toml)
+- [x] Mypy strict mode
+- [x] Async patterns (crawl4ai, error handling)
+- [x] Structured logging (JSON, contexte)
+- [x] Docstrings pragmatiques (PEP 257 : 1 ligne par défaut)
+- [x] Compléter `.claude/CLAUDE.md` - Section Standards
+- [x] Ajouter règle anti-pattern : commentaires inline interdits
+- [x] Commit : `docs: add Python standards to CLAUDE.md`
 
 📝 **Output** : `.claude/CLAUDE.md` - Section Standards
 
 ### 1.4 Architecture & Décisions (ADR)
-- [ ] Créer diagrammes (composants, séquence)
-- [ ] Documenter flow de données (Requête HTTP → Services internes → Response JSON)
-- [ ] Rédiger ADR #001 : Crawl4AI+Proxies vs SerpAPI (coût, flexibilité, maintenance)
-- [ ] Rédiger ADR #002 : Decodo vs Oxylabs (prix, pool IP, France targeting)
-- [ ] Rédiger ADR #003 : Top 10 en mémoire (pas de DB)
-- [ ] Rédiger ADR #004 : Tenacity pour retry
-- [ ] Rédiger ADR #005 : Captcha handling strategy (proxies rotation + detection, pas de résolution dans MVP)
-- [ ] Rédiger ADR #006 : JsonCssExtractionStrategy vs LLMExtractionStrategy (coût, performance)
-- [ ] Créer `docs/architecture.md` avec ADR intégrés
-- [ ] Commit : `docs: add architecture and ADR`
+- [x] Créer diagrammes (composants, séquence)
+- [x] Documenter flow de données (Requête HTTP → Services internes → Response JSON)
+- [x] Rédiger ADR #001 : Crawl4AI+Proxies vs SerpAPI (coût, flexibilité, maintenance)
+- [x] Rédiger ADR #002 : Decodo vs Oxylabs (prix, pool IP, France targeting)
+- [x] Rédiger ADR #003 : Top 10 en mémoire (pas de DB)
+- [x] Rédiger ADR #004 : Tenacity pour retry
+- [x] Rédiger ADR #005 : Captcha handling strategy (proxies rotation + detection, pas de résolution dans MVP)
+- [x] Rédiger ADR #006 : JsonCssExtractionStrategy vs LLMExtractionStrategy (coût, performance)
+- [x] Compléter `docs/ARCHITECTURE.md` avec ADR intégrés
+- [x] Commit : `docs: add ARCHITECTURE and ADR`
 
-📝 **Output** : `docs/architecture.md`
+📝 **Output** : `docs/ARCHITECTURE.md`
 
-### 1.5 Conventions Git
-- [ ] Documenter stratégie branches (main/develop/feature)
-- [ ] Documenter Conventional Commits (feat, fix, docs, etc.)
-- [ ] Documenter pre-commit checks (ruff, mypy, pytest)
-- [ ] Documenter workflow développement
-- [ ] Compléter `.claude/CLAUDE.md` - Section Git
-- [ ] Commit : `docs: add git conventions to CLAUDE.md`
-
-📝 **Output** : `.claude/CLAUDE.md` - Section Git
-
-### 1.6 Mise à jour CHANGELOG
-- [ ] Ajouter entrée v0.1.0-research dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for research phase`
+### 1.5 Mise à jour CHANGELOG
+- [x] Ajouter entrée v0.1.0-research dans `docs/CHANGELOG.md`
+- [x] Commit : `docs: update changelog for research phase`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-### 1.7 Merge recherche
-- [ ] Merger `feature/research-stack` dans `develop`
-- [ ] Tag `v0.1.0-research`
-- [ ] Push develop + tags
+**Fin de phase** : Push branche → PR → Merge develop → Tag v0.1.0-research
 
 ---
 
@@ -128,51 +153,48 @@
 **Branche** : `feature/project-structure`
 
 ### 2.1 Création structure complète
-- [ ] Créer fichiers racine : `README.md`, `.gitignore`, `.dockerignore`, `Dockerfile`, `pyproject.toml`, `.env.example`
-- [ ] Créer structure `app/` avec tous dossiers et fichiers
-- [ ] Créer structure `tests/` avec unit/ et integration/
-- [ ] Ajouter docstrings TODO dans tous fichiers Python
-- [ ] Commit : `chore: create project structure skeleton`
+- [x] Créer fichiers racine : `README.md`, `.gitignore`, `.dockerignore`, `Dockerfile`, `pyproject.toml`, `.env.example`
+- [x] Créer structure `app/` avec tous dossiers et fichiers
+- [x] Créer structure `tests/` avec unit/ et integration/
+- [x] Ajouter docstrings TODO dans tous fichiers Python
+- [x] Commit : `chore: create project structure skeleton`
 
 📝 **Output** : Arborescence complète avec fichiers vides + TODO
 
 ### 2.2 Configuration fichiers système
-- [ ] Remplir `.gitignore` (Python, tests, IDEs, env, Docker, OS)
-- [ ] Remplir `.dockerignore`
-- [ ] Créer `.env.example` avec variables :
+- [x] Remplir `.gitignore` (Python, tests, IDEs, env, Docker, OS)
+- [x] Remplir `.dockerignore`
+- [x] Créer `.env.example` avec variables :
       - LOG_LEVEL=INFO
       - DECODO_USERNAME=customer-XXXX-country-FR
       - DECODO_PASSWORD=your_password
       - DECODO_PROXY_HOST=pr.decodo.com:8080
       - PROXY_ROTATION_ENABLED=true
       - CAPTCHA_DETECTION_ENABLED=true
-- [ ] Commit : `chore: add system configuration files`
+- [x] Commit : `chore: add system configuration files`
 
 📝 **Output** : Fichiers config système prêts
 
 ### 2.3 Compléter CLAUDE.md
-- [ ] Vérifier section Contexte projet
-- [ ] Vérifier section Standards (déjà fait Phase 1.3)
-- [ ] Ajouter section Organisation fichiers (arborescence)
-- [ ] Vérifier section Anti-patterns
-- [ ] Vérifier section Git (déjà fait Phase 1.5)
-- [ ] Ajouter section Workflow développement
-- [ ] Ajouter section Tests (pytest commands)
-- [ ] Ajouter section Docker (build/run)
-- [ ] Commit si modifs : `docs: finalize CLAUDE.md`
+- [x] Vérifier section Contexte projet
+- [x] Vérifier section Standards (déjà fait Phase 1.3)
+- [x] Ajouter section Organisation fichiers (arborescence)
+- [x] Vérifier section Anti-patterns
+- [x] Vérifier section Git (déjà fait Phase 0.2)
+- [x] Ajouter section Workflow développement
+- [x] Ajouter section Tests (pytest commands)
+- [x] Ajouter section Docker (build/run)
+- [x] Commit si modifs : `docs: finalize CLAUDE.md`
 
 📝 **Output** : `.claude/CLAUDE.md` complet
 
 ### 2.4 Mise à jour CHANGELOG
-- [ ] Ajouter entrée v0.2.0-structure dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for structure phase`
+- [x] Ajouter entrée v0.2.0-structure dans `docs/CHANGELOG.md`
+- [x] Commit : `docs: update changelog for structure phase`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-### 2.5 Merge structure
-- [ ] Merger `feature/project-structure` dans `develop`
-- [ ] Tag `v0.2.0-structure`
-- [ ] Push develop + tags
+**Fin de phase** : Push branche → PR → Merge develop → Tag v0.2.0-structure
 
 ---
 
@@ -230,10 +252,22 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-### 3.6 Merge config
-- [ ] Merger `feature/config-build` dans `develop`
-- [ ] Tag `v0.3.0-build`
-- [ ] Push develop + tags
+### 3.6 CI Quality Checks
+- [ ] Créer `.github/workflows/ci.yml` :
+      - Trigger : PR + push sur develop/master
+      - Setup : Python 3.13, cache uv dependencies (actions/cache)
+      - Install : uv sync --all-extras && crawl4ai-setup (installe Playwright)
+      - Jobs : lint (ruff check), format (ruff format --check), typecheck (mypy), tests (pytest tests/unit/)
+      - Coverage : pytest --cov=app --cov-report=xml
+      - Fail-fast : false (exécuter tous les checks même si l'un échoue)
+      - Upload coverage : codecov/codecov-action (optionnel)
+- [ ] Ajouter badge CI dans README.md
+- [ ] Tester workflow en local : `act pull_request` (optionnel)
+- [ ] Commit : `ci: add quality checks workflow`
+
+📝 **Output** : Pipeline CI pour qualité code (tests unitaires uniquement, tests intégration manuels)
+
+**Fin de phase** : Push branche → PR → Merge develop → Tag v0.3.0-build
 
 ---
 
@@ -292,10 +326,7 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-### 4.8 Merge planning
-- [ ] Merger `feature/planning-specs` dans `develop`
-- [ ] Tag `v0.4.0-planning`
-- [ ] Push develop + tags
+**Fin de phase** : Push branche → PR → Merge develop → Tag v0.4.0-planning
 
 ---
 
@@ -378,10 +409,7 @@
 
 📝 **Output** : API MVP complète et testée (sans résolution captcha)
 
-### 5.12 Merge implementation
-- [ ] Merger `feature/implementation` dans `develop`
-- [ ] Tag `v0.5.0-mvp`
-- [ ] Push develop + tags
+**Fin de phase** : Push branche → PR → Merge develop → Tag v0.5.0-mvp
 
 ---
 
@@ -412,17 +440,17 @@
 
 📝 **Output** : CHANGELOG.md complet
 
-### 6.3 Merge documentation
-- [ ] Merger `feature/documentation` dans `develop`
-- [ ] Merger `develop` dans `main`
-- [ ] Tag `v1.0.0`
-- [ ] Push main + develop + tags
+### 6.3 Release v1.0.0
+- [ ] Push branche : `git push origin feature/documentation`
+- [ ] Créer Pull Request sur GitHub : `feature/documentation` → `develop`
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull develop en local : `git checkout develop && git pull`
+- [ ] Créer Pull Request sur GitHub : `develop` → `master` (Release v1.0.0)
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull master en local : `git checkout master && git pull`
+- [ ] Tag : `git tag v1.0.0 && git push origin v1.0.0` (déclenche workflow release.yml)
 
-### 6.4 Release GitHub
-- [ ] Créer release sur GitHub avec tag v1.0.0
-- [ ] Copier CHANGELOG v1.0.0 dans release notes
-
-📝 **Output** : Release v1.0.0 publique (MVP sans résolution captcha)
+📝 **Output** : Release v1.0.0 publique sur GitHub (automatique via workflow)
 
 ---
 
@@ -439,7 +467,7 @@
       - DECODO_PROXY_HOST
       - PROXY_ROTATION_ENABLED
       - CAPTCHA_DETECTION_ENABLED
-- [ ] Déclencher build automatique (push sur main)
+- [ ] Déclencher build automatique (push sur master)
 - [ ] Vérifier deployment : `curl https://ton-domaine.com/health`
 - [ ] Tester endpoint complet avec n8n
 - [ ] Monitorer logs : captcha rate, proxy costs, success rate
@@ -475,7 +503,7 @@
 - [ ] Estimation coûts : nombre captchas/mois × $0.001-0.003
 - [ ] Comparer avec coût des recherches perdues
 - [ ] Valider ROI positif
-- [ ] Ajouter à `docs/REFERENCES.md`
+- [ ] Créer `docs/references/2captcha.md` et mettre à jour l'index REFERENCES.md
 
 ### 7.3 Intégration 2Captcha
 - [ ] Ajouter `2captcha-python` à pyproject.toml
@@ -511,20 +539,23 @@
 ### 7.6 Documentation
 - [ ] Mettre à jour README : section Captcha Solving
 - [ ] Mettre à jour PLANNING.md : stratégie captcha complète
-- [ ] Ajouter ADR #007 dans architecture.md
+- [ ] Ajouter ADR #007 dans ARCHITECTURE.md
 - [ ] Commit : `docs: add captcha solving documentation`
 
 ### 7.7 Mise à jour CHANGELOG
 - [ ] Ajouter entrée v1.1.0-captcha dans `docs/CHANGELOG.md`
 - [ ] Commit : `docs: update changelog for captcha solving phase`
 
-### 7.8 Merge & release
-- [ ] Merger `feature/captcha-solving` dans `develop`
-- [ ] Tests complets sur develop
-- [ ] Merger `develop` dans `main`
-- [ ] Tag `v1.1.0`
-- [ ] Push main + develop + tags
-- [ ] Release GitHub v1.1.0
+### 7.8 Release v1.1.0
+- [ ] Push branche : `git push origin feature/captcha-solving`
+- [ ] Créer Pull Request sur GitHub : `feature/captcha-solving` → `develop`
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull develop en local : `git checkout develop && git pull`
+- [ ] Tests complets sur develop : `pytest -v && ruff check . && mypy app/`
+- [ ] Créer Pull Request sur GitHub : `develop` → `master` (Release v1.1.0)
+- [ ] (Manuel) Merger la PR sur GitHub
+- [ ] Pull master en local : `git checkout master && git pull`
+- [ ] Tag : `git tag v1.1.0 && git push origin v1.1.0` (déclenche workflow release.yml)
 
 ### 7.9 Déploiement
 - [ ] Ajouter TWOCAPTCHA_API_KEY dans Dokploy
@@ -556,8 +587,8 @@
 
 ### Git workflow
 - Toujours travailler sur feature branches
-- Merger dans develop
-- Release : develop → main avec tag
+- Workflow Pull Requests (documenté en Phase 0.2)
+- Release : develop → master avec tag via PR
 
 ### Stack Crawl4AI + Proxies
 
@@ -603,48 +634,67 @@
 ```
 flight-search-api/
 ├── .claude/
+│   ├── commands/
+│   │   └── execute-plan-phase.md
 │   ├── CLAUDE.md      # Standards, conventions
 │   └── PLAN.md        # Ce plan
+├── .github/
+│   └── workflows/
+│       ├── ci.yml          # Quality checks (Phase 3.6)
+│       └── release.yml     # Release automation (Phase 0.2)
 ├── docs/
-│   ├── architecture.md
+│   ├── references/     # Documentation technique modulaire
+│   │   ├── anti-detection.md
+│   │   ├── captcha-detection.md
+│   │   ├── crawl4ai.md
+│   │   ├── decodo-proxies.md
+│   │   ├── dokploy.md
+│   │   ├── fastapi.md
+│   │   ├── github-actions.md
+│   │   ├── google-flights.md
+│   │   ├── pydantic-v2.md
+│   │   └── tenacity.md
+│   ├── ARCHITECTURE.md
+│   ├── CHANGELOG.md
 │   ├── PLANNING.md
-│   ├── REFERENCES.md
-│   ├── VERSIONS.md
-│   └── CHANGELOG.md
+│   ├── REFERENCES.md   # Index léger avec liens
+│   └── VERSIONS.md
 ├── app/
 │   ├── api/
 │   │   └── routes.py
+│   ├── core/
+│   │   ├── config.py
+│   │   └── logger.py
 │   ├── models/
 │   │   ├── request.py
 │   │   └── response.py
 │   ├── services/
 │   │   ├── combination_generator.py
-│   │   ├── proxy_service.py
 │   │   ├── crawler_service.py
 │   │   ├── flight_parser.py
+│   │   ├── proxy_service.py
 │   │   ├── search_service.py
 │   │   └── (captcha_solver.py - Phase 7 optionnelle)
-│   ├── core/
-│   │   ├── config.py
-│   │   └── logger.py
 │   ├── utils/
 │   └── main.py
 ├── tests/
-│   ├── unit/
-│   │   ├── test_models.py
-│   │   ├── test_config.py
-│   │   ├── test_combination_generator.py
-│   │   ├── test_proxy_service.py
-│   │   ├── test_crawler_service.py
-│   │   ├── test_flight_parser.py
-│   │   ├── test_search_service.py
-│   │   └── (test_captcha_solver.py - Phase 7)
-│   └── integration/
-│       ├── test_health.py
-│       └── test_api_routes.py
+│   ├── integration/
+│   │   ├── test_api_routes.py
+│   │   └── test_health.py
+│   └── unit/
+│       ├── test_combination_generator.py
+│       ├── test_config.py
+│       ├── test_crawler_service.py
+│       ├── test_flight_parser.py
+│       ├── test_models.py
+│       ├── test_proxy_service.py
+│       ├── test_search_service.py
+│       └── (test_captcha_solver.py - Phase 7)
+├── .dockerignore
+├── .env.example
+├── .gitignore
 ├── Dockerfile
 ├── pyproject.toml
-├── .env.example
 └── README.md
 ```
 
