@@ -147,8 +147,8 @@ Marquer "Stocker liste fichiers" → in_progress
 ```
 
 **Stocker dans variables** :
-- `codebase_info` : Tout le bloc `codebase`
-- `files_to_read` : Liste de `documentation.files_to_read`
+- `codebase_context` : Tout le bloc `codebase`
+- `documentation_files` : Liste de `documentation.files_to_read`
 
 Marquer → completed
 
@@ -192,10 +192,10 @@ Task(
   {expected_output}
 
   **Contexte codebase** :
-  {codebase_info}
+  {codebase_context}
 
   **Fichiers pertinents** :
-  {files_to_read}
+  {documentation_files}
 
   Génère :
   1. Checklist niveau 2 (détaillée, exécutable)
@@ -281,10 +281,10 @@ Implémenter partie {N} de la checklist niveau 2 :
 {sous-ensemble_checklist_pour_cet_agent}
 
 **Contexte codebase** :
-{codebase_info}
+{codebase}
 
 **Fichiers pertinents** :
-{files_to_read}
+{documentation_files}
 
 **Output attendu** :
 {expected_output_partial}
@@ -304,13 +304,13 @@ Task(
   Implémenter la phase complète :
 
   **Checklist niveau 2** :
-  {checklist_complete}
+  {checklist}
 
   **Contexte codebase** :
-  {codebase_info}
+  {codebase}
 
   **Fichiers pertinents** :
-  {files_to_read}
+  {documentation_files}
 
   **Output attendu** :
   {expected_output}
@@ -342,16 +342,16 @@ Task(
   Valider la phase {phase_number} :
 
   **Checklist niveau 2** (ce qui devait être fait) :
-  {checklist_niveau_2}
+  {checklist_details}
 
   **Output attendu** :
   {expected_output}
 
   **Contexte codebase** :
-  {codebase_info}
+  {codebase}
 
   **Rapports CODE** :
-  {code_reports}
+  {implementation_report}
 
   Vérifier :
   1. Conformité checklist (toutes étapes implémentées)
