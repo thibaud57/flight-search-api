@@ -232,27 +232,21 @@
 📝 **Output** : App minimale testable
 
 ### 3.4 Vérifications locales
-- [ ] Install deps : `uv sync --all-extras`
-- [ ] Run post-install : `crawl4ai-setup` (installe Playwright)
-- [ ] Run app : `fastapi dev app/main.py`
-- [ ] Test health : `curl http://localhost:8000/health`
-- [ ] Run tests : `pytest -v`
-- [ ] Lint : `ruff check . && ruff format . --check`
-- [ ] Type check : `mypy app/`
-- [ ] Build Docker : `docker build -t flight-search-api .`
-- [ ] Run Docker : `docker run -p 8000:8000 flight-search-api`
-- [ ] Test Docker health : `curl http://localhost:8000/health`
-- [ ] Commit : `chore: verify local and docker builds`
+- [x] Install deps : `uv sync --all-extras`
+- [x] Run post-install : `crawl4ai-setup` (installe Playwright)
+- [x] Run app : `fastapi dev app/main.py`
+- [x] Test health : `curl http://localhost:8000/health`
+- [x] Run tests : `pytest -v`
+- [x] Lint : `ruff check . && ruff format . --check`
+- [x] Type check : `mypy app/`
+- [x] Build Docker : `docker build -t flight-search-api .`
+- [x] Run Docker : `docker run -p 8000:8000 flight-search-api`
+- [x] Test Docker health : `curl http://localhost:8000/health`
+- [x] Commit : `chore: verify local and docker builds`
 
 📝 **Output** : Vérification que tout fonctionne
 
-### 3.5 Mise à jour CHANGELOG
-- [ ] Ajouter entrée v0.3.0-build dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for build phase`
-
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
-
-### 3.6 CI Quality Checks
+### 3.5 CI Quality Checks
 - [ ] Créer `.github/workflows/ci.yml` :
       - Trigger : PR + push sur develop/master
       - Setup : Python 3.13, cache uv dependencies (actions/cache)
@@ -266,6 +260,12 @@
 - [ ] Commit : `ci: add quality checks workflow`
 
 📝 **Output** : Pipeline CI pour qualité code (tests unitaires uniquement, tests intégration manuels)
+
+### 3.6 Mise à jour CHANGELOG
+- [ ] Ajouter entrée v0.3.0-build dans `docs/CHANGELOG.md`
+- [ ] Commit : `docs: update changelog for build phase`
+
+📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.3.0-build sur master
 
