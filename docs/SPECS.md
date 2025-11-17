@@ -4,7 +4,7 @@ description: "Spécifications techniques détaillées pour implémentation MVP (
 date: "2025-11-17"
 keywords: ["specs", "specifications", "technical", "models", "services", "api", "tests", "mvp"]
 scope: ["docs"]
-technologies: ["FastAPI", "Pydantic", "Crawl4AI", "Tenacity", "Pytest"]
+technologies: []
 ---
 
 # Spécifications Techniques Détaillées
