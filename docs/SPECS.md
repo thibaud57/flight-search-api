@@ -1,12 +1,12 @@
 ---
-title: "PLANNING - Spécifications Détaillées"
-description: "Spécifications détaillées et planning d'implémentation MVP. Consulter pour roadmap phases, user stories, cas d'usage, backlog features."
-date: "2025-17-11"
-keywords: ["planning", "specs", "roadmap", "mvp", "user-stories", "backlog", "phases", "features"]
+title: "SPECS - Spécifications Techniques Détaillées"
+description: "Spécifications techniques détaillées pour implémentation MVP (Models, Services, API Routes, Tests). Consulter avant développement Phase 5."
+date: "2025-11-17"
+keywords: ["specs", "specifications", "technical", "models", "services", "api", "tests", "mvp"]
 scope: ["docs"]
-technologies: []
+technologies: ["FastAPI", "Pydantic", "Crawl4AI", "Tenacity", "Pytest"]
 ---
 
-# Spécifications Détaillées
+# Spécifications Techniques Détaillées
 
 _À compléter en Phase 4_
