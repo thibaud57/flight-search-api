@@ -1,1 +1,9 @@
-"""TODO: À implémenter en Phase 3.3 (app minimale) et Phase 5.8 (routes complètes)"""
+from fastapi import FastAPI
+
+app = FastAPI(title="flight-search-api", version="0.3.0")
+
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    """Health check endpoint pour monitoring."""
+    return {"status": "ok"}
