@@ -224,10 +224,10 @@
 📝 **Output** : `Dockerfile` production-ready
 
 ### 3.3 App minimale + health endpoint
-- [ ] Implémenter `app/main.py` : FastAPI app basique
-- [ ] Implémenter endpoint GET `/health` → `{"status": "ok"}`
-- [ ] Implémenter `tests/integration/test_health.py`
-- [ ] Commit : `feat(api): add minimal app with health endpoint`
+- [x] Implémenter `app/main.py` : FastAPI app basique
+- [x] Implémenter endpoint GET `/health` → `{"status": "ok"}`
+- [x] Implémenter `tests/integration/test_health.py`
+- [x] Commit : `feat(api): add minimal app with health endpoint`
 
 📝 **Output** : App minimale testable
 
