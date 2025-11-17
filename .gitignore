@@ -43,6 +43,10 @@ coverage.xml
 *.log
 .hypothesis/
 
+# Linters & Type Checkers
+.ruff_cache/
+.mypy_cache/
+
 # IDEs
 .vscode/
 .idea/
@@ -61,6 +65,20 @@ Thumbs.db
 *.bak
 *.tmp
 
+# Playwright (Crawl4AI)
+.playwright/
+playwright/.local-browsers/
+ms-playwright/
+
 # Project specific
 .env.local
 .env.*.local
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.pid
+*.seed
+*.pid.lock
