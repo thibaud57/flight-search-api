@@ -19,13 +19,28 @@ htmlcov
 .tox
 .nox
 
+# Linters & Type Checkers
+.ruff_cache
+.mypy_cache
+
+# Playwright (Crawl4AI)
+.playwright
+playwright/.local-browsers
+ms-playwright
+
 README.md
 docs/
 .claude/
 
+# Tests
+tests/
+
 *.log
 *.bak
 *.tmp
+*.pid
+*.seed
+*.pid.lock
 
 node_modules
 npm-debug.log

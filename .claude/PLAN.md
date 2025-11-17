@@ -142,7 +142,7 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-**Fin de phase** : Push branche → PR → Merge develop → Tag v0.1.0-research
+**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.1.0-research sur master
 
 ---
 
@@ -194,7 +194,7 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-**Fin de phase** : Push branche → PR → Merge develop → Tag v0.2.0-structure
+**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.2.0-structure sur master
 
 ---
 
@@ -205,21 +205,21 @@
 **Branche** : `feature/config-build`
 
 ### 3.1 pyproject.toml complet
-- [ ] Section [project] : metadata + dependencies (fastapi, pydantic, crawl4ai, tenacity)
-- [ ] Section [project.optional-dependencies] : dev tools
-- [ ] Section [tool.ruff] : linting rules + formatting
-- [ ] Section [tool.mypy] : strict mode + overrides
-- [ ] Section [tool.pytest.ini_options] : test config + coverage
-- [ ] Commit : `chore(config): add complete pyproject.toml`
+- [x] Section [project] : metadata + dependencies (fastapi, pydantic, crawl4ai, tenacity)
+- [x] Section [project.optional-dependencies] : dev tools
+- [x] Section [tool.ruff] : linting rules + formatting
+- [x] Section [tool.mypy] : strict mode + overrides
+- [x] Section [tool.pytest.ini_options] : test config + coverage
+- [x] Commit : `chore(config): add complete pyproject.toml`
 
 📝 **Output** : `pyproject.toml` complet
 
 ### 3.2 Dockerfile multi-stage optimisé
-- [ ] Stage 1 Builder : install uv + dependencies + crawl4ai-setup
+- [x] Stage 1 Builder : install uv + dependencies + crawl4ai-setup
       **Note** : crawl4ai-setup installe automatiquement Playwright + dépendances système
-- [ ] Stage 2 Runtime : copy deps + code, non-root user, healthcheck
-- [ ] Optimisé pour Dokploy
-- [ ] Commit : `chore(docker): add optimized Dockerfile`
+- [x] Stage 2 Runtime : copy deps + code, non-root user, healthcheck
+- [x] Optimisé pour Dokploy
+- [x] Commit : `chore(docker): add optimized Dockerfile`
 
 📝 **Output** : `Dockerfile` production-ready
 
@@ -267,7 +267,7 @@
 
 📝 **Output** : Pipeline CI pour qualité code (tests unitaires uniquement, tests intégration manuels)
 
-**Fin de phase** : Push branche → PR → Merge develop → Tag v0.3.0-build
+**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.3.0-build sur master
 
 ---
 
@@ -326,7 +326,7 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-**Fin de phase** : Push branche → PR → Merge develop → Tag v0.4.0-planning
+**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.4.0-planning sur master
 
 ---
 
@@ -409,7 +409,7 @@
 
 📝 **Output** : API MVP complète et testée (sans résolution captcha)
 
-**Fin de phase** : Push branche → PR → Merge develop → Tag v0.5.0-mvp
+**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.5.0-mvp sur master
 
 ---
 
