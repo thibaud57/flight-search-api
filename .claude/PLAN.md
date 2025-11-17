@@ -189,8 +189,8 @@
 📝 **Output** : `.claude/CLAUDE.md` complet
 
 ### 2.4 Mise à jour CHANGELOG
-- [ ] Ajouter entrée v0.2.0-structure dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for structure phase`
+- [x] Ajouter entrée v0.2.0-structure dans `docs/CHANGELOG.md`
+- [x] Commit : `docs: update changelog for structure phase`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
