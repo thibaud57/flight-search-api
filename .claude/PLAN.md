@@ -215,11 +215,11 @@
 📝 **Output** : `pyproject.toml` complet
 
 ### 3.2 Dockerfile multi-stage optimisé
-- [ ] Stage 1 Builder : install uv + dependencies + crawl4ai-setup
+- [x] Stage 1 Builder : install uv + dependencies + crawl4ai-setup
       **Note** : crawl4ai-setup installe automatiquement Playwright + dépendances système
-- [ ] Stage 2 Runtime : copy deps + code, non-root user, healthcheck
-- [ ] Optimisé pour Dokploy
-- [ ] Commit : `chore(docker): add optimized Dockerfile`
+- [x] Stage 2 Runtime : copy deps + code, non-root user, healthcheck
+- [x] Optimisé pour Dokploy
+- [x] Commit : `chore(docker): add optimized Dockerfile`
 
 📝 **Output** : `Dockerfile` production-ready
 
