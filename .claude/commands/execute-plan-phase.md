@@ -82,13 +82,6 @@ Lire **uniquement** `.claude/PLAN.md` et parser :
 - Output attendu (`📝 **Output**`)
 - Notes
 
-**Ne PAS lire** :
-- ❌ CLAUDE.md
-- ❌ docs/*.md
-- ❌ Fichiers projet
-
-→ Ces fichiers seront identifiés par EXPLORE à l'étape 2
-
 Marquer → completed
 
 ### ÉTAPE 2 : Lancer agent EXPLORE
@@ -156,8 +149,6 @@ Marquer "Stocker liste fichiers" → in_progress
 **Stocker dans variables** :
 - `codebase_info` : Tout le bloc `codebase`
 - `files_to_read` : Liste de `documentation.files_to_read`
-
-**❌ NE PAS lire les fichiers** (PLAN/CODE le feront eux-mêmes)
 
 Marquer → completed
 

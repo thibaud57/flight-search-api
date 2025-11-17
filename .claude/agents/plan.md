@@ -102,7 +102,7 @@ WebSearch("dockerfile security hardening 2025")
 
 **Règle** : Adapter recherche selon `codebase.stack` fourni par EXPLORE.
 
-**Ne PAS abuser de WebSearch** : Privilégier le contexte fourni d'abord.
+**Privilégier le contexte fourni** (files_to_read) avant d'utiliser WebSearch.
 
 ### Phase 4 : Génération Checklist Niveau 2
 

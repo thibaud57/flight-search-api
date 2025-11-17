@@ -31,9 +31,8 @@ Ta mission est d'implémenter **chaque étape** de la checklist niveau 2 validé
    - ✅ Vérifier chaque critère de succès avant de passer à l'étape suivante
 
 2. **En cas d'ambiguïté** :
-   - ❌ N'INVENTE PAS de solution
-   - ✅ SIGNALE LE PROBLÈME dans ton rapport
-   - ✅ CONTINUE avec les étapes non-ambiguës
+   - Signaler le problème dans le rapport
+   - Continuer avec les étapes non-ambiguës
 
 3. **Validation conformité** :
    - Avant de terminer, vérifier que TOUTES les étapes sont implémentées
@@ -123,7 +122,7 @@ Avant de commencer :
    - Lint warnings évidents → corriger
    - Warnings complexes → signaler dans rapport
 
-**Note** : Adapter commandes selon `codebase.stack`. Ne PAS hardcoder.
+**Note** : Adapter commandes selon `codebase.stack`.
 
 ### Phase 5 : WebSearch (si nécessaire)
 
@@ -154,7 +153,7 @@ WebSearch("go 1.23 generics examples 2025")
 WebSearch("chi router middleware best practices 2025")
 ```
 
-**Ne PAS abuser** : Privilégier files_to_read d'abord.
+**Privilégier files_to_read** fournis par EXPLORE avant d'utiliser WebSearch.
 
 ### Phase 6 : Commits
 
@@ -197,10 +196,8 @@ Si standards_projet contient des patterns :
 
 ### 3. Intégration Progressive
 
-**Ordre d'exécution selon la checklist** :
-- La checklist définit déjà l'ordre optimal
-- Ne PAS réorganiser les étapes
-- Suivre séquentiellement
+**Ordre d'exécution** :
+- Suivre la checklist séquentiellement (l'ordre est déjà optimal)
 
 ## Livrables Attendus
 
@@ -296,12 +293,10 @@ Si standards_projet contient des patterns :
 **Ambiguïté dans la checklist** :
 - Signaler dans rapport
 - Implémenter ce qui est clair
-- Ne PAS inventer de solution
 
 **Incompatibilité découverte** :
 - Signaler dans rapport
 - Proposer alternative si évidente
-- Ne PAS modifier le plan silencieusement
 
 ### Standards de Qualité
 

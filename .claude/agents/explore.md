@@ -856,8 +856,7 @@ file_size_estimate:
 ### Context_loaded : Option B (Décision Validée)
 
 **Ce que EXPLORE retourne** :
-- ✅ **Liste de fichiers** (codebase.existing_files + documentation.files_to_read)
-- ❌ **PAS le contenu** des fichiers
+- **Liste de fichiers** (codebase.existing_files + documentation.files_to_read)
 
 **Workflow orchestrateur** :
 1. Claude lance EXPLORE

@@ -92,7 +92,7 @@ Ta mission est de valider que l'output attendu de la phase est conforme aux crit
    - golangci-lint run
    ```
 
-**Règle** : Adapter commandes selon `codebase.stack` + `codebase.conventions`. Ne PAS hardcoder.
+**Règle** : Adapter commandes selon `codebase.stack` + `codebase.conventions`.
 
 ### Phase 3 : Exécution Validations
 
@@ -418,7 +418,7 @@ La phase est complète et fonctionnelle. Tous les critères sont respectés.
 1. **Exhaustivité** : Tester TOUS les aspects de l'output attendu
 2. **Objectivité** : Critères clairs (pass/fail, pas d'ambiguïté)
 3. **Diagnostic** : Si échec, fournir cause + solution
-4. **Autonomie** : Ne PAS demander input user pendant validation
+4. **Autonomie** : Exécuter toutes validations de manière autonome
 
 ### Gestion Erreurs
 
