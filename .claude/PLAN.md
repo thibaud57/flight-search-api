@@ -205,12 +205,12 @@
 **Branche** : `feature/config-build`
 
 ### 3.1 pyproject.toml complet
-- [ ] Section [project] : metadata + dependencies (fastapi, pydantic, crawl4ai, tenacity)
-- [ ] Section [project.optional-dependencies] : dev tools
-- [ ] Section [tool.ruff] : linting rules + formatting
-- [ ] Section [tool.mypy] : strict mode + overrides
-- [ ] Section [tool.pytest.ini_options] : test config + coverage
-- [ ] Commit : `chore(config): add complete pyproject.toml`
+- [x] Section [project] : metadata + dependencies (fastapi, pydantic, crawl4ai, tenacity)
+- [x] Section [project.optional-dependencies] : dev tools
+- [x] Section [tool.ruff] : linting rules + formatting
+- [x] Section [tool.mypy] : strict mode + overrides
+- [x] Section [tool.pytest.ini_options] : test config + coverage
+- [x] Commit : `chore(config): add complete pyproject.toml`
 
 📝 **Output** : `pyproject.toml` complet
 
