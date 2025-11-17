@@ -323,12 +323,12 @@
 📝 **Output** : `docs/SPECS.md` ultra-détaillé
 
 ### 4.7 Mise à jour CHANGELOG
-- [ ] Ajouter entrée v0.4.0-planning dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for planning phase`
+- [ ] Ajouter entrée v0.4.0-specs dans `docs/CHANGELOG.md`
+- [ ] Commit : `docs: update changelog for specs phase`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.4.0-planning sur master
+**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.4.0-specs sur master
 
 ---
 
