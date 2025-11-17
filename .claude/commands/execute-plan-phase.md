@@ -62,7 +62,8 @@ TodoWrite([
   {content: "Lancer agent PLAN", status: "pending", activeForm: "Lancement PLAN"},
   {content: "Lancer agent(s) CODE", status: "pending", activeForm: "Lancement CODE"},
   {content: "Lancer agent TEST", status: "pending", activeForm: "Lancement TEST"},
-  {content: "Cocher PLAN.md", status: "pending", activeForm: "Mise à jour PLAN"}
+  {content: "Cocher PLAN.md", status: "pending", activeForm: "Mise à jour PLAN"},
+  {content: "Commit, Push & Pull Request", status: "pending", activeForm: "Création Pull Request"}
 ])
 ```
 
@@ -385,6 +386,62 @@ Modifier `.claude/PLAN.md` :
 
 Marquer → completed
 
+### ÉTAPE 9 : Commit, Push & Pull Request
+
+Marquer "Commit, Push & PR" → in_progress
+
+**9A. Récupérer message(s) commit depuis PLAN.md** :
+
+Dans la sous-phase parsée (ÉTAPE 1), chercher pattern(s) :
+- `- [x] Commit : "message"`
+
+**Cas 1 : Un seul commit**
+```bash
+git add .
+git commit -m "{message}"
+LAST_COMMIT_MSG="{message}"
+```
+
+**Cas 2 : Plusieurs commits** (ex: Phase 0.2 a 2 commits)
+```bash
+# Parser ordre commits dans PLAN.md
+# Identifier fichiers concernés par chaque étape avant le commit
+
+# Commit 1
+git add {fichiers_avant_premier_commit}
+git commit -m "{message_1}"
+
+# Commit 2
+git add {fichiers_avant_deuxième_commit}
+git commit -m "{message_2}"
+LAST_COMMIT_MSG="{message_2}"
+```
+
+**9B. Push branche** :
+```bash
+git push origin {nom_branche} --set-upstream
+```
+
+**9C. Créer Pull Request** :
+```bash
+PR_URL=$(gh pr create \
+  --base develop \
+  --title "$LAST_COMMIT_MSG" \
+  --body "Implements Phase {X.Y}
+
+## Story Changes
+{checklist_niveau_1_resumé}
+
+## Output
+{expected_output}" \
+  --json url --jq .url)
+```
+
+**Capturer URL PR** :
+Stocker : `pr_url`
+
+Marquer → completed
+
 ## Messages Utilisateur
 
 ### Démarrage
@@ -445,11 +502,27 @@ Corriger et relancer TEST ? (oui/non)
 
 ### Completion
 ```
-✅ Phase {X.Y} terminée !
+✅ Story {X.Y} terminée !
 
-📄 Output : {fichier_créé}
-💾 Commits : {hash1}, {hash2}
-📋 PLAN.md mis à jour
+📄 Output : {expected_output}
+📋 PLAN.md : Cases cochées
+🔀 Pull Request : {pr_url}
 
-➡️ Prochaine : /execute-plan-phase {X.Y+1}
+🔄 **Prochaine étape** :
+
+1. **Merger la PR sur GitHub** :
+   Ouvrir {pr_url} et cliquer sur "Merge pull request"
+
+2. **Continuer l'Epic** :
+   ➡️ Prochaine story : /execute-plan-phase {X.Y+1}
+   (Attendre que la PR soit mergée avant de lancer)
+
+3. **Si Epic complet** (voir "Fin de phase" dans PLAN.md) :
+   ```bash
+   git checkout develop && git pull
+   git checkout master && git merge develop --ff-only
+   git tag {version_tag}
+   git push origin master --tags
+   ```
+   → GitHub Actions crée Release automatiquement
 ```

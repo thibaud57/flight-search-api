@@ -142,7 +142,7 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-**Fin de phase** : Push branche → PR → Merge develop → Tag v0.1.0-research
+**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.1.0-research sur master
 
 ---
 
@@ -194,7 +194,7 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-**Fin de phase** : Push branche → PR → Merge develop → Tag v0.2.0-structure
+**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.2.0-structure sur master
 
 ---
 
@@ -267,7 +267,7 @@
 
 📝 **Output** : Pipeline CI pour qualité code (tests unitaires uniquement, tests intégration manuels)
 
-**Fin de phase** : Push branche → PR → Merge develop → Tag v0.3.0-build
+**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.3.0-build sur master
 
 ---
 
@@ -326,7 +326,7 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-**Fin de phase** : Push branche → PR → Merge develop → Tag v0.4.0-planning
+**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.4.0-planning sur master
 
 ---
 
@@ -409,7 +409,7 @@
 
 📝 **Output** : API MVP complète et testée (sans résolution captcha)
 
-**Fin de phase** : Push branche → PR → Merge develop → Tag v0.5.0-mvp
+**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.5.0-mvp sur master
 
 ---
 

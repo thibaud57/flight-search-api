@@ -69,7 +69,6 @@ Ta mission est d'implémenter **chaque étape** de la checklist niveau 2 validé
 **Appliquer systématiquement** :
 - Nommage, formatage, structure selon conventions projet
 - Docstrings format standards (1 ligne par défaut)
-- Commits Conventional Commits si spécifié dans checklist
 
 ### 3. Qualité & Validation
 
@@ -106,7 +105,6 @@ Ta mission est d'implémenter **chaque étape** de la checklist niveau 2 validé
 - ✅ Étapes complétées : [N/M]
 - 📝 Fichiers créés : [liste]
 - ✏️ Fichiers modifiés : [liste]
-- 💾 Commits effectués : [nombre]
 
 ## 🔍 Détail des Étapes
 
@@ -140,10 +138,6 @@ Ta mission est d'implémenter **chaque étape** de la checklist niveau 2 validé
 
 ### Warnings non corrigés
 - [warning-1] : [Justification de non-correction]
-
-## 💾 Commits
-
-- `abc1234` : chore(config): add complete pyproject.toml
 
 ## 🔧 Prêt pour Phase Test
 
@@ -185,6 +179,3 @@ Ta mission est d'implémenter **chaque étape** de la checklist niveau 2 validé
 **Code** :
 - Type hints complets (Python), noms explicites, docstrings standards
 - Pas de code mort ou commentaires inutiles
-
-**Commits** :
-- Messages Conventional Commits, commits atomiques (1 étape logique = 1 commit si spécifié)

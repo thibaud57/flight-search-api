@@ -983,18 +983,35 @@ git branch -d feature/initial-setup
 
 **Workflow Release** :
 
-**Dev Releases (v0.x.x-xxx)** :
-1. Développement sur `feature/*`
-2. Merge `feature/*` → `develop` (via PR)
-3. Tag version sur `develop` (ex: `v0.2.0-structure`)
-4. GitHub Actions crée Release automatiquement (marquée `prerelease`)
+**Workflow Story (sous-phase)** :
+1. Lancer story : `/execute-plan-phase X.Y`
+   - Commit automatique selon PLAN.md
+   - Push automatique branche feature
+   - Création automatique PR → develop
+   - Retourne URL de la PR
+2. Merger PR sur GitHub (interface web)
+3. Répéter pour stories suivantes (X.Y+1)
 
-**Production Releases (v1.x.x+)** :
-1. Développement sur `feature/*`
-2. Merge `feature/*` → `develop` (via PR)
-3. Quand `develop` prête : Merge `develop` → `master` (via PR)
-4. Tag version sur `master` (ex: `v1.0.0`)
-5. GitHub Actions crée Release automatiquement (release stable)
+**Workflow Epic (phase complète)** :
+1. Toutes stories mergées sur develop ✅
+2. Aligner master avec develop :
+   ```bash
+   git checkout develop && git pull
+   git checkout master && git merge develop --ff-only
+   ```
+3. Tag version sur `master` : `git tag {version} && git push origin master --tags`
+4. Release automatique via `.github/workflows/release.yml`
+
+**Distinction versions** :
+- **Dev releases** : `v0.x.x-xxx` (ex: `v0.3.0-build`) → Marquées "Pre-release" sur GitHub
+- **Prod releases** : `v1.x.x` (ex: `v1.0.0`) → Marquées "Latest release" sur GitHub
+- Détection automatique : `contains(github.ref, '-')` dans workflow release.yml
+
+**Notes** :
+- Story = sous-phase (ex: 3.1, 3.2) → 1 PR automatique → develop
+- Epic = phase complète (ex: Phase 3) → merge develop→master → tag
+- `/execute-plan-phase` gère automatiquement : commit, push, PR
+- User gère : merge PR, tag final Epic
 
 ---
 
