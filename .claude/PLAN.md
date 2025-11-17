@@ -261,6 +261,8 @@
 
 📝 **Output** : Pipeline CI pour qualité code (tests unitaires uniquement, tests intégration manuels)
 
+**Note** : Step "Tests with coverage" temporairement désactivé (commenté dans ci.yml) car aucun test n'existe encore. À réactiver en Phase 5.1+ lors de l'implémentation TDD.
+
 ### 3.6 Mise à jour CHANGELOG
 - [ ] Ajouter entrée v0.3.0-build dans `docs/CHANGELOG.md`
 - [ ] Commit : `docs: update changelog for build phase`
@@ -337,6 +339,7 @@
 **Branche** : `feature/implementation`
 
 ### 5.1 Models (Pydantic)
+- [ ] **RAPPEL : Réactiver step "Tests with coverage" dans `.github/workflows/ci.yml`** (décommenter lignes 46-47)
 - [ ] Écrire tests `tests/unit/test_models.py`
 - [ ] Implémenter `app/models/request.py`
 - [ ] Implémenter `app/models/response.py`
