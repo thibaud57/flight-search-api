@@ -1,8 +1,13 @@
-# Matrice de Compatibilité - flight-search-api
+---
+title: "VERSIONS - Matrice de compatibilité"
+description: "Versions exactes des dépendances Python 3.13+ et compatibilité croisée. Consulter pour configuration pyproject.toml, installation dependencies, migration Pydantic v2."
+date: "2025-16-11"
+keywords: ["versions", "dependencies", "compatibility", "python", "python3.13", "fastapi", "pydantic", "pydantic-v2", "crawl4ai", "tenacity", "pyproject", "migration"]
+scope: ["config", "setup"]
+technologies: ["python", "fastapi", "pydantic", "crawl4ai", "tenacity", "uvicorn"]
+---
 
-**Dernière mise à jour** : 16/11/2025
-
-## Vue d'ensemble
+# Vue d'ensemble
 
 | Technologie | Version Recommandée | Python 3.13 | Statut Production | Notes Critiques |
 |-------------|---------------------|-------------|-------------------|-----------------|
@@ -41,11 +46,6 @@
 
 **Recommandation** : ✅ **OK pour production** avec Pydantic ≥ 2.8.0
 
-**Sources** :
-- https://docs.python.org/3.13/whatsnew/3.13.html
-- https://peps.python.org/pep-0695/
-- https://www.python.org/downloads/release/python-3130/
-
 ---
 
 ### 2. FastAPI 0.121.2
@@ -80,11 +80,6 @@
 - ✅ Solution : `httpx.AsyncClient` + `ASGITransport` + `@pytest.mark.anyio`
 
 **Recommandation** : ✅ **Production-ready** - Vérifier cycle de vie `yield`
-
-**Sources** :
-- https://fastapi.tiangolo.com/release-notes/
-- https://github.com/tiangolo/fastapi/releases
-- https://fastapi.tiangolo.com/advanced/async-tests/
 
 ---
 
@@ -156,12 +151,6 @@ bump-pydantic my_package  # Automatisation migration
 
 **Recommandation** : ✅ **Migration v1→v2 smooth** (2-5 jours) - ROI très haut
 
-**Sources** :
-- https://docs.pydantic.dev/latest/migration/
-- https://docs.pydantic.dev/latest/concepts/validators/
-- https://docs.pydantic.dev/latest/concepts/pydantic_settings/
-- https://github.com/pydantic/pydantic/releases
-
 ---
 
 ### 4. tenacity 9.1.2
@@ -218,11 +207,6 @@ retry=retry_if_exception_type((
 - ✅ Callbacks logging (`before_sleep`, `after`)
 
 **Recommandation** : ✅ **Parfait pour retry logic async**
-
-**Sources** :
-- https://tenacity.readthedocs.io/en/latest/
-- https://tenacity.readthedocs.io/en/latest/index.html#async-code
-- https://github.com/jd/tenacity/releases
 
 ---
 
@@ -321,13 +305,6 @@ strategy = RoundRobinProxyStrategy(proxies=proxies)
 - Undetected browser (anti-bot enterprise)
 - JsonCssExtractionStrategy (gratuit, rapide)
 - Proxy rotation (évite ban IP)
-
-**Sources** :
-- https://docs.crawl4ai.com/
-- https://docs.crawl4ai.com/core/browser-config/
-- https://docs.crawl4ai.com/advanced/undetected-browser/
-- https://docs.crawl4ai.com/extraction/no-llm-strategies/
-- https://github.com/unclecode/crawl4ai/releases
 
 ---
 
@@ -447,3 +424,27 @@ python -c "import crawl4ai; print(crawl4ai.__version__)"
 - Temps migration : 2-5 jours
 - Support long terme : 5 ans (Python 3.13)
 
+---
+
+# Ressources
+
+## Documentation Officielle
+
+- **Python 3.13 What's New** : https://docs.python.org/3.13/whatsnew/3.13.html
+- **Python 3.13.0 Release** : https://www.python.org/downloads/release/python-3130/
+- **PEP 695 (Type Parameter Syntax)** : https://peps.python.org/pep-0695/
+- **FastAPI Release Notes** : https://fastapi.tiangolo.com/release-notes/
+- **FastAPI Async Tests** : https://fastapi.tiangolo.com/advanced/async-tests/
+- **FastAPI GitHub Releases** : https://github.com/tiangolo/fastapi/releases
+- **Pydantic Migration v1→v2** : https://docs.pydantic.dev/latest/migration/
+- **Pydantic Validators** : https://docs.pydantic.dev/latest/concepts/validators/
+- **Pydantic Settings** : https://docs.pydantic.dev/latest/concepts/pydantic_settings/
+- **Pydantic GitHub Releases** : https://github.com/pydantic/pydantic/releases
+- **Tenacity Documentation** : https://tenacity.readthedocs.io/en/latest/
+- **Tenacity Async Code** : https://tenacity.readthedocs.io/en/latest/index.html#async-code
+- **Tenacity GitHub Releases** : https://github.com/jd/tenacity/releases
+- **Crawl4AI Documentation** : https://docs.crawl4ai.com/
+- **Crawl4AI BrowserConfig** : https://docs.crawl4ai.com/core/browser-config/
+- **Crawl4AI Undetected Browser** : https://docs.crawl4ai.com/advanced/undetected-browser/
+- **Crawl4AI JsonCssExtractionStrategy** : https://docs.crawl4ai.com/extraction/no-llm-strategies/
+- **Crawl4AI GitHub Releases** : https://github.com/unclecode/crawl4ai/releases

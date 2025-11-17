@@ -1,10 +1,15 @@
-# REFERENCES.md - flight-search-api
+---
+title: "REFERENCES - Index Références Techniques"
+description: "Index centralisé des références techniques modulaires (FastAPI, Pydantic v2, Crawl4AI, Decodo, Tenacity, etc.). Consulter pour naviguer vers documentation spécifique par technologie."
+date: "2025-16-11"
+keywords: ["references", "index", "documentation", "fastapi", "pydantic", "crawl4ai", "decodo", "proxies", "tenacity", "anti-detection", "captcha", "github-actions", "dokploy", "google-flights", "scraping"]
+scope: ["docs"]
+technologies: ["python", "fastapi", "pydantic", "crawl4ai", "tenacity", "github-actions"]
+---
+
+# Index Références Techniques
 
 Documentation technique complète pour toutes les technologies utilisées dans le projet.
-
-**Dernière mise à jour** : 16/11/2025
-
----
 
 ## Structure de la Documentation
 
@@ -71,20 +76,6 @@ La documentation technique est organisée en fichiers séparés pour optimiser l
 
 ---
 
-## Ressources Additionnelles
-
-| Technologie | Documentation Principale |
-|-------------|--------------------------|
-| GitHub Actions | https://docs.github.com/en/actions |
-| FastAPI | https://fastapi.tiangolo.com/ |
-| Pydantic v2 | https://docs.pydantic.dev/latest/ |
-| Crawl4AI | https://docs.crawl4ai.com/ |
-| Decodo | https://help.decodo.com/docs |
-| Tenacity | https://tenacity.readthedocs.io/ |
-| Dokploy | https://docs.dokploy.com/ |
-
----
-
 ## Usage
 
 Pour consulter une référence spécifique, ouvrez le fichier correspondant dans [docs/references/](references/).
@@ -95,3 +86,17 @@ Cette organisation modulaire permet :
 - ✅ Navigation plus rapide dans les IDEs
 - ✅ Meilleure gestion Git (historique, conflits)
 - ✅ Maintenance facilitée
+
+---
+
+# Ressources
+
+## Documentation Officielle
+
+- **GitHub Actions** : https://docs.github.com/en/actions
+- **FastAPI** : https://fastapi.tiangolo.com/
+- **Pydantic v2** : https://docs.pydantic.dev/latest/
+- **Crawl4AI** : https://docs.crawl4ai.com/
+- **Decodo** : https://help.decodo.com/docs
+- **Tenacity** : https://tenacity.readthedocs.io/
+- **Dokploy** : https://docs.dokploy.com/

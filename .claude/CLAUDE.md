@@ -30,45 +30,15 @@
 
 ### 1. Type Hints Modernes (PEP 695)
 
-**Python 3.13+ supporte la syntaxe simplifiée** :
-
-```python
-# ❌ Ancienne syntaxe (< Python 3.12)
-from typing import TypeVar, Generic
-T = TypeVar('T')
-
-class Response(Generic[T]):
-    data: T
-
-# ✅ Nouvelle syntaxe PEP 695 (Python 3.12+)
-class Response[T]:
-    data: T
-
-# ✅ Fonctions génériques
-def process[T](items: list[T]) -> T:
-    return items[0]
-
-# ✅ Type aliases
-type JsonDict = dict[str, str | int | float | bool | None]
-```
-
 **Règles obligatoires** :
-- ✅ Utiliser PEP 695 partout (classes, fonctions, type aliases)
-- ✅ Annoter TOUTES les signatures de fonctions (args + return)
-- ✅ Utiliser `list[T]`, `dict[K, V]` au lieu de `List[T]`, `Dict[K, V]`
+- ✅ Utiliser PEP 695 partout : `class Response[T]:`, `def process[T](items: list[T]) -> T:`
+- ✅ Annoter TOUTES les signatures (args + return)
+- ✅ Utiliser `list[T]`, `dict[K, V]` (pas `List[T]`, `Dict[K, V]`)
 - ✅ Préférer `X | None` à `Optional[X]`
-- ✅ Type alias avec `type` keyword pour clarté
+- ✅ Type alias : `type JsonDict = dict[str, str | int | float | bool | None]`
+- ✅ Bounds : `class Container[T: (str, int)]:` ou `class Processor[T: BaseModel]:`
 
-**Contraintes** :
-```python
-# ✅ Bounds
-class Container[T: (str, int)]:  # T doit être str ou int
-    value: T
-
-# ✅ Upper bound
-class Processor[T: BaseModel]:  # T doit hériter de BaseModel
-    def process(self, item: T) -> T: ...
-```
+Exemples détaillés → `docs/references/fastapi.md`, `pydantic-v2.md`
 
 ---
 
@@ -175,47 +145,10 @@ mypy app/
 
 ### 4. Patterns Async (crawl4ai, error handling)
 
-**Context managers async** :
-```python
-from crawl4ai import AsyncWebCrawler, BrowserConfig
-
-async def fetch_flights(url: str) -> str:
-    browser_config = BrowserConfig(
-        browser_type="undetected",
-        headless=True
-    )
-
-    async with AsyncWebCrawler(config=browser_config) as crawler:
-        result = await crawler.arun(url)
-        return result.html
-```
-
-**Error handling async avec tenacity** :
-```python
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_random_exponential,
-    retry_if_exception_type
-)
-import httpx
-
-@retry(
-    stop=stop_after_attempt(5),
-    wait=wait_random_exponential(multiplier=1, max=60),
-    retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError))
-)
-async def fetch_with_retry(url: str) -> str:
-    async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.get(url)
-        response.raise_for_status()
-        return response.text
-```
-
 **Règles projet** :
 - ✅ TOUJOURS utiliser `async with` pour AsyncWebCrawler
 - ✅ Retry logic avec tenacity (exponential backoff + jitter)
-- ✅ Timeouts explicites (ex: `httpx.AsyncClient(timeout=10)`)
+- ✅ Timeouts explicites : `httpx.AsyncClient(timeout=10)`
 - ✅ Capturer exceptions spécifiques (pas `except Exception:`)
 - ✅ Logger avant retry (`before_sleep` callback tenacity)
 
@@ -224,129 +157,41 @@ async def fetch_with_retry(url: str) -> str:
 - ❌ Retry sur 404 (erreur client, pas serveur)
 - ❌ Pas de timeout → risque hang
 
+Exemples complets → `docs/references/crawl4ai.md`, `tenacity.md`
+
 ---
 
 ### 5. Structured Logging (JSON, contexte)
 
-**Configuration logger** :
-```python
-import logging
-import sys
-from pythonjsonlogger import jsonlogger
-
-def setup_logger(name: str) -> logging.Logger:
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
-
-    handler = logging.StreamHandler(sys.stdout)
-    formatter = jsonlogger.JsonFormatter(
-        "%(asctime)s %(name)s %(levelname)s %(message)s",
-        timestamp=True
-    )
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
-    return logger
-
-logger = setup_logger("flight-search-api")
-```
-
-**Usage avec contexte** :
-```python
-logger.info(
-    "Flight search started",
-    extra={
-        "search_id": search_id,
-        "destinations": destinations,
-        "date_range": date_range,
-        "proxy_used": proxy_host
-    }
-)
-
-logger.warning(
-    "Captcha detected",
-    extra={
-        "url": url,
-        "retry_count": retry_count,
-        "captcha_type": "recaptcha"
-    }
-)
-```
-
 **Règles projet** :
-- ✅ Format JSON structuré (machine-readable)
-- ✅ TOUJOURS ajouter `extra={}` avec contexte métier
+- ✅ Format JSON structuré avec `pythonjsonlogger`
+- ✅ TOUJOURS ajouter `extra={}` avec contexte métier (search_id, destinations, proxy_used, etc.)
 - ✅ Niveaux : DEBUG (dev), INFO (prod), WARNING (retry), ERROR (fail)
-- ✅ Logger captcha detection, proxy rotation, parsing errors
+- ✅ Logger : captcha detection, proxy rotation, parsing errors, Top 10 résultats
 - ✅ Pas de secrets dans logs (masquer API keys, passwords)
 
-**Métriques à logger** :
-- Search ID, destinations, dates
-- Proxy utilisé, bandwidth consommé
-- Captcha détectés (type, URL, retry count)
-- Parsing success/failure
-- Top 10 résultats
+Configuration complète → `app/core/logger.py`
 
 ---
 
 ### 6. Docstrings Pragmatiques (PEP 257)
 
 **Règle : 1 ligne par défaut** (90% des cas) :
-
 ```python
 def parse_price(html: str) -> float:
     """Extrait le prix depuis le HTML Google Flights."""
-    ...
-
-async def search_flights(request: SearchRequest) -> SearchResponse:
-    """Orchestre la recherche de vols multi-destinations."""
-    ...
 ```
 
-**Format complet uniquement si nécessaire** :
-
-```python
-@retry(stop=stop_after_attempt(5))
-async def crawl_with_proxy(url: str, proxy_config: ProxyConfig) -> str:
-    """
-    Crawl URL avec proxy et retry logic.
-
-    Args:
-        url: URL Google Flights à crawler
-        proxy_config: Configuration proxy Decodo
-
-    Returns:
-        HTML brut de la page
-
-    Raises:
-        CaptchaDetectedError: Si captcha détecté après 5 tentatives
-        ProxyRotationError: Si tous les proxies échouent
-    """
-    ...
-```
-
-**Quand utiliser format complet** :
+**Format complet si nécessaire** :
 - ✅ Comportement non-évident (side-effects, mutations)
 - ✅ Exceptions importantes levées
-- ✅ Algorithmes complexes (ex: combinaison generator)
+- ✅ Algorithmes complexes
 - ✅ API publiques (routes FastAPI)
 
-**Règles projet** :
+**Règles** :
 - ✅ 1 ligne suffit si signature explicite
-- ✅ Pas de verbosité (ne pas répéter ce que le type dit déjà)
-- ✅ Focus sur **POURQUOI**, pas **QUOI** (code montre le quoi)
-
-**Anti-patterns** :
-```python
-# ❌ Redondant
-def add(a: int, b: int) -> int:
-    """Adds two integers and returns the result."""
-    return a + b
-
-# ✅ Inutile si évident
-def add(a: int, b: int) -> int:
-    return a + b
-```
+- ✅ Focus sur **POURQUOI**, pas **QUOI**
+- ❌ Pas de verbosité (ne pas répéter ce que le type dit)
 
 ---
 
@@ -727,7 +572,7 @@ docker build --cache-from flight-search-api:latest -t flight-search-api .
      /------\    30% - Integration (API routes)
     /        \
    /----------\  60% - Unit (services, models, utils)
-  /__________\
+  /____________\
 ```
 
 ### Types de Tests
@@ -1048,300 +893,41 @@ def test_raises_validation_error():
 
 ## 🐳 Docker
 
-### Dockerfile Multi-Stage
+**Dockerfile** : Disponible dans `/Dockerfile` (multi-stage, non-root user, healthcheck)
 
-**Structure** (Phase 3.2) :
-
-```dockerfile
-# Stage 1: Builder
-FROM python:3.13-slim AS builder
-
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-
-# Install dependencies
-WORKDIR /app
-COPY pyproject.toml ./
-RUN uv sync --no-dev
-
-# Install Playwright via crawl4ai-setup
-RUN uv run crawl4ai-setup
-
-# Stage 2: Runtime
-FROM python:3.13-slim
-
-# Create non-root user
-RUN useradd -m -u 1000 appuser
-
-# Copy deps from builder
-COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
-
-# Copy application code
-WORKDIR /app
-COPY app/ ./app/
-
-# Set user
-USER appuser
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD python -c "import requests; requests.get('http://localhost:8000/health')"
-
-# Run app
-CMD ["/app/.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-**Optimisations** :
-- ✅ Multi-stage build (réduction taille image ~60%)
-- ✅ Cache uv dependencies (build incrémentiel rapide)
-- ✅ Non-root user (sécurité)
-- ✅ Healthcheck natif
-- ✅ Playwright installé via `crawl4ai-setup`
-
-### Commandes Docker
-
-**Build** :
+**Commandes essentielles** :
 ```bash
-# Build standard
+# Build
 docker build -t flight-search-api .
 
-# Build avec cache
-docker build --cache-from flight-search-api:latest -t flight-search-api .
-
-# Build avec tag version
-docker build -t flight-search-api:v1.0.0 .
-
-# Build sans cache (clean build)
-docker build --no-cache -t flight-search-api .
-```
-
-**Run** :
-```bash
-# Run avec .env file
+# Run avec .env
 docker run -p 8000:8000 --env-file .env flight-search-api
 
-# Run avec env vars inline
-docker run -p 8000:8000 \
-  -e LOG_LEVEL=INFO \
-  -e DECODO_USERNAME=customer-XXX-country-FR \
-  -e DECODO_PASSWORD=password \
-  flight-search-api
-
-# Run en background (detached)
+# Run en background
 docker run -d -p 8000:8000 --name flight-api flight-search-api
 
-# Run avec volumes (développement)
-docker run -p 8000:8000 -v $(pwd)/app:/app/app flight-search-api
-```
-
-**Gestion Containers** :
-```bash
-# Lister containers actifs
-docker ps
-
-# Logs container
-docker logs flight-api
-
-# Logs en temps réel
+# Logs
 docker logs -f flight-api
 
-# Stop container
-docker stop flight-api
-
-# Remove container
-docker rm flight-api
-
-# Remove image
-docker rmi flight-search-api
+# Stop & Remove
+docker stop flight-api && docker rm flight-api
 ```
 
-**Debugging** :
+**Docker Compose** :
 ```bash
-# Shell interactif dans container
-docker exec -it flight-api /bin/bash
-
-# Health check manuel
-docker exec flight-api curl http://localhost:8000/health
-
-# Inspecter container
-docker inspect flight-api
-```
-
-### Docker Compose (développement)
-
-**`docker-compose.yml`** (optionnel, Phase 3+) :
-```yaml
-version: '3.8'
-
-services:
-  api:
-    build: .
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    volumes:
-      - ./app:/app/app  # Hot-reload en dev
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-```
-
-**Commandes** :
-```bash
-# Up
-docker-compose up
-
-# Up en background
 docker-compose up -d
-
-# Rebuild
-docker-compose up --build
-
-# Logs
 docker-compose logs -f
-
-# Down
 docker-compose down
 ```
 
-### Optimisations Avancées
-
-**1. Layer Caching** :
-```dockerfile
-# COPY dependencies avant code (cache optimal)
-COPY pyproject.toml ./
-RUN uv sync --no-dev
-
-# COPY code en dernier (changements fréquents)
-COPY app/ ./app/
-```
-
-**2. Image Size Reduction** :
-```dockerfile
-# Utiliser alpine pour taille minimale (optionnel)
-FROM python:3.13-alpine AS builder
-
-# Multi-stage pour exclure build tools
-# Runtime image contient uniquement .venv + code
-```
-
-**3. Security** :
-```dockerfile
-# Non-root user obligatoire
-USER appuser
-
-# Scan vulnérabilités
-docker scan flight-search-api
-```
-
-**4. Build Args** (pour CI/CD) :
-```dockerfile
-ARG VERSION=dev
-LABEL version=$VERSION
-
-# Build
-docker build --build-arg VERSION=v1.0.0 -t flight-search-api:v1.0.0 .
-```
-
-### Déploiement Dokploy
-
-**Configuration Dokploy** :
-
-1. **Connecter Repo GitHub** :
-   - URL : `https://github.com/username/flight-search-api`
-   - Branch : `master`
-   - Auto-deploy sur push
-
-2. **Variables Environnement** (UI Dokploy) :
-   ```
-   LOG_LEVEL=INFO
-   DECODO_USERNAME=customer-XXX-country-FR
-   DECODO_PASSWORD=***
-   DECODO_PROXY_HOST=pr.decodo.com:8080
-   PROXY_ROTATION_ENABLED=true
-   CAPTCHA_DETECTION_ENABLED=true
-   ```
-
-3. **Build Settings** :
-   - Dockerfile path : `./Dockerfile`
-   - Port : `8000`
-   - Health check : `/health`
-
-4. **Resources** :
-   - CPU : 1 vCPU
-   - RAM : 1 GB (minimum pour Playwright)
-   - Storage : 5 GB
-
-**Logs Dokploy** :
-```bash
-# Via UI Dokploy
-# Logs → flight-search-api → View Logs
-
-# Filtrer par level
-# Search: "levelname": "ERROR"
-
-# Monitoring
-# Métriques CPU/RAM/Network
-```
-
-### Troubleshooting Docker
-
-**Erreur `crawl4ai-setup` échoue** :
-```bash
-# Vérifier espace disque dans container
-docker exec flight-api df -h
-
-# Augmenter ressources Docker Desktop
-# Settings → Resources → Memory: 4GB minimum
-```
-
-**Image trop grosse** :
-```bash
-# Analyser layers
-docker history flight-search-api
-
-# Utiliser dive pour inspection détaillée
-dive flight-search-api
-```
-
-**Build lent** :
-```bash
-# Utiliser BuildKit (plus rapide)
-DOCKER_BUILDKIT=1 docker build -t flight-search-api .
-
-# Cache externe (CI/CD)
-docker buildx build --cache-from type=registry,ref=user/app:cache \
-  --cache-to type=registry,ref=user/app:cache -t flight-search-api .
-```
-
-**Container crash au démarrage** :
-```bash
-# Logs détaillés
-docker logs flight-api
-
-# Override entrypoint pour debug
-docker run -it --entrypoint /bin/bash flight-search-api
-```
-
-### Best Practices
-
-**DO** :
-- ✅ Multi-stage builds (réduction taille)
+**Best Practices** :
+- ✅ Multi-stage builds (réduction taille ~60%)
 - ✅ Non-root user (sécurité)
-- ✅ Health checks (monitoring)
-- ✅ `.dockerignore` (exclure .git, tests, etc.)
-- ✅ Layer caching optimal (deps avant code)
+- ✅ Healthcheck natif
+- ✅ `.dockerignore` (exclure .git, tests)
+- ❌ Jamais hardcoder secrets dans Dockerfile
 
-**DON'T** :
-- ❌ Secrets hardcodés dans Dockerfile
-- ❌ Root user en production
-- ❌ Image sans health check
-- ❌ Build sans cache (lenteur CI/CD)
-- ❌ Image alpine pour Python (compatibilité)
+**Documentation complète** : `docs/references/dokploy.md` (Dockerfile détaillé, troubleshooting, déploiement Dokploy, optimisations avancées)
 
 ---
 
@@ -1583,151 +1169,35 @@ pytest tests/unit/ -v
 
 ### 4. Workflow Pull Request
 
-**Processus complet** :
+**Processus** :
+1. Push branche feature
+2. Créer PR → develop (titre = Conventional Commit format)
+3. CI GitHub Actions (lint, format, typecheck, tests) → doit passer
+4. Review (optionnel solo dev)
+5. **Squash merge** → develop
+6. Supprimer branche feature
 
-```
-1. Développement local (feature/*)
-   ↓
-2. Push branche
-   ↓
-3. Créer Pull Request → develop
-   ↓
-4. CI GitHub Actions (lint, format, typecheck, tests)
-   ↓
-5. Review (optionnel pour solo dev)
-   ↓
-6. Merge squash → develop
-   ↓
-7. Supprimer branche feature
-```
-
-**Étapes détaillées** :
-
-**1. Créer Pull Request** :
-
+**Créer PR** :
 ```bash
-# Après push feature
 git push -u origin feature/initial-setup
-
-# Sur GitHub/GitLab :
-# - Base : develop
-# - Compare : feature/initial-setup
-# - Titre : Même convention que commit (ex: "feat(api): add search endpoint")
-# - Description : Lister changements principaux
+# Sur GitHub : Base=develop, Titre="feat(api): add endpoint"
 ```
 
-**Template PR recommandé** :
-
-```markdown
-## Description
-
-Implémente endpoint de recherche multi-destinations
-
-## Changements
-
-- ✅ Ajout route POST /api/v1/flights/search
-- ✅ Validation Pydantic SearchRequest
-- ✅ Intégration AsyncWebCrawler
-- ✅ Tests unitaires (12 tests, 95% coverage)
-
-## Checklist
-
-- [x] Tests passent localement
-- [x] Ruff lint + format OK
-- [x] Mypy type check OK
-- [x] Documentation mise à jour
-
-## Testing
-
-```bash
-pytest tests/unit/test_search.py -v
-```
-
-## Related Issues
-
-Closes #123
-```
-
-**2. CI Validation automatique** :
-
-- **Déclenché par** : Ouverture PR + chaque push sur branche
-- **Jobs exécutés** :
-  - `lint` : ruff check
-  - `format` : ruff format --check
-  - `typecheck` : mypy app/
-  - `test` : pytest tests/unit/ --cov
-- **Statut visible** : ✅ ou ❌ sur PR
-- **Merge bloqué** si CI échoue
-
-**3. Review (optionnel)** :
-
-- **Solo dev** : Auto-review rapide (vérifier diff)
-- **Team** : Assigner reviewer, attendre approval
-- **Critères** :
-  - Code respecte standards projet
-  - Tests couvrent cas principaux
-  - Pas de régression
-  - Documentation à jour
-
-**4. Merge Strategy** :
-
-**Squash Merge (recommandé)** :
-
-```
-# Tous commits feature → 1 commit sur develop
-# Commit message = titre PR
-# Historique develop propre
-```
-
-**Workflow GitHub** :
-1. Cliquer "Squash and merge"
-2. Vérifier message commit (convention respectée)
-3. Confirmer merge
-4. Branche feature supprimée automatiquement
+**CI Validation** :
+- Jobs : lint, format, typecheck, test
+- Merge bloqué si échec
 
 **Après merge** :
-
 ```bash
-# Revenir sur develop local
 git checkout develop
 git pull origin develop
-
-# Supprimer branche locale (si pas auto)
 git branch -d feature/initial-setup
-
-# Créer nouvelle feature
-git checkout -b feature/next-task
 ```
 
-**Gestion conflits** :
-
-```bash
-# Si develop a avancé pendant dev feature
-git checkout feature/ma-feature
-git fetch origin
-git rebase origin/develop
-
-# Résoudre conflits si nécessaire
-# ... édition manuelle ...
-git add .
-git rebase --continue
-
-# Force push (rebase réécrit historique)
-git push --force-with-lease origin feature/ma-feature
-```
-
-**Règles projet** :
-
-✅ **1 PR = 1 feature logique** (pas de mega-PR)
-✅ **Titre PR = Conventional Commit** format
-✅ **CI doit passer** avant merge (obligatoire)
-✅ **Squash merge** pour historique propre
-✅ **Supprimer branche** après merge (cleanup)
-❌ **Jamais merge** si CI échoue
-❌ **Jamais commit** directement sur develop/master
-
-**Cas particuliers** :
-
-- **Hotfix urgent** : Créer `hotfix/*` depuis master, merge direct master + cherry-pick develop
-- **Documentation seule** : `docs/*` peut skip certains tests
-- **WIP PR** : Préfixer titre `WIP:` pour indiquer travaux en cours (draft PR)
+**Règles** :
+- ✅ 1 PR = 1 feature logique
+- ✅ Titre PR = Conventional Commit
+- ✅ CI doit passer avant merge
+- ✅ Squash merge pour historique propre
+- ❌ Jamais merge si CI échoue
+- ❌ Jamais commit direct sur develop/master

@@ -1,15 +1,19 @@
-# Pydantic v2 - Référence Technique
-
-**Date de dernière mise à jour** : 16 novembre 2025
-
+---
+title: "Pydantic v2 - Validation & Settings"
+description: "Référence Pydantic v2 : BaseSettings (env vars, .env files), field_validator (validation champs individuels), model_validator (cross-champs), model_config (ConfigDict, frozen, extra), migration v1→v2 (model_dump, parse_obj renaming). Consulter pour validation données, configuration app."
+date: "2025-17-11"
+keywords: ["pydantic", "pydantic-v2", "basesettings", "settings", "field-validator", "model-validator", "validation", "model-config", "config", "migration", "env-vars", "environment", "type-hints"]
+scope: ["code", "config"]
+technologies: ["pydantic"]
 ---
 
-## 1. BaseSettings & Configuration d'Environnement
+# 1. BaseSettings & Configuration d'Environnement
 
-**Description**
+## Description
+
 `BaseSettings` hérite de `BaseModel` et ajoute le chargement automatique des variables d'environnement, fichiers `.env`, et secrets. Les variables d'environnement prennent toujours priorité sur les valeurs du fichier `.env`.
 
-**Exemple minimal**
+## Exemple minimal
 ```python
 from pydantic_settings import BaseSettings
 
@@ -25,18 +29,15 @@ class Settings(BaseSettings):
 settings = Settings()
 ```
 
-**Source** : https://docs.pydantic.dev/latest/concepts/pydantic_settings/
+# 2. Field Validator & Model Validator
 
----
+## field_validator
 
-## 2. Field Validator & Model Validator
+### Description
 
-**field_validator**
-
-**Description**
 Valide des champs individuels après (ou avant) le parsing Pydantic. Supporte 4 modes : `after` (défaut), `before`, `plain`, `wrap`.
 
-**Exemple minimal**
+### Exemple minimal
 ```python
 from pydantic import BaseModel, field_validator
 
@@ -51,12 +52,13 @@ class User(BaseModel):
         return v
 ```
 
-**model_validator**
+## model_validator
 
-**Description**
+### Description
+
 Valide l'ensemble du modèle après instantiation. Permet des validations cross-champs ou des transformations globales.
 
-**Exemple minimal**
+### Exemple minimal
 ```python
 from pydantic import BaseModel, model_validator
 
@@ -71,16 +73,13 @@ class Person(BaseModel):
         return self
 ```
 
-**Source** : https://docs.pydantic.dev/latest/concepts/validators/
+# 3. Configuration avec model_config
 
----
+## Description
 
-## 3. Configuration avec model_config
-
-**Description**
 Remplace la classe `Config` de v1. Utilise un dictionnaire `model_config` ou `ConfigDict` pour contrôler le comportement du modèle (extra fields, frozen, validation, etc.).
 
-**Exemple minimal**
+## Exemple minimal
 ```python
 from pydantic import BaseModel, ConfigDict
 
@@ -96,20 +95,16 @@ class StrictModel(BaseModel):
     age: int
 ```
 
-**Options clés**
+## Options clés
 - `extra` : `'ignore'` | `'forbid'` | `'allow'`
 - `frozen` : Rend le modèle immutable
 - `validate_default` : Valide les valeurs par défaut
 - `validate_assignment` : Valide lors de modifications
 - `strict` : Mode stricte (pas de coercion de types)
 
-**Source** : https://docs.pydantic.dev/latest/api/config/
+# 4. Migration v1 → v2 - Changements Importants
 
----
-
-## 4. Migration v1 → v2 - Changements Importants
-
-**Méthodes renommées**
+## Méthodes renommées
 | v1 | v2 |
 |----|-----|
 | `model.dict()` | `model.model_dump()` |
@@ -117,13 +112,13 @@ class StrictModel(BaseModel):
 | `Model.parse_obj(data)` | `Model.model_validate(data)` |
 | `Model.parse_raw(json)` | `Model.model_validate_json(json)` |
 
-**Décorateurs de validation remplacés**
+## Décorateurs de validation remplacés
 | v1 | v2 |
 |----|-----|
 | `@validator` | `@field_validator` |
 | `@root_validator` | `@model_validator` |
 
-**Champs optionnels**
+## Champs optionnels
 ```python
 # v1
 optional_field: Optional[str]  # ✓ Accepte None par défaut
@@ -133,4 +128,12 @@ optional_field: Optional[str] = None  # ✓ Doit spécifier le défaut
 optional_field: str | None = None     # ✓ Syntaxe moderne
 ```
 
-**Source** : https://docs.pydantic.dev/latest/migration/
+# Ressources
+
+## Documentation Officielle
+
+- **Pydantic Documentation** : https://docs.pydantic.dev
+- **Pydantic Settings** : https://docs.pydantic.dev/latest/concepts/pydantic_settings/
+- **Validators** : https://docs.pydantic.dev/latest/concepts/validators/
+- **Model Config** : https://docs.pydantic.dev/latest/api/config/
+- **Migration Guide v1→v2** : https://docs.pydantic.dev/latest/migration/

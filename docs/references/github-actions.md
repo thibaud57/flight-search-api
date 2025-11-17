@@ -1,12 +1,15 @@
-# GitHub Actions - Référence Technique
-
-**Documentation officielle** : https://docs.github.com/en/actions
-
+---
+title: "GitHub Actions - CI/CD Automation"
+description: "Référence complète GitHub Actions pour CI/CD : syntaxe workflows, triggers (push, PR, tags), jobs parallèles/séquentiels, secrets management (GITHUB_TOKEN), workflows projet (ci.yml quality checks, release.yml automation). Consulter pour configuration pipelines, debugging, best practices."
+date: "2025-17-11"
+keywords: ["github-actions", "ci-cd", "ci", "workflows", "automation", "triggers", "jobs", "steps", "secrets", "github-token", "deployment", "release", "testing", "lint", "actions-marketplace"]
+scope: ["deploy", "code"]
+technologies: ["github-actions"]
 ---
 
-## 1. Syntaxe de Base
+# 1. Syntaxe de Base
 
-### Structure d'un Workflow
+## Structure d'un Workflow
 
 ```yaml
 name: Nom du Workflow
@@ -36,11 +39,9 @@ jobs:
 - **`runs-on`** : Environnement d'exécution (ubuntu-latest, windows-latest, macos-latest)
 - **`steps`** : Liste d'actions séquentielles
 
----
+# 2. Triggers (on)
 
-## 2. Triggers (on)
-
-### Push & Pull Request
+## Push & Pull Request
 
 ```yaml
 on:
@@ -62,7 +63,7 @@ on:
 - `paths` : Déclencher uniquement si fichiers spécifiques modifiés
 - `types` : Types d'événements PR (opened, synchronize, etc.)
 
-### Tags (Release Automation)
+## Tags (Release Automation)
 
 ```yaml
 on:
@@ -74,7 +75,7 @@ on:
 
 **Usage projet** : Workflow Release déclenché sur tag `v*.*.*`
 
-### Événements Multiples
+## Événements Multiples
 
 ```yaml
 on:
@@ -87,11 +88,9 @@ on:
     - cron: '0 2 * * *'  # Tous les jours à 2h UTC
 ```
 
----
+# 3. Jobs & Steps
 
-## 3. Jobs & Steps
-
-### Jobs Parallèles
+## Jobs Parallèles
 
 ```yaml
 jobs:
@@ -112,7 +111,7 @@ jobs:
 
 **Par défaut** : Jobs s'exécutent en parallèle (gain de temps)
 
-### Jobs Séquentiels (avec dépendances)
+## Jobs Séquentiels (avec dépendances)
 
 ```yaml
 jobs:
@@ -134,7 +133,7 @@ jobs:
       - run: echo "Deploying..."
 ```
 
-### Fail-Fast Strategy
+## Fail-Fast Strategy
 
 ```yaml
 jobs:
@@ -148,11 +147,9 @@ jobs:
 
 **Usage projet** : CI quality checks (lint, format, typecheck, test) avec `fail-fast: false` pour voir toutes les erreurs
 
----
+# 4. Actions Réutilisables (uses)
 
-## 4. Actions Réutilisables (uses)
-
-### Actions Officielles
+## Actions Officielles
 
 ```yaml
 steps:
@@ -180,7 +177,7 @@ steps:
 - `actions/cache` : Cache dépendances (accélère CI)
 - `actions/upload-artifact` : Sauvegarder fichiers entre jobs
 
-### Actions Tierces
+## Actions Tierces
 
 ```yaml
 steps:
@@ -192,11 +189,9 @@ steps:
       flags: unittests
 ```
 
----
+# 5. Secrets Management
 
-## 5. Secrets Management
-
-### Secrets GitHub
+## Secrets GitHub
 
 **Configuration** : Settings → Secrets and variables → Actions
 
@@ -217,7 +212,7 @@ jobs:
 - **User-defined** : `secrets.NOM_SECRET` (configurés manuellement)
 - **`GITHUB_TOKEN`** : Token auto-généré par GitHub (permissions limitées)
 
-### GITHUB_TOKEN
+## GITHUB_TOKEN
 
 ```yaml
 steps:
@@ -237,11 +232,9 @@ steps:
 
 **Usage projet** : Workflow Release utilise `GITHUB_TOKEN` pour créer release automatiquement
 
----
+# 6. Workflows Projet
 
-## 6. Workflows Projet
-
-### CI Quality Checks (ci.yml)
+## CI Quality Checks (ci.yml)
 
 **Fichier** : `.github/workflows/ci.yml`
 
@@ -305,7 +298,7 @@ jobs:
           files: ./coverage.xml
 ```
 
-### Release Automation (release.yml)
+## Release Automation (release.yml)
 
 **Fichier** : `.github/workflows/release.yml`
 
@@ -356,11 +349,9 @@ jobs:
 2. Workflow déclenché automatiquement
 3. Release créée sur GitHub avec notes extraites de CHANGELOG.md
 
----
+# 7. Contexte & Variables
 
-## 7. Contexte & Variables
-
-### Variables Prédéfinies
+## Variables Prédéfinies
 
 ```yaml
 steps:
@@ -378,7 +369,7 @@ steps:
 - `github.event_name` : Type événement (push, pull_request, etc.)
 - `runner.os` : OS de l'environnement (Linux, Windows, macOS)
 
-### Outputs entre Steps
+## Outputs entre Steps
 
 ```yaml
 steps:
@@ -390,11 +381,9 @@ steps:
     run: echo "Got: ${{ steps.step1.outputs.VALUE }}"
 ```
 
----
+# 8. Best Practices
 
-## 8. Best Practices
-
-### ✅ Recommandations
+## ✅ Recommandations
 
 1. **Cache dependencies** : Utiliser `actions/cache` pour uv/pip (gain 30-60s)
 2. **Fail-fast: false** : Voir toutes erreurs CI en un run
@@ -402,18 +391,16 @@ steps:
 4. **Secrets sécurisés** : Jamais hardcoder API keys dans workflows
 5. **Workflow minimal** : Garder jobs rapides (<5min idéal)
 
-### ❌ Anti-Patterns
+## ❌ Anti-Patterns
 
 - ❌ Installer dépendances sans cache (lent)
 - ❌ Exécuter tests intégration sur chaque PR (coût proxies)
 - ❌ Workflows complexes imbriqués (debugging difficile)
 - ❌ Secrets dans logs (GitHub masque automatiquement mais éviter prints)
 
----
+# 9. Debugging
 
-## 9. Debugging
-
-### Logs
+## Logs
 
 ```yaml
 steps:
@@ -424,12 +411,12 @@ steps:
       env  # Afficher toutes variables environnement
 ```
 
-### Re-run Jobs
+## Re-run Jobs
 
 - Interface GitHub : Bouton "Re-run jobs" sur workflow échoué
 - Utile pour erreurs transitoires (network timeout, etc.)
 
-### Act (local testing)
+## Act (local testing)
 
 ```bash
 # Installer act (https://github.com/nektos/act)
@@ -443,15 +430,14 @@ act push          # Simule push
 
 **Limitation** : Pas 100% identique à GitHub (secrets, caching)
 
----
+# Ressources
 
-## 10. Ressources
+## Documentation Officielle
 
-- **Documentation officielle** : https://docs.github.com/en/actions
-- **Marketplace actions** : https://github.com/marketplace?type=actions
-- **Awesome Actions** : https://github.com/sdras/awesome-actions
+- **GitHub Actions Documentation** : https://docs.github.com/en/actions
 - **GitHub Actions Toolkit** : https://github.com/actions/toolkit
 
----
+## Ressources Complémentaires
 
-**Dernière mise à jour** : 16 novembre 2025
+- **Marketplace actions** : https://github.com/marketplace?type=actions
+- **Awesome Actions** : https://github.com/sdras/awesome-actions

@@ -1,15 +1,20 @@
-# CHANGELOG - flight-search-api
+---
+title: "CHANGELOG - Historique Versions"
+description: "Historique complet des modifications du projet par version (format Keep a Changelog). Consulter pour suivre évolution features, bugfixes, breaking changes par release."
+date: "2025-17-11"
+keywords: ["changelog", "versions", "history", "releases", "semver", "keep-a-changelog", "features", "bugfixes", "breaking-changes"]
+scope: ["docs"]
+technologies: []
+---
 
-**Dernière mise à jour** : 17/11/2025
+# Historique Versions
 
 Toutes les modifications notables de ce projet seront documentées dans ce fichier.
 
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
----
-
-## [v0.0.0-setup] - 2025-11-16
+## [v0.0.0-setup] - 2025-16-11
 
 ### Added
 
@@ -51,7 +56,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
-## [v0.1.0-research] - 2025-11-16
+## [v0.1.0-research] - 2025-16-11
 
 ### Added
 
@@ -147,3 +152,11 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 **Prochaine étape** : Phase 3 - Configuration & Build (pyproject.toml, Dockerfile, app minimale)
 
 ---
+
+# Ressources
+
+## Documentation Officielle
+
+- **Keep a Changelog** : https://keepachangelog.com/
+- **Semantic Versioning** : https://semver.org/
+- **Conventional Commits** : https://www.conventionalcommits.org/

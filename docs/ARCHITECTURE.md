@@ -1,18 +1,19 @@
-# ARCHITECTURE - flight-search-api
-
-**API FastAPI pour recherche de vols multi-destinations via Google Flights**
-
-**Date de création** : 16 novembre 2025
-
+---
+title: "ARCHITECTURE - Vision d'ensemble"
+description: "Architecture globale, diagrammes (composants, séquence), ADRs (6 décisions techniques). Consulter pour comprendre structure API async, flow de données, décisions architecturales (Crawl4AI vs SerpAPI, proxies, captcha, extraction CSS)."
+date: "2025-16-11"
+keywords: ["architecture", "design", "adr", "architecture-decision-record", "diagrams", "mermaid", "fastapi", "async", "crawl4ai", "proxies", "decodo", "scraping", "api", "flow", "components"]
+scope: ["docs", "code"]
+technologies: ["python", "fastapi", "crawl4ai", "pydantic", "tenacity"]
 ---
 
-## 📐 Vue d'ensemble
+# Vue d'ensemble
 
-### Objectif
+## Objectif
 
 Fournir une API RESTful asynchrone permettant de rechercher les meilleures combinaisons de vols multi-destinations en scrapant Google Flights, avec gestion intelligente des proxies, détection de captchas et ranking des résultats.
 
-### Principes Architecturaux
+## Principes Architecturaux
 
 1. **Async-First** : Architecture 100% asynchrone (FastAPI + AsyncWebCrawler)
 2. **Stateless** : Pas de base de données, résultats en mémoire (Top 10)
@@ -20,11 +21,9 @@ Fournir une API RESTful asynchrone permettant de rechercher les meilleures combi
 4. **Stealth** : Anti-détection via proxies résidentiels + undetected browser
 5. **Cost-Efficient** : Extraction CSS (gratuit) vs LLM (payant)
 
----
+# Diagrammes
 
-## 🏗️ Diagrammes
-
-### Diagramme de Composants
+## Diagramme de Composants
 
 ```mermaid
 graph TB
@@ -79,7 +78,7 @@ graph TB
     Config -.->|Settings| ProxyService
 ```
 
-### Diagramme de Séquence - Recherche de Vol
+## Diagramme de Séquence - Recherche de Vol
 
 ```mermaid
 sequenceDiagram
@@ -133,11 +132,9 @@ sequenceDiagram
     FastAPI-->>Client: JSON Response
 ```
 
----
+# Flow de Données
 
-## 🔄 Flow de Données
-
-### Requête HTTP → Response JSON
+## Requête HTTP → Response JSON
 
 **Étape 1 : Réception & Validation**
 ```
@@ -248,11 +245,9 @@ SearchResponse:
 }
 ```
 
----
+# Architecture Decision Records (ADR)
 
-## 📋 Architecture Decision Records (ADR)
-
-### ADR #001 : Crawl4AI + Proxies vs SerpAPI
+## ADR #001 : Crawl4AI + Proxies vs SerpAPI
 
 **Contexte** : Besoin de scraper Google Flights pour récupérer les prix et horaires de vols.
 
@@ -280,9 +275,7 @@ SearchResponse:
 - ⚠️ Maintenance sélecteurs CSS si Google change HTML
 - ⚠️ Gestion captchas manuelle (détection + retry)
 
----
-
-### ADR #002 : Decodo vs Oxylabs (Proxies Résidentiels)
+## ADR #002 : Decodo vs Oxylabs (Proxies Résidentiels)
 
 **Contexte** : Besoin de proxies résidentiels pour éviter détection Google Flights.
 
@@ -310,9 +303,7 @@ SearchResponse:
 - ⚠️ Support moins premium qu'Oxylabs (acceptable pour MVP)
 - ✅ Migration Oxylabs facile si besoin (même API format)
 
----
-
-### ADR #003 : Top 10 en Mémoire (Pas de Base de Données)
+## ADR #003 : Top 10 en Mémoire (Pas de Base de Données)
 
 **Contexte** : Stockage des résultats de recherche de vols.
 
@@ -342,9 +333,7 @@ SearchResponse:
 - ❌ Pas d'historique recherches (acceptable pour MVP)
 - ✅ Migration DB facile si besoin futur (ex: analytics)
 
----
-
-### ADR #004 : Tenacity pour Retry Logic
+## ADR #004 : Tenacity pour Retry Logic
 
 **Contexte** : Gestion des erreurs réseau et timeouts lors du scraping.
 
@@ -383,9 +372,7 @@ async def crawl_google_flights(url: str) -> str:
 - ✅ Logging détaillé des retries
 - ⚠️ Dépendance externe (minime, lib stable)
 
----
-
-### ADR #005 : Captcha Handling Strategy (MVP : Détection Only)
+## ADR #005 : Captcha Handling Strategy (MVP : Détection Only)
 
 **Contexte** : Google Flights peut afficher des captchas pour bloquer les bots.
 
@@ -436,9 +423,7 @@ def is_captcha_detected(html: str) -> bool:
 - ⚠️ ~5% de recherches peuvent échouer (acceptable MVP)
 - ✅ Migration 2Captcha facile si nécessaire
 
----
-
-### ADR #006 : JsonCssExtractionStrategy vs LLMExtractionStrategy
+## ADR #006 : JsonCssExtractionStrategy vs LLMExtractionStrategy
 
 **Contexte** : Extraction des données de vols depuis le HTML Google Flights.
 
@@ -489,11 +474,9 @@ schema = {
 - ⚠️ Maintenance sélecteurs CSS si Google change HTML
 - ✅ Fallback LLM possible si nécessaire (architecture modulaire)
 
----
+# Décisions Complémentaires
 
-## 🎯 Décisions Complémentaires
-
-### Logging Structuré (JSON)
+## Logging Structuré (JSON)
 
 **Décision** : Utiliser `python-json-logger` pour logs structurés
 
@@ -502,7 +485,7 @@ schema = {
 - Contexte métier riche (search_id, proxy_used, captcha_detected)
 - Compatible Grafana/Loki/CloudWatch
 
-### Configuration (Pydantic Settings)
+## Configuration (Pydantic Settings)
 
 **Décision** : `pydantic-settings` pour env vars
 
@@ -511,18 +494,16 @@ schema = {
 - Type safety
 - Auto-documentation (.env.example)
 
-### Tests
+## Tests
 
 **Stratégie** :
 - **Unit** : Mocks Crawl4AI, Decodo, HTML responses
 - **Integration** : TestClient FastAPI
 - **Coverage** : Minimum 80%
 
----
+# Métriques & Monitoring
 
-## 📊 Métriques & Monitoring
-
-### Métriques Clés
+## Métriques Clés
 
 | Métrique | Seuil Alerte | Action |
 |----------|--------------|--------|
@@ -531,7 +512,7 @@ schema = {
 | **Proxy bandwidth** | >50GB/mois | Optimiser requêtes |
 | **Response time p95** | >60s | Optimiser parallélisation |
 
-### Logging Essentiel
+## Logging Essentiel
 
 ```python
 logger.info(
@@ -548,11 +529,9 @@ logger.info(
 )
 ```
 
----
+# Évolutions Futures
 
-## 🚀 Évolutions Futures
-
-### Phase 7 (Post-MVP) : Captcha Solving
+## Phase 7 (Post-MVP) : Captcha Solving
 
 **Trigger** : Monitoring montre >5% taux captcha
 
@@ -561,7 +540,7 @@ logger.info(
 2. Optimisation proxies (pools dédiés)
 3. Rate limiting intelligent
 
-### Extensions Possibles
+## Extensions Possibles
 
 - **Cache Redis** : Résultats temporaires (15min TTL)
 - **Analytics DB** : Historique recherches, tendances prix
@@ -571,4 +550,14 @@ logger.info(
 
 ---
 
-**Dernière mise à jour** : 16 novembre 2025
+# Ressources
+
+## Documentation Officielle
+
+- **Mermaid Diagrams** : https://mermaid.js.org/
+- **C4 Model** : https://c4model.com/
+
+## Ressources Complémentaires
+
+- **ADR GitHub** : https://adr.github.io/
+- **Architecture Decision Records** : https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions

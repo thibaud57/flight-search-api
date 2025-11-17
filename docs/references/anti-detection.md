@@ -7,8 +7,6 @@ scope: ["code"]
 technologies: ["crawl4ai", "playwright"]
 ---
 
-**Documentation officielle Crawl4AI** : https://docs.crawl4ai.com/advanced/undetected-browser/
-
 # 1. Stealth Mode Crawl4AI
 
 ## Description
@@ -192,3 +190,18 @@ async with AsyncWebCrawler(config=browser_config) as crawler:
 2. **Couche 2** : Ajouter Proxy Rotation
 3. **Couche 3** : Basculer à Undetected Browser si bloqué
 4. **Couche 4** : Ajouter délais aléatoires et comportements humains
+
+# Ressources
+
+## Documentation Officielle
+
+- **Crawl4AI Undetected Browser** : https://docs.crawl4ai.com/advanced/undetected-browser/
+- **Crawl4AI BrowserConfig** : https://docs.crawl4ai.com/core/browser-config/
+- **Playwright Stealth** : https://github.com/berstend/puppeteer-extra/tree/master/packages/puppeteer-extra-plugin-stealth
+
+## Ressources Complémentaires
+
+- **User-Agent Strings Database** : https://useragentstring.com/
+- **Browser Fingerprinting Guide** : https://pixelprivacy.com/resources/browser-fingerprinting/
+- **Cloudflare Bot Detection** : https://developers.cloudflare.com/bots/
+- **DataDome Documentation** : https://docs.datadome.co/

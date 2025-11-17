@@ -1,12 +1,16 @@
-# Détection de Captchas - Référence Technique
-
-**Date de dernière mise à jour** : 16 novembre 2025
-
+---
+title: "Captcha Detection - reCAPTCHA & hCaptcha Patterns"
+description: "Référence complète détection captchas : patterns HTML reCAPTCHA v2/v3 et hCaptcha, détecteur Python regex, stratégies retry avec rotation IP (Tenacity + Proxies Decodo), configuration exponential backoff, best practices stealth mode et user-agent rotation. Consulter pour implémentation anti-captcha, logging, minimisation blocages."
+date: "2025-17-11"
+keywords: ["captcha", "detection", "recaptcha", "hcaptcha", "patterns", "html", "retry", "rotation", "ip", "proxy", "tenacity", "stealth-mode", "user-agent", "blocking", "decodo", "anti-detection"]
+scope: ["code"]
+technologies: ["crawl4ai", "tenacity", "python"]
 ---
 
-## 1. Patterns HTML de reCAPTCHA
+# 1. Patterns HTML de reCAPTCHA
 
-**reCAPTCHA v2 (Checkbox)**
+## reCAPTCHA v2 (Checkbox)
+
 ```html
 <!-- Élément conteneur principal -->
 <div class="g-recaptcha"
@@ -18,31 +22,32 @@
         title="reCAPTCHA"></iframe>
 ```
 
-**Patterns de détection**
+### Patterns de détection
 - Classes CSS: `g-recaptcha`, `grecaptcha`
 - Attributs: `data-sitekey`, `data-callback`
 - Iframes depuis `google.com/recaptcha/api`
 - Token caché: `<input name="g-recaptcha-response" type="hidden">`
 
-**reCAPTCHA v2 Invisible**
+## reCAPTCHA v2 Invisible
+
 ```html
 <div class="g-recaptcha"
      data-sitekey="VOTRE_SITE_KEY"
      data-size="invisible"></div>
 ```
 
-**reCAPTCHA v3**
+## reCAPTCHA v3
+
 ```javascript
 // Pas d'élément DOM visible
 // Détection par les requêtes réseau
 <script src="https://www.google.com/recaptcha/api.js?render=VOTRE_SITE_KEY"></script>
 ```
 
----
+# 2. Patterns HTML de hCaptcha
 
-## 2. Patterns HTML de hCaptcha
+## hCaptcha Standard
 
-**hCaptcha Standard**
 ```html
 <!-- Conteneur avec classe h-captcha -->
 <div class="h-captcha"
@@ -57,15 +62,13 @@
         title="hCaptcha"></iframe>
 ```
 
-**Patterns de détection**
+### Patterns de détection
 - Classes CSS: `h-captcha`
 - Attributs: `data-sitekey`, `data-theme`, `data-callback`
 - Iframes depuis `hcaptcha.com`
 - Token response: `<textarea id="h-captcha-response"></textarea>`
 
----
-
-## 3. Code de Détection Python
+# 3. Code de Détection Python
 
 ```python
 from html.parser import HTMLParser
@@ -122,11 +125,9 @@ class CaptchaDetector:
         }
 ```
 
----
+# 4. Stratégie de Retry avec Rotation IP (Tenacity + Proxies)
 
-## 4. Stratégie de Retry avec Rotation IP (Tenacity + Proxies)
-
-**Architecture Recommandée**
+## Architecture Recommandée
 ```
 Requête initiale
     ↓
@@ -143,7 +144,7 @@ Captcha détecté ? → Oui → Rotate IP + Retry (Tenacity)
                         Retry avec proxy suivant
 ```
 
-**Implémentation Complète**
+## Implémentation Complète
 
 ```python
 import asyncio
@@ -235,9 +236,9 @@ class CaptchaHandlingCrawler:
         return result
 ```
 
----
+# 5. Configuration Optimale de Retry
 
-## 5. Configuration Optimale de Retry
+## Paramètres et Justifications
 
 | Paramètre | Valeur | Justification |
 |-----------|--------|---------------|
@@ -248,7 +249,7 @@ class CaptchaHandlingCrawler:
 | **Proxy rotation** | À chaque retry | Force le changement d'IP |
 | **User-Agent rotation** | À chaque tentative | Augmente la légitimité |
 
-**Délais Progressifs**
+## Délais Progressifs
 ```
 Tentative 1: Pas de proxy, attendre 0s
 Tentative 2: Proxy 1, attendre 4s (2^1 * 2)
@@ -257,11 +258,9 @@ Tentative 4: Proxy 3, attendre 16s (2^3 * 2)
 Tentative 5: Proxy 4, attendre 32s (2^4 * 2)
 ```
 
----
+# 6. Best Practices pour Minimiser les Captchas
 
-## 6. Best Practices pour Minimiser les Captchas
-
-**Préventif**
+## Approche Préventive
 ```python
 # ✅ Utiliser des proxies résidentiels (Decodo)
 # → Clés résidentiels = +95% moins de captchas
@@ -287,7 +286,8 @@ def get_random_user_agent() -> str:
     return random.choice(USER_AGENTS)
 ```
 
-**Mode Stealth**
+## Mode Stealth
+
 ```python
 # ✅ Activer stealth mode
 browser_config = BrowserConfig(
@@ -300,3 +300,16 @@ browser_config = BrowserConfig(
     }
 )
 ```
+
+# Ressources
+
+## Documentation Officielle
+
+- **Google reCAPTCHA Documentation** : https://developers.google.com/recaptcha
+- **hCaptcha Documentation** : https://docs.hcaptcha.com
+- **Tenacity Documentation** : https://tenacity.readthedocs.io/
+
+## Ressources Complémentaires
+
+- **Crawl4AI Stealth Mode** : https://docs.crawl4ai.com/core/browser-config/
+- **Decodo Proxies** : https://decodo.com/docs

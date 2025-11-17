@@ -7,18 +7,19 @@ scope: ["code"]
 technologies: ["crawl4ai", "playwright"]
 ---
 
-## AsyncWebCrawler - Utilisation et Méthodes Principales
+# 1. AsyncWebCrawler - Crawler Asynchrone
 
-### Description
+## Description
 
 AsyncWebCrawler est la classe principale pour les opérations de web scraping. Elle fournit une interface asynchrone pour crawler des pages individuelles ou multiples avec support complet de la configuration du navigateur, l'extraction structurée et le caching.
 
-### Méthodes principales
+## Méthodes principales
 
 - `arun(url, config)` : Crawl une URL unique et retourne un objet CrawlResult
 - `arun_many(urls, configs)` : Traite plusieurs URLs en parallèle avec configuration par URL
 
-### Exemple minimal
+## Exemple minimal
+
 ```python
 import asyncio
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
@@ -34,21 +35,20 @@ async def main():
 asyncio.run(main())
 ```
 
-### Points clés
+## Points clés
 
 - Utiliser le context manager `async with` pour gérer automatiquement les ressources
 - Séparer BrowserConfig (global) et CrawlerRunConfig (par crawl)
 - Le CrawlResult contient `cleaned_html`, `markdown`, et `extracted_content`
 
-**Source** : https://docs.crawl4ai.com/api/async-webcrawler/
+# 2. BrowserConfig - Configuration Browser
 
-## BrowserConfig - Configuration Browser et Stealth Mode
-
-### Description
+## Description
 
 BrowserConfig contrôle le comportement global du navigateur incluant le type de navigateur, le mode sans interface, les dimensions de la fenêtre, les proxies, les user-agents et les contextes persistants. Inclut le stealth mode pour contourner la détection de bots.
 
-### Options principales
+## Options principales
+
 - `browser_type` : Type de navigateur ("chromium", "firefox", "webkit")
 - `headless` : Mode sans interface (True/False)
 - `enable_stealth` : Active le stealth mode via playwright-stealth (True/False)
@@ -56,7 +56,8 @@ BrowserConfig contrôle le comportement global du navigateur incluant le type de
 - `viewport` : Dimensions de la fenêtre
 - `proxy` : Configuration proxy
 
-### Exemple avec stealth mode
+## Exemple avec stealth mode
+
 ```python
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 
@@ -71,27 +72,26 @@ async with AsyncWebCrawler(config=browser_conf) as crawler:
     print(result.markdown)
 ```
 
-### Points clés
+## Points clés
 
 - Stealth mode modifie les fingerprints du navigateur pour éviter la détection basique
 - Désactivé par défaut (`False`)
 - Recommandé pour les sites avec protection anti-bot
 - Peut être combiné avec UndetectedAdapter pour une protection accrue
 
-**Source** : https://docs.crawl4ai.com/core/browser-config/
+# 3. JsonCssExtractionStrategy - Extraction CSS
 
-## JsonCssExtractionStrategy - Extraction CSS sans LLM
-
-### Description
+## Description
 
 JsonCssExtractionStrategy permet l'extraction de données structurées sans utiliser de modèles de langage. Elle utilise des sélecteurs CSS pour identifier et extraire des données avec précision, rapidité et coût zéro. Idéale pour les pages avec structure HTML répétitive.
 
-### Concept
+## Concept
 
 - **Base Selector** : Identifie les conteneurs répétitifs (lignes de tableau, cartes de produits)
 - **Fields** : Spécifie les sélecteurs CSS pour extraire les données individuelles
 
-### Exemple complet
+## Exemple complet
+
 ```python
 import json
 import asyncio
@@ -134,18 +134,29 @@ async def extract_crypto_prices():
 asyncio.run(extract_crypto_prices())
 ```
 
-### Types de champs supportés
+## Types de champs supportés
 
 - `text` : Contenu textuel
 - `attribute` : Attributs HTML (href, data-*, etc.)
 - `html` : HTML brut
 - `regex` : Extraction via expression régulière
 
-### Avantages
+## Avantages
 
 - Performance : Exécution quasi-instantanée
 - Fiabilité : Résultats consistants et reproductibles
 - Scalabilité : Traitement parallèle de milliers de pages
 - Coût : Zéro appel API ou surcharge computationnelle
 
-**Source** : https://docs.crawl4ai.com/extraction/no-llm-strategies/
+# Ressources
+
+## Documentation Officielle
+
+- **Crawl4AI Documentation** : https://docs.crawl4ai.com/
+- **AsyncWebCrawler API** : https://docs.crawl4ai.com/api/async-webcrawler/
+- **BrowserConfig Reference** : https://docs.crawl4ai.com/core/browser-config/
+- **JsonCssExtractionStrategy** : https://docs.crawl4ai.com/extraction/no-llm-strategies/
+
+## Ressources Complémentaires
+
+- **Playwright Documentation** : https://playwright.dev/python/docs/intro
