@@ -1,6 +1,6 @@
 # CHANGELOG - flight-search-api
 
-**Dernière mise à jour** : 16/11/2025
+**Dernière mise à jour** : 17/11/2025
 
 Toutes les modifications notables de ce projet seront documentées dans ce fichier.
 
@@ -101,5 +101,49 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 **Objectif** : Établir base de connaissance technique avant développement MVP
 
 **Prochaine étape** : Phase 2 - Setup Environnement Python
+
+---
+
+## [v0.2.0-structure] - 2025-11-17
+
+### Added
+
+**Structure Projet Complète**
+- Arborescence complète du projet :
+  - Fichiers racine : `README.md`, `.gitignore`, `.dockerignore`, `Dockerfile`, `pyproject.toml`, `.env.example`
+  - Structure `app/` avec tous les modules :
+    - `app/api/` : Routes FastAPI
+    - `app/core/` : Configuration et logging
+    - `app/models/` : Schémas Pydantic (request/response)
+    - `app/services/` : Logique métier (crawler, parser, proxy, search, combination_generator)
+    - `app/utils/` : Helpers génériques
+    - `app/main.py` : FastAPI app entry point
+  - Structure `tests/` miroir de `app/` :
+    - `tests/unit/` : Tests unitaires avec mocks
+    - `tests/integration/` : Tests end-to-end avec TestClient
+  - Docstrings TODO dans tous fichiers Python pour complétion Phase 5
+
+**Configuration Système**
+- `.gitignore` complet : Python, tests, IDEs, environnements, Docker, OS
+- `.dockerignore` : Exclusion fichiers inutiles pour build
+- `.env.example` : Template variables environnement :
+  - Logging : LOG_LEVEL
+  - Decodo Proxies : DECODO_USERNAME, DECODO_PASSWORD, DECODO_PROXY_HOST
+  - Features : PROXY_ROTATION_ENABLED, CAPTCHA_DETECTION_ENABLED
+
+**Documentation Standards**
+- `.claude/CLAUDE.md` complété avec nouvelles sections :
+  - Organisation fichiers : Arborescence détaillée, principes séparation responsabilités
+  - Workflow développement : Installation, commandes dev, feature development, variables env, debugging, troubleshooting
+  - Tests : Stratégie TDD, types de tests (unit/intégration/E2E), commandes pytest, configuration, fixtures, bonnes pratiques, CI integration
+  - Docker : Dockerfile multi-stage, commandes build/run, Docker Compose, optimisations avancées, déploiement Dokploy, troubleshooting, best practices
+
+### Notes
+
+**Phase** : Architecture & Squelette
+**Branche** : `feature/project-structure`
+**Objectif** : Créer la structure complète du projet (prête pour implémentation Phase 3+)
+
+**Prochaine étape** : Phase 3 - Configuration & Build (pyproject.toml, Dockerfile, app minimale)
 
 ---
