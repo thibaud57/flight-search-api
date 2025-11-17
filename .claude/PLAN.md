@@ -100,7 +100,7 @@
 - [x] Compléter `docs/REFERENCES.md` comme index avec liens vers fichiers modulaires
 - [x] Commit : `docs: add technical references`
 
-📝 **Output** : `docs/REFERENCES.md` (index) + `docs/references/*.md` (9 fichiers)
+📝 **Output** : `docs/REFERENCES.md` (index) + `docs/references/*.md` (10 fichiers : 9 de Phase 1.2 + github-actions.md de Phase 0.2)
 
 **Avantages structure modulaire** :
 - Chargement ciblé des références nécessaires (~44% économie tokens)
@@ -153,44 +153,44 @@
 **Branche** : `feature/project-structure`
 
 ### 2.1 Création structure complète
-- [ ] Créer fichiers racine : `README.md`, `.gitignore`, `.dockerignore`, `Dockerfile`, `pyproject.toml`, `.env.example`
-- [ ] Créer structure `app/` avec tous dossiers et fichiers
-- [ ] Créer structure `tests/` avec unit/ et integration/
-- [ ] Ajouter docstrings TODO dans tous fichiers Python
-- [ ] Commit : `chore: create project structure skeleton`
+- [x] Créer fichiers racine : `README.md`, `.gitignore`, `.dockerignore`, `Dockerfile`, `pyproject.toml`, `.env.example`
+- [x] Créer structure `app/` avec tous dossiers et fichiers
+- [x] Créer structure `tests/` avec unit/ et integration/
+- [x] Ajouter docstrings TODO dans tous fichiers Python
+- [x] Commit : `chore: create project structure skeleton`
 
 📝 **Output** : Arborescence complète avec fichiers vides + TODO
 
 ### 2.2 Configuration fichiers système
-- [ ] Remplir `.gitignore` (Python, tests, IDEs, env, Docker, OS)
-- [ ] Remplir `.dockerignore`
-- [ ] Créer `.env.example` avec variables :
+- [x] Remplir `.gitignore` (Python, tests, IDEs, env, Docker, OS)
+- [x] Remplir `.dockerignore`
+- [x] Créer `.env.example` avec variables :
       - LOG_LEVEL=INFO
       - DECODO_USERNAME=customer-XXXX-country-FR
       - DECODO_PASSWORD=your_password
       - DECODO_PROXY_HOST=pr.decodo.com:8080
       - PROXY_ROTATION_ENABLED=true
       - CAPTCHA_DETECTION_ENABLED=true
-- [ ] Commit : `chore: add system configuration files`
+- [x] Commit : `chore: add system configuration files`
 
 📝 **Output** : Fichiers config système prêts
 
 ### 2.3 Compléter CLAUDE.md
-- [ ] Vérifier section Contexte projet
-- [ ] Vérifier section Standards (déjà fait Phase 1.3)
-- [ ] Ajouter section Organisation fichiers (arborescence)
-- [ ] Vérifier section Anti-patterns
-- [ ] Vérifier section Git (déjà fait Phase 0.2)
-- [ ] Ajouter section Workflow développement
-- [ ] Ajouter section Tests (pytest commands)
-- [ ] Ajouter section Docker (build/run)
-- [ ] Commit si modifs : `docs: finalize CLAUDE.md`
+- [x] Vérifier section Contexte projet
+- [x] Vérifier section Standards (déjà fait Phase 1.3)
+- [x] Ajouter section Organisation fichiers (arborescence)
+- [x] Vérifier section Anti-patterns
+- [x] Vérifier section Git (déjà fait Phase 0.2)
+- [x] Ajouter section Workflow développement
+- [x] Ajouter section Tests (pytest commands)
+- [x] Ajouter section Docker (build/run)
+- [x] Commit si modifs : `docs: finalize CLAUDE.md`
 
 📝 **Output** : `.claude/CLAUDE.md` complet
 
 ### 2.4 Mise à jour CHANGELOG
-- [ ] Ajouter entrée v0.2.0-structure dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for structure phase`
+- [x] Ajouter entrée v0.2.0-structure dans `docs/CHANGELOG.md`
+- [x] Commit : `docs: update changelog for structure phase`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -587,7 +587,7 @@
 
 ### Git workflow
 - Toujours travailler sur feature branches
-- Workflow Pull Requests (documenté en Phase 1.5)
+- Workflow Pull Requests (documenté en Phase 0.2)
 - Release : develop → master avec tag via PR
 
 ### Stack Crawl4AI + Proxies
@@ -634,58 +634,67 @@
 ```
 flight-search-api/
 ├── .claude/
+│   ├── commands/
+│   │   └── execute-plan-phase.md
 │   ├── CLAUDE.md      # Standards, conventions
 │   └── PLAN.md        # Ce plan
+├── .github/
+│   └── workflows/
+│       ├── ci.yml          # Quality checks (Phase 3.6)
+│       └── release.yml     # Release automation (Phase 0.2)
 ├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── PLANNING.md
-│   ├── REFERENCES.md   # Index léger avec liens
 │   ├── references/     # Documentation technique modulaire
-│   │   ├── fastapi.md
-│   │   ├── pydantic-v2.md
-│   │   ├── crawl4ai.md
-│   │   ├── decodo-proxies.md
-│   │   ├── google-flights.md
 │   │   ├── anti-detection.md
 │   │   ├── captcha-detection.md
-│   │   ├── tenacity.md
-│   │   └── dokploy.md
-│   ├── VERSIONS.md
-│   └── CHANGELOG.md
+│   │   ├── crawl4ai.md
+│   │   ├── decodo-proxies.md
+│   │   ├── dokploy.md
+│   │   ├── fastapi.md
+│   │   ├── github-actions.md
+│   │   ├── google-flights.md
+│   │   ├── pydantic-v2.md
+│   │   └── tenacity.md
+│   ├── ARCHITECTURE.md
+│   ├── CHANGELOG.md
+│   ├── PLANNING.md
+│   ├── REFERENCES.md   # Index léger avec liens
+│   └── VERSIONS.md
 ├── app/
 │   ├── api/
 │   │   └── routes.py
+│   ├── core/
+│   │   ├── config.py
+│   │   └── logger.py
 │   ├── models/
 │   │   ├── request.py
 │   │   └── response.py
 │   ├── services/
 │   │   ├── combination_generator.py
-│   │   ├── proxy_service.py
 │   │   ├── crawler_service.py
 │   │   ├── flight_parser.py
+│   │   ├── proxy_service.py
 │   │   ├── search_service.py
 │   │   └── (captcha_solver.py - Phase 7 optionnelle)
-│   ├── core/
-│   │   ├── config.py
-│   │   └── logger.py
 │   ├── utils/
 │   └── main.py
 ├── tests/
-│   ├── unit/
-│   │   ├── test_models.py
-│   │   ├── test_config.py
-│   │   ├── test_combination_generator.py
-│   │   ├── test_proxy_service.py
-│   │   ├── test_crawler_service.py
-│   │   ├── test_flight_parser.py
-│   │   ├── test_search_service.py
-│   │   └── (test_captcha_solver.py - Phase 7)
-│   └── integration/
-│       ├── test_health.py
-│       └── test_api_routes.py
+│   ├── integration/
+│   │   ├── test_api_routes.py
+│   │   └── test_health.py
+│   └── unit/
+│       ├── test_combination_generator.py
+│       ├── test_config.py
+│       ├── test_crawler_service.py
+│       ├── test_flight_parser.py
+│       ├── test_models.py
+│       ├── test_proxy_service.py
+│       ├── test_search_service.py
+│       └── (test_captcha_solver.py - Phase 7)
+├── .dockerignore
+├── .env.example
+├── .gitignore
 ├── Dockerfile
 ├── pyproject.toml
-├── .env.example
 └── README.md
 ```
 
