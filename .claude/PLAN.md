@@ -264,8 +264,8 @@
 **Note** : Step "Tests with coverage" temporairement désactivé (commenté dans ci.yml) car aucun test n'existe encore. À réactiver en Phase 5.1+ lors de l'implémentation TDD.
 
 ### 3.6 Mise à jour CHANGELOG
-- [ ] Ajouter entrée v0.3.0-build dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for build phase`
+- [x] Ajouter entrée v0.3.0-build dans `docs/CHANGELOG.md`
+- [x] Commit : `docs: update changelog for build phase`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 

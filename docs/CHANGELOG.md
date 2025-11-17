@@ -1,7 +1,7 @@
 ---
 title: "CHANGELOG - Historique Versions"
 description: "Historique complet des modifications du projet par version (format Keep a Changelog). Consulter pour suivre évolution features, bugfixes, breaking changes par release."
-date: "2025-17-11"
+date: "2025-11-17"
 keywords: ["changelog", "versions", "history", "releases", "semver", "keep-a-changelog", "features", "bugfixes", "breaking-changes"]
 scope: ["docs"]
 technologies: []
@@ -14,7 +14,7 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [v0.0.0-setup] - 2025-16-11
+## [v0.0.0-setup] - 2025-11-16
 
 ### Added
 
@@ -56,7 +56,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
-## [v0.1.0-research] - 2025-16-11
+## [v0.1.0-research] - 2025-11-16
 
 ### Added
 
@@ -150,6 +150,63 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 **Objectif** : Créer la structure complète du projet (prête pour implémentation Phase 3+)
 
 **Prochaine étape** : Phase 3 - Configuration & Build (pyproject.toml, Dockerfile, app minimale)
+
+---
+
+## [v0.3.0-build] - 2025-11-18
+
+### Added
+
+**Configuration Projet**
+- `pyproject.toml` complet :
+  - Metadata projet (name, version, description, authors)
+  - Dependencies principales : FastAPI 0.121.2+, Pydantic 2.12.4+, Crawl4AI 0.7.7+, Tenacity 9.1.2+, Uvicorn, python-dotenv
+  - Dependencies développement : pytest, pytest-asyncio, pytest-cov, ruff, mypy
+  - Configuration ruff (linter & formatter) : line-length 88, target py313, select rules (E/F/I/N/UP/B/C4/SIM/RUF)
+  - Configuration mypy strict mode : python_version 3.13, strict=true, overrides pour tests et crawl4ai
+  - Configuration pytest : testpaths, asyncio_mode auto, coverage, markers (slow, integration)
+
+**Docker & Build**
+- Dockerfile multi-stage optimisé pour production :
+  - Stage Builder : Python 3.13 slim, installation uv, `uv sync --frozen`, `crawl4ai-setup` (installe Playwright automatiquement)
+  - Stage Runtime : Python 3.13 slim, non-root user (appuser), WORKDIR /app, healthcheck natif GET /health
+  - Optimisations Dokploy : .dockerignore (exclut .git, tests, docs, cache), réduction taille image via multi-stage
+
+**Application Minimale**
+- FastAPI app minimale dans `app/main.py` :
+  - Initialisation FastAPI avec metadata (title, version, description)
+  - Endpoint GET `/health` retournant JSON `{"status": "ok"}`
+- Tests integration pour health endpoint (`tests/integration/test_health.py`) :
+  - TestClient FastAPI, test status 200, validation format réponse JSON
+
+**CI/CD Quality Checks**
+- Workflow GitHub Actions `.github/workflows/ci.yml` :
+  - Triggers : pull_request + push sur branches develop/master
+  - Setup : Python 3.13, cache uv dependencies (actions/cache avec key hashFiles pyproject.toml)
+  - Installation : `uv sync --all-extras` + `crawl4ai-setup`
+  - Jobs : lint (`ruff check .`), format (`ruff format . --check`), typecheck (`mypy app/`)
+  - Tests unitaires temporairement désactivés (commentés) - À réactiver Phase 5.1+
+  - Fail-fast : false (exécute tous jobs même si l'un échoue)
+  - Coverage optionnelle : `pytest --cov=app --cov-report=xml` (upload codecov commenté)
+- Badge CI status ajouté dans `README.md`
+
+**Vérifications Locales**
+- Installation complète validée : `uv sync --all-extras` + `crawl4ai-setup`
+- Application locale fonctionnelle : `fastapi dev app/main.py` + test `curl http://localhost:8000/health`
+- Tests integration passent : `pytest tests/integration/test_health.py -v`
+- Quality checks passent : `ruff check .`, `ruff format . --check`, `mypy app/`
+- Docker build réussi : `docker build -t flight-search-api .`
+- Container Docker opérationnel : `docker run -p 8000:8000` + healthcheck fonctionnel
+
+### Notes
+
+**Phase** : Configuration & Build
+**Branche** : `feature/config-build`
+**Objectif** : Projet runnable avec configuration minimale (build local + Docker + CI/CD)
+
+**Note importante** : Step "Tests with coverage" temporairement désactivé dans CI workflow (aucun test unitaire n'existe encore). À réactiver lors de Phase 5.1 (implémentation TDD services).
+
+**Prochaine étape** : Phase 4 - Planning Détaillé Développement (PLANNING.md avec specs détaillées services)
 
 ---
 
