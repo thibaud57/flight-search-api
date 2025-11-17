@@ -459,13 +459,23 @@ Permet à EXPLORE de découvrir automatiquement.
    - ✅ TodoWrite usage correct
 
 10. ⏳ **Simulation End-to-End Système Complet**
-    - Test Phase 1.2 (VERSIONS.md)
-    - Test Phase 2.1 (REFERENCES.md)
-    - Test Phase 3.2 (CI/CD quality checks)
-    - Test Phase 4.2 (Backend scraping service)
-    - Test Phase 5.1 (Docker production)
-    - Vérifier workflow complet fonctionne de bout en bout
-    - Identifier bugs/problèmes dans orchestration réelle
+    - ✅ Plan de tests amélioré (8 tests vs 5 initiaux)
+    - ✅ Ajout Phase 0 (manquante) : Test 0.2 (Git Workflow & Release)
+    - ✅ Correction phases inexistantes (4.2, 5.1 → 4.3, 6.1)
+    - ✅ Couverture complète : Phases 0, 1, 2, 3, 4, 6
+    - ✅ Diversité outputs : docs (4), config (3), CI/CD (2)
+    - Tests à exécuter :
+      - Test 1 : Phase 0.2 (Git Workflow & Release Automation)
+      - Test 2 : Phase 1.2 (VERSIONS.md)
+      - Test 3 : Phase 2.4 (PR Template)
+      - Test 4 : Phase 3.1 (pyproject.toml complet - critique)
+      - Test 5 : Phase 3.2 (Dockerfile multi-stage)
+      - Test 6 : Phase 3.6 (CI Quality Checks)
+      - Test 7 : Phase 4.3 (Spécifications Services)
+      - Test 8 : Phase 6.1 (README.md complet)
+    - ⏳ Exécution tests end-to-end
+    - ⏳ Vérifier workflow complet fonctionne de bout en bout
+    - ⏳ Identifier bugs/problèmes dans orchestration réelle
 
 ---
 
@@ -804,16 +814,50 @@ claude = Read(".claude/CLAUDE.md")   // 3000 tokens
 
 ### 🧪 Simulation End-to-End : Plan de Test
 
-**Objectif** : Valider que le système EPCT fonctionne de bout en bout sur différentes phases du PLAN.md
+**Objectif** : Valider que le système EPCT fonctionne de bout en bout sur phases variées couvrant tous les types d'outputs
 
-#### **Test 1 : Phase 1.2 (VERSIONS.md)**
-**Type** : Documentation simple
+**Stratégie** : 1-2 tests par phase majeure, diversité maximale (docs, config, code, docker, CI/CD)
+
+**Couverture** :
+- Phase 0 : Setup Documentation & Git
+- Phase 1 : Recherche & Documentation
+- Phase 2 : Architecture & Squelette
+- Phase 3 : Configuration & Build
+- Phase 4 : Planning détaillé développement
+- Phase 6 : Documentation finale & Release MVP
+
+---
+
+#### **Test 1 : Phase 0.2 (Git Workflow & Release Automation)**
+**Type** : Configuration Git + GitHub Actions
+**Complexité** : Moyenne
+**Attendu** :
+- EXPLORE trouve docs/references/github-actions.md
+- PLAN génère checklist ~10 étapes (workflow release.yml + branch protection)
+- CODE crée .github/workflows/release.yml + .gitignore adapté
+- TEST valide syntaxe YAML workflow + structure .gitignore
+
+**Commande** :
+```bash
+/execute-plan-phase 0.2
+```
+
+**Success Criteria** :
+- ✅ release.yml créé avec triggers corrects (tags v*)
+- ✅ .gitignore adapté stack Python (venv, __pycache__, .env)
+- ✅ YAML valide et testable
+- ✅ Commit conventional commits effectué
+
+---
+
+#### **Test 2 : Phase 1.2 (VERSIONS.md)**
+**Type** : Documentation technique avec metadata
 **Complexité** : Faible
 **Attendu** :
-- EXPLORE trouve docs/TEMPLATE.md, docs/VERSIONS.md existant
-- PLAN génère checklist ~6 étapes (update versions)
-- CODE exécute mise à jour fichier
-- TEST valide format markdown + structure
+- EXPLORE trouve docs/TEMPLATE.md + .claude/CLAUDE.md
+- PLAN génère checklist ~6 étapes
+- CODE crée VERSIONS.md avec metadata YAML + matrice compatibilité
+- TEST valide format markdown + metadata parsable
 
 **Commande** :
 ```bash
@@ -821,43 +865,64 @@ claude = Read(".claude/CLAUDE.md")   // 3000 tokens
 ```
 
 **Success Criteria** :
-- ✅ Workflow complet sans erreur
-- ✅ VERSIONS.md mis à jour correctement
-- ✅ Commit effectué avec message conventional
-- ✅ PLAN.md coché
+- ✅ VERSIONS.md créé avec frontmatter YAML valide
+- ✅ Sections attendues présentes (Python 3.13.1+, FastAPI 0.121.2+, etc.)
+- ✅ Matrice compatibilité complète
+- ✅ Commit conventional commits effectué
 
 ---
 
-#### **Test 2 : Phase 2.1 (REFERENCES.md)**
-**Type** : Documentation index
-**Complexité** : Moyenne
+#### **Test 3 : Phase 2.4 (Création PR Template)**
+**Type** : Documentation GitHub markdown
+**Complexité** : Faible-Moyenne
 **Attendu** :
-- EXPLORE identifie tous fichiers docs/references/*.md
-- PLAN génère checklist ~8 étapes (créer index)
-- CODE génère table liens + descriptions
-- TEST valide liens + format
+- EXPLORE détecte .github/ existant, conventions Conventional Commits
+- PLAN génère checklist ~5 étapes
+- CODE crée .github/PULL_REQUEST_TEMPLATE.md avec sections standards
+- TEST valide format markdown + checklist présente
 
 **Commande** :
 ```bash
-/execute-plan-phase 2.1
+/execute-plan-phase 2.4
 ```
 
 **Success Criteria** :
-- ✅ EXPLORE détecte metadata YAML dans docs/references/
-- ✅ PLAN adapte selon nombre de fichiers trouvés
-- ✅ REFERENCES.md généré avec tous liens
-- ✅ Tests validation passent
+- ✅ Template créé avec sections (Description, Type, Testing, Checklist)
+- ✅ Format markdown valide
+- ✅ Cohérent avec Conventional Commits
 
 ---
 
-#### **Test 3 : Phase 3.2 (CI/CD quality checks)**
-**Type** : Configuration CI/CD
-**Complexité** : Moyenne-Haute
+#### **Test 4 : Phase 3.1 (pyproject.toml complet)**
+**Type** : Configuration projet Python (critique)
+**Complexité** : Haute
 **Attendu** :
-- EXPLORE détecte stack Python, conventions (ruff, mypy)
-- PLAN génère checklist ~12 étapes (workflow GitHub Actions)
-- CODE crée .github/workflows/ci.yml adapté au stack
-- TEST valide syntaxe YAML + jobs définis
+- EXPLORE détecte stack Python, lit VERSIONS.md + CLAUDE.md pour standards
+- PLAN génère checklist ~15 étapes (metadata + deps + tools)
+- CODE crée pyproject.toml complet (dependencies, ruff, mypy, pytest)
+- TEST valide syntaxe TOML + install deps + lint/typecheck
+
+**Commande** :
+```bash
+/execute-plan-phase 3.1
+```
+
+**Success Criteria** :
+- ✅ pyproject.toml parsable et complet (5 sections minimum)
+- ✅ Dependencies avec versions exactes depuis VERSIONS.md
+- ✅ Config ruff + mypy stricte conforme CLAUDE.md
+- ✅ `uv sync` réussit sans erreur
+
+---
+
+#### **Test 5 : Phase 3.2 (Dockerfile multi-stage)**
+**Type** : Configuration Docker production
+**Complexité** : Haute
+**Attendu** :
+- EXPLORE détecte stack Python, package_manager uv, docs/references/dokploy.md
+- PLAN génère checklist ~12 étapes (multi-stage, healthcheck, security)
+- CODE crée Dockerfile optimisé (builder + runtime)
+- TEST valide docker build + run + healthcheck
 
 **Commande** :
 ```bash
@@ -865,54 +930,76 @@ claude = Read(".claude/CLAUDE.md")   // 3000 tokens
 ```
 
 **Success Criteria** :
-- ✅ Workflow adapté au stack (Python → ruff, mypy, pytest)
-- ✅ Jobs parallèles configurés
-- ✅ Cache dependencies configuré
-- ✅ YAML valide et testable
-
----
-
-#### **Test 4 : Phase 4.2 (Backend scraping service)**
-**Type** : Code complexe (multi-fichiers)
-**Complexité** : Haute
-**Attendu** :
-- EXPLORE identifie fichiers existants (app/, conventions)
-- PLAN génère checklist ~20 étapes (service complet)
-- CODE crée multiples fichiers (service, models, tests)
-- TEST exécute tests unitaires + linting
-
-**Commande** :
-```bash
-/execute-plan-phase 4.2
-```
-
-**Success Criteria** :
-- ✅ PLAN décide stratégie (parallèle ou séquentiel)
-- ✅ CODE respecte conventions projet (ruff, mypy)
-- ✅ Tests unitaires passent
-- ✅ Code quality checks OK
-
----
-
-#### **Test 5 : Phase 5.1 (Docker production)**
-**Type** : Configuration Docker multi-stage
-**Complexité** : Haute
-**Attendu** :
-- EXPLORE détecte stack, package_manager (uv)
-- PLAN génère checklist ~11 étapes (Dockerfile optimisé)
-- CODE crée Dockerfile multi-stage adapté Python
-- TEST valide docker build + run + healthcheck
-
-**Commande** :
-```bash
-/execute-plan-phase 5.1
-```
-
-**Success Criteria** :
-- ✅ Dockerfile multi-stage Python (uv)
+- ✅ Dockerfile multi-stage (builder + runtime)
 - ✅ User non-root configuré
 - ✅ Healthcheck défini
-- ✅ Image build + container run OK
+- ✅ `docker build` + `docker run` OK + health endpoint répond
+
+---
+
+#### **Test 6 : Phase 3.6 (CI Quality Checks)**
+**Type** : Configuration CI/CD GitHub Actions
+**Complexité** : Moyenne-Haute
+**Attendu** :
+- EXPLORE détecte stack Python, conventions (ruff, mypy), docs/references/github-actions.md
+- PLAN génère checklist ~14 étapes (workflow avec jobs parallèles)
+- CODE crée .github/workflows/ci.yml adapté au stack
+- TEST valide syntaxe YAML + jobs définis
+
+**Commande** :
+```bash
+/execute-plan-phase 3.6
+```
+
+**Success Criteria** :
+- ✅ Workflow adapté au stack (Python → ruff, mypy, pytest)
+- ✅ Jobs parallèles configurés (lint, format, typecheck, test)
+- ✅ Cache uv dependencies configuré
+- ✅ YAML valide et testable (syntax check)
+
+---
+
+#### **Test 7 : Phase 4.3 (Spécifications Services)**
+**Type** : Documentation planning détaillé
+**Complexité** : Moyenne
+**Attendu** :
+- EXPLORE identifie docs/references/ pertinents (crawl4ai, tenacity, decodo-proxies)
+- PLAN génère checklist ~8 étapes (5 services à documenter)
+- CODE crée section complète dans docs/PLANNING.md
+- TEST valide format markdown + cohérence specs
+
+**Commande** :
+```bash
+/execute-plan-phase 4.3
+```
+
+**Success Criteria** :
+- ✅ Section Services ajoutée à PLANNING.md
+- ✅ Specs détaillées pour 5 services (CombinationGenerator, ProxyService, CrawlerService, FlightParser, SearchService)
+- ✅ Liste tests unitaires par service
+- ✅ Format markdown valide
+
+---
+
+#### **Test 8 : Phase 6.1 (README.md complet)**
+**Type** : Documentation utilisateur finale
+**Complexité** : Moyenne-Haute
+**Attendu** :
+- EXPLORE lit ARCHITECTURE.md, PLANNING.md, pyproject.toml, Dockerfile
+- PLAN génère checklist ~10 étapes (9 sections README)
+- CODE crée README.md professionnel avec exemples
+- TEST valide format markdown + liens valides + code blocks syntaxe correcte
+
+**Commande** :
+```bash
+/execute-plan-phase 6.1
+```
+
+**Success Criteria** :
+- ✅ README complet avec 9 sections (Description, Prérequis, Installation, Config, Usage, Tests, Déploiement, Limites, Monitoring)
+- ✅ Exemples curl fonctionnels
+- ✅ Liens internes valides
+- ✅ Code blocks avec syntaxe highlighting
 
 ---
 
@@ -941,10 +1028,12 @@ claude = Read(".claude/CLAUDE.md")   // 3000 tokens
    - Créer issues GitHub si nécessaire
 
 **Success Global** :
-- ✅ 5/5 tests passent sans intervention manuelle
+- ✅ 8/8 tests passent sans intervention manuelle
 - ✅ Aucun bug critique
 - ✅ Workflow utilisable en production
 - ✅ Documentation agents conforme best practices
+- ✅ Couverture complète : toutes les phases majeures testées (0-6)
+- ✅ Diversité outputs : docs (4), config (3), CI/CD (2)
 
 ---
 
