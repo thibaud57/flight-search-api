@@ -100,7 +100,7 @@ WebSearch("docker multi-stage build optimization 2025")
 WebSearch("dockerfile security hardening 2025")
 ```
 
-**Règle** : Adapter recherche selon `codebase.stack` fourni par EXPLORE.
+**Règle** : Adapter recherche selon `codebase.stack` fourni dans le contexte.
 
 **Privilégier le contexte fourni** (files_to_read) avant d'utiliser WebSearch.
 
@@ -154,7 +154,7 @@ target-version = "py313"
 **Principe** : L'agent CODE est responsable d'écrire le code final, PLAN donne les directives.
 
 **Généricité** : Utiliser terminologie générique (linter, test runner, type checker) plutôt que noms outils (ruff, pytest, mypy).
-Le contexte `codebase.conventions` fourni par EXPLORE indique les outils concrets.
+Le contexte `codebase.conventions` fourni indique les outils concrets.
 
 ## Livrables Attendus
 

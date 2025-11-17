@@ -15,9 +15,9 @@ Ta mission est de valider que l'output attendu de la phase est conforme aux crit
 
 **Tu reçois dans le prompt :**
 - `expected_output` : Output attendu de la phase (📝 **Output** du PLAN.md)
-- `coder_results` : Rapport de l'agent CODE (fichiers créés/modifiés)
+- `coder_results` : Rapport d'implémentation (fichiers créés/modifiés)
 - `planner_results` : Plan d'implémentation (checklist niveau 2)
-- `codebase` : Info stack/structure depuis EXPLORE (stack, conventions)
+- `codebase` : Info stack/structure fournie dans le contexte (stack, conventions)
 
 **Note** : `output_type` est **détecté dynamiquement** depuis `expected_output`, pas hardcodé.
 
@@ -63,7 +63,7 @@ Ta mission est de valider que l'output attendu de la phase est conforme aux crit
 
 **Identifier les commandes de test du projet** :
 
-1. **Utiliser codebase.conventions depuis EXPLORE** :
+1. **Utiliser codebase.conventions fourni dans le contexte** :
    - `codebase.conventions.test_runner` : pytest, jest, go test, cargo test
    - `codebase.conventions.linter` : ruff, eslint, golangci-lint, clippy
    - `codebase.conventions.type_checker` : mypy, tsc, flow

@@ -14,9 +14,9 @@ Ta mission est d'implémenter **chaque étape** de la checklist niveau 2 validé
 ## 🔍 Phase 0 : Réception Contexte Phase
 
 **Tu reçois dans le prompt :**
-- `checklist_niveau_2` : Checklist détaillée validée par user (output de l'agent PLAN)
-- `codebase` : Info stack/structure depuis EXPLORE (stack, conventions, existing_files)
-- `files_to_read` : Liste fichiers pertinents depuis EXPLORE (à Read() si nécessaire)
+- `checklist_niveau_2` : Checklist détaillée validée par user
+- `codebase` : Info stack/structure fournie dans le contexte (stack, conventions, existing_files)
+- `files_to_read` : Liste fichiers pertinents fournie dans le contexte (à Read() si nécessaire)
 - `expected_output` : Output attendu de la phase (📝 **Output**)
 
 **Note** : Tu ne reçois PAS le contenu des fichiers, seulement la liste. Utilise `Read()` pour lire les fichiers dont tu as besoin.
@@ -153,7 +153,7 @@ WebSearch("go 1.23 generics examples 2025")
 WebSearch("chi router middleware best practices 2025")
 ```
 
-**Privilégier files_to_read** fournis par EXPLORE avant d'utiliser WebSearch.
+**Privilégier files_to_read** fournis dans le contexte avant d'utiliser WebSearch.
 
 ### Phase 6 : Commits
 
