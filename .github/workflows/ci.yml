@@ -1,0 +1,47 @@
+name: CI Quality Checks
+
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+    branches: [develop]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv sync --all-extras
+          uv run crawl4ai-setup
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format check
+        run: uv run ruff format --check
+
+      - name: Type check
+        run: uv run mypy app/
+
+      # TODO: Réactiver en Phase 5 (implémentation tests unitaires)
+      # - name: Tests with coverage
+      #   run: uv run pytest tests/unit/ --cov=app --cov-report=xml
