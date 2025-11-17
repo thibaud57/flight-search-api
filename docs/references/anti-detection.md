@@ -1,15 +1,21 @@
-# Techniques Anti-Détection - Référence Technique
-
-**Date de dernière mise à jour** : 16 novembre 2025
-
+---
+title: "Anti-Detection - Stealth Browsing & Detection Evasion"
+description: "Référence complète anti-détection : stealth mode Crawl4AI, undetected browser mode, user-agent rotation pondérée, proxy rotation (datacenter/residential), stratégie combinée multi-couches. Techniques pour contourner Cloudflare, DataDome, Akamai. Configuration, best practices, escalade progressive."
+date: "2025-17-11"
+keywords: ["anti-detection", "stealth", "undetected-browser", "user-agent", "rotation", "proxies", "bot-detection", "scraping", "crawl4ai", "cloudflare", "datadome", "akamai", "fingerprinting", "headless"]
+scope: ["code"]
+technologies: ["crawl4ai", "playwright"]
 ---
 
-## 1. Stealth Mode Crawl4AI
+**Documentation officielle Crawl4AI** : https://docs.crawl4ai.com/advanced/undetected-browser/
 
-**Description**
+# 1. Stealth Mode Crawl4AI
+
+## Description
+
 Le Stealth Mode de Crawl4AI utilise `playwright-stealth` pour modifier les fingerprints du navigateur en supprimant les indicateurs détectables comme `navigator.webdriver` et en émulant un comportement de plugins réaliste.
 
-**Configuration**
+## Configuration
 ```python
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 
@@ -22,21 +28,19 @@ async with AsyncWebCrawler(config=browser_config) as crawler:
     result = await crawler.arun("https://example.com")
 ```
 
-**Best Practices**
+## Best Practices
+
 - Désactiver le mode headless (plus facile à détecter)
 - Implémenter des délais raisonnables entre les requêtes
 - Combiner avec d'autres techniques d'anti-détection
 
-**Source** : https://docs.crawl4ai.com/advanced/undetected-browser/
+# 2. Undetected Browser Mode (Mode Avancé)
 
----
+## Description
 
-## 2. Undetected Browser Mode (Mode Avancé)
-
-**Description**
 Pour les sites avec détection sophistiquée (Cloudflare, DataDome, Akamai), le mode Undetected Browser applique des patches plus profonds offrant une protection maximale contre les systèmes de détection modernes.
 
-**Configuration**
+## Configuration
 ```python
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 
@@ -53,21 +57,19 @@ async with AsyncWebCrawler(config=browser_config) as crawler:
     result = await crawler.arun("https://protected-site.com")
 ```
 
-**Stratégie Progressive**
+## Stratégie Progressive
+
 1. Commencer avec navigateur régulier + stealth mode
 2. Si bloqué, escalader vers undetected browser
 3. Pour protection maximale, combiner stealth mode + undetected browser
 
-**Source** : https://docs.crawl4ai.com/advanced/undetected-browser/
+# 3. User-Agent Rotation
 
----
+## Description
 
-## 3. User-Agent Rotation
-
-**Description**
 La rotation des User-Agents alterne les chaînes d'identification du navigateur pour simuler des requêtes provenant d'utilisateurs différents. La rotation pondérée (weighted rotation) est plus efficace que la sélection purement aléatoire.
 
-**Configuration avec Pool Pondéré**
+## Configuration avec Pool Pondéré
 ```python
 import random
 
@@ -89,20 +91,20 @@ browser_config = BrowserConfig(
 )
 ```
 
-**Best Practices**
+## Best Practices
+
 - Utiliser des user-agents actuels et réalistes (Chrome/Firefox récents)
 - Maintenir une diverse pool (Windows, macOS, navigateurs populaires)
 - Assigner des poids plus élevés aux versions modernes
 - Combiner avec throttling et rotation de proxies
 
----
+# 4. Proxy Rotation
 
-## 4. Proxy Rotation
+## Description
 
-**Description**
 La rotation des proxies distribue les requêtes sur plusieurs adresses IP pour éviter les blocages. Combiner proxies avec fingerprinting du navigateur et stealth mode simule un comportement utilisateur organique.
 
-**Types de Proxies**
+## Types de Proxies
 
 | Type | Détectabilité | Coût | Utilisation Recommandée |
 |------|---------------|------|------------------------|
@@ -111,7 +113,7 @@ La rotation des proxies distribue les requêtes sur plusieurs adresses IP pour �
 | Static Residential | Très faible | Haut | Connexions persistantes |
 | Mobile | Très faible | Très haut | Contenu mobile-restricted |
 
-**Configuration avec Stealth Mode et Proxy**
+## Configuration avec Stealth Mode et Proxy
 ```python
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 
@@ -126,7 +128,7 @@ async with AsyncWebCrawler(config=browser_config) as crawler:
     result = await crawler.arun("https://example.com")
 ```
 
-**Pool Manager Pattern**
+## Pool Manager Pattern
 ```python
 import random
 from itertools import cycle
@@ -147,17 +149,16 @@ def get_random_proxy():
     return random.choice(PROXY_POOL)
 ```
 
-**Best Practices de Rotation**
+## Best Practices de Rotation
+
 - Utiliser ISP/Static Residential proxies pour l'evasion optimale
 - Implémenter un pool manager avec rotation intelligente
 - Associer chaque proxy à un nouveau fingerprint du navigateur
 - Monitorer les taux de succès et adapter la rotation
 
----
+# 5. Stratégie Complète Combinée
 
-## 5. Stratégie Complète Combinée
-
-**Configuration Multi-Couches**
+## Configuration Multi-Couches
 ```python
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 import random
@@ -185,7 +186,8 @@ async with AsyncWebCrawler(config=browser_config) as crawler:
         await asyncio.sleep(random.uniform(2, 5))  # Délai humain
 ```
 
-**Ordre d'Application Recommandé**
+## Ordre d'Application Recommandé
+
 1. **Couche 1** : Stealth Mode + User-Agent Rotation
 2. **Couche 2** : Ajouter Proxy Rotation
 3. **Couche 3** : Basculer à Undetected Browser si bloqué
