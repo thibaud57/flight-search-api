@@ -343,10 +343,39 @@ flight-search-api/
 uv sync --all-extras
 
 # Post-install : Setup Playwright (automatique via crawl4ai-setup)
-crawl4ai-setup
+uv run crawl4ai-setup
 ```
 
 **Note** : `crawl4ai-setup` installe automatiquement Playwright et ses dépendances système. Pas besoin d'installation manuelle de Playwright.
+
+**Alternative exécution commandes** :
+
+Deux méthodes équivalentes pour exécuter les outils (`ruff`, `mypy`, `pytest`, etc.) :
+
+**Méthode 1 : Environnement virtuel activé** (workflow local standard)
+```bash
+# Activer venv une fois
+.venv\Scripts\activate      # Windows
+source .venv/bin/activate   # Linux/macOS
+
+# Puis utiliser commandes directement
+ruff check .
+mypy app/
+pytest tests/
+```
+
+**Méthode 2 : uv run** (CI/CD + local sans activation venv)
+```bash
+# Pas besoin d'activer venv manuellement
+uv run ruff check .
+uv run mypy app/
+uv run pytest tests/
+```
+
+**Quand utiliser `uv run`** :
+- ✅ **Obligatoire en CI/CD** (GitHub Actions) : venv non activé automatiquement
+- ✅ **Optionnel en local** : si venv non activé ou scripts automation
+- ❌ **Pas nécessaire** : si venv déjà activé dans terminal/IDE
 
 ### Commandes Développement
 
