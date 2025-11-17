@@ -1396,11 +1396,19 @@ git branch -d feature/initial-setup
 ```
 
 **Workflow Release** :
+
+**Dev Releases (v0.x.x-xxx)** :
 1. Développement sur `feature/*`
 2. Merge `feature/*` → `develop` (via PR)
-3. Quand `develop` prête : Merge `develop` → `master`
+3. Tag version sur `develop` (ex: `v0.2.0-structure`)
+4. GitHub Actions crée Release automatiquement (marquée `prerelease`)
+
+**Production Releases (v1.x.x+)** :
+1. Développement sur `feature/*`
+2. Merge `feature/*` → `develop` (via PR)
+3. Quand `develop` prête : Merge `develop` → `master` (via PR)
 4. Tag version sur `master` (ex: `v1.0.0`)
-5. GitHub Actions crée Release automatiquement
+5. GitHub Actions crée Release automatiquement (release stable)
 
 ---
 
