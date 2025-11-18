@@ -1,6 +1,6 @@
 ---
 description: Orchestrateur intelligent d'exécution de phases de projet selon PLAN.md
-argument-hint: <phase_number> (ex: 1.1, 1.2, 5.3)
+argument-hint: '[--force] [<phase_number>]' (ex: /execute-plan-phase, /execute-plan-phase 4.2, /execute-plan-phase --force 4.1)
 allowed-tools: TodoWrite, Read, Bash, Task, Edit
 ---
 
@@ -11,9 +11,14 @@ Tu orchestres l'exécution autonome d'une sous-phase du PLAN.md avec stratégie 
 ## Usage
 
 ```bash
-/execute-plan-phase 1.1
-/execute-plan-phase 1.2
-/execute-plan-phase 5.3
+# Auto-détection : lance la première phase non cochée
+/execute-plan-phase
+
+# Phase spécifique
+/execute-plan-phase 4.2
+
+# Re-exécution forcée d'une phase déjà réalisée
+/execute-plan-phase --force 4.1
 ```
 
 ## 🎯 Mission
@@ -29,25 +34,82 @@ Tu orchestres l'exécution autonome d'une sous-phase du PLAN.md avec stratégie 
 
 ## 🚀 Process Exécution
 
-### ÉTAPE PRÉLIMINAIRE : Validation argument
+### ÉTAPE PRÉLIMINAIRE : Parsing arguments & Validation checkbox
 
-Vérifier que `<phase_number>` est fourni.
+**A. Parser les arguments** :
 
-**Si manquant** :
+Détecter 3 cas possibles :
+1. **Aucun argument** : Mode auto-détection
+2. **`--force <phase_number>`** : Re-exécution forcée
+3. **`<phase_number>`** : Exécution phase spécifique
+
+**B. Déterminer la phase cible** :
+
+**Cas 1 : Aucun argument** (mode auto-détection)
 ```
-❌ Erreur : Numéro de phase manquant
-
-Usage : /execute-plan-phase <phase_number>
-
-Exemples :
-  /execute-plan-phase 1.1
-  /execute-plan-phase 2.3
-  /execute-plan-phase 5.1
-
-💡 Consulte .claude/PLAN.md pour voir les phases disponibles
+🔍 Recherche de la première phase non cochée dans PLAN.md...
 ```
+- Lire `.claude/PLAN.md`
+- Parser toutes les sous-phases (format `### X.Y`)
+- Identifier la **première** sous-phase avec au moins une case `- [ ]` (non cochée)
+- Stocker : `phase_number` = X.Y détectée
 
-**ARRÊTER l'exécution si argument manquant.**
+**Si toutes les phases cochées** :
+```
+✅ Toutes les phases du PLAN.md sont terminées !
+
+🎉 Projet complet selon PLAN.md
+
+💡 Pour re-exécuter une phase : /execute-plan-phase --force <phase_number>
+```
+**ARRÊTER l'exécution.**
+
+**Si phase détectée** :
+```
+📌 Phase {X.Y} détectée : {titre_phase}
+🚀 Lancement de l'orchestration...
+```
+→ Continuer à **Étape C**
+
+**Cas 2 : `--force <phase_number>`** (re-exécution forcée)
+```
+⚠️ Mode force activé : re-exécution de la phase {X.Y}
+```
+- Stocker : `phase_number` = argument fourni
+- Stocker : `force_mode` = true
+→ **Sauter Étape C** (pas de vérification checkbox), aller directement à ÉTAPE 0
+
+**Cas 3 : `<phase_number>`** (exécution normale)
+- Stocker : `phase_number` = argument fourni
+- Stocker : `force_mode` = false
+→ Continuer à **Étape C**
+
+**C. Vérifier checkbox (si `force_mode` = false)** :
+
+Lire `.claude/PLAN.md` et parser la sous-phase `{phase_number}` :
+- Vérifier si **toutes** les cases de cette sous-phase sont cochées `- [x]`
+
+**Si toutes cochées** (phase déjà réalisée) :
+```
+❌ Phase {X.Y} déjà réalisée (toutes les cases cochées)
+
+📋 Checklist actuelle :
+- [x] Item 1
+- [x] Item 2
+- [x] Item 3
+
+💡 Options :
+  • Re-exécuter quand même : /execute-plan-phase --force {X.Y}
+  • Lancer prochaine phase : /execute-plan-phase
+```
+**ARRÊTER l'exécution.**
+
+**Si au moins une case non cochée** `- [ ]` :
+```
+✅ Phase {X.Y} valide (items restants détectés)
+🚀 Lancement de l'orchestration...
+```
+→ Continuer à ÉTAPE 0
 
 ### ÉTAPE 0 : Initialisation Todo List
 
@@ -515,7 +577,8 @@ Corriger et relancer TEST ? (oui/non)
    Ouvrir {pr_url} et cliquer sur "Merge pull request"
 
 2. **Continuer l'Epic** :
-   ➡️ Prochaine story : /execute-plan-phase {X.Y+1}
+   ➡️ Lancer prochaine story automatiquement : /execute-plan-phase
+   ➡️ Ou cibler manuellement : /execute-plan-phase {X.Y+1}
    (Attendre que la PR soit mergée avant de lancer)
 
 3. **Si Epic complet** (voir "Fin de phase" dans PLAN.md) :
