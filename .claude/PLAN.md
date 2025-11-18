@@ -298,11 +298,11 @@ Pour chaque story → Remplir template TEMPLATE_SPECS.md
 📝 **Output** : Story 1 specs complètes (2 story points)
 
 ### 4.3 Story 2: Configuration & Logging
-- [ ] Specs : Settings (Pydantic BaseSettings), Logger (JSON structuré)
-- [ ] Contexte business : Config sécurisée (.env), monitoring logs
-- [ ] Tests : Tests unitaires Settings + Logger (à spécifier)
-- [ ] Ajouter à `docs/specs/epic-1-api-foundation/story-2-config-logging.md`
-- [ ] Commit : `docs(specs): add story 2 specifications`
+- [x] Specs : Settings (Pydantic BaseSettings), Logger (JSON structuré)
+- [x] Contexte business : Config sécurisée (.env), monitoring logs
+- [x] Tests : Tests unitaires Settings + Logger (à spécifier)
+- [x] Ajouter à `docs/specs/epic-1-api-foundation/story-2-config-logging.md`
+- [x] Commit : `docs(specs): add story 2 specifications`
 
 📝 **Output** : Story 2 specs complètes (3 story points)
 
