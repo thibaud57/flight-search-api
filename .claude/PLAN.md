@@ -307,7 +307,7 @@ Pour chaque story → Remplir template TEMPLATE_SPECS.md
 📝 **Output** : Story 2 specs complètes (3 story points)
 
 ### 4.4 Story 3: Search endpoint basique (mock)
-- [x] Specs : Models (SearchRequest, SearchResponse) ← **DÉJÀ FAIT ✅**
+- [ ] Specs : Models (SearchRequest, SearchResponse)
 - [ ] Specs : SearchService (mock data), Route POST /search-flights
 - [ ] Contexte business : API testable client, contrat validé
 - [ ] Tests : Tests unitaires Models + Service + Route + intégration (à spécifier)
