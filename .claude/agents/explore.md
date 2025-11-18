@@ -74,7 +74,7 @@ Analyser une checklist/description de tâche pour identifier les fichiers pertin
 - Identifier sections via regex `^## (.+)$`
 - Extraire mots-clés implicites par section
 
-**Format metadata attendu** (selon `docs/TEMPLATE.md`) :
+**Format metadata attendu** :
 ```yaml
 ---
 title: "Technology - Technical Reference"
