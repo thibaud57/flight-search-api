@@ -9,26 +9,24 @@ scope: ["specs"]
 technologies: ["Crawl4AI", "AsyncWebCrawler", "JsonCssExtractionStrategy", "pytest"]
 ---
 
-# Story 4: Crawler + Parser (1 destination)
-
-## 🎯 Contexte Business
+# 🎯 Contexte Business
 
 _À remplir_
 
 ---
 
-## 📋 Spécifications Techniques
+# 📋 Spécifications Techniques
 
 _À remplir_
 
 ---
 
-## 🧪 Tests
+# 🧪 Tests
 
 _À remplir_
 
 ---
 
-## ✅ Critères d'acceptation
+# ✅ Critères d'acceptation
 
 _À remplir_

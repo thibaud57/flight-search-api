@@ -9,36 +9,34 @@ scope: ["specs"]
 technologies: []
 ---
 
-# Story X: [Nom story]
+# 🎯 Contexte Business
 
-## 🎯 Contexte Business
-
-### Besoin utilisateur
+## Besoin utilisateur
 - [Décrire le besoin métier concret]
 - [Qui utilise cette feature ?]
 - [Quel problème résout-elle ?]
 
-### Contraintes métier
+## Contraintes métier
 - [Contrainte 1: limites techniques, budgets, SLA]
 - [Contrainte 2]
 - [Contrainte 3]
 
-### Valeur business
+## Valeur business
 - ✅ [Valeur 1: qu'apporte cette story au client final ?]
 - ✅ [Valeur 2: feedback rapide, validation early, dérisquage]
 - ✅ [Valeur 3: foundation pour stories futures]
 - ✅ [Valeur 4: métriques observables]
 
-### Métriques succès
+## Métriques succès
 - [Métrique 1: temps de réponse, taux d'erreur, etc.]
 - [Métrique 2: adoption client, feedback qualitatif]
 - [Métrique 3: coverage tests, qualité code]
 
 ---
 
-## 📋 Spécifications Techniques
+# 📋 Spécifications Techniques
 
-### 1. [Composant 1]
+## 1. [Composant 1]
 
 **Rôle**: [Décrire responsabilité unique du composant]
 
@@ -74,19 +72,19 @@ exemple = ComposantExemple(param="value")
 resultat = exemple.methode_principale(input_data)
 ```
 
-### 2. [Composant 2]
+## 2. [Composant 2]
 
 [Répéter structure similaire pour chaque composant de la story]
 
 ---
 
-## 🧪 Tests
+# 🧪 Tests
 
-### Tests unitaires (TDD)
+## Tests unitaires (TDD)
 
 **Format recommandé: AAA (Arrange/Act/Assert)**
 
-#### [Composant 1] (X tests)
+### [Composant 1] (X tests)
 
 | # | Nom test | Input | Output attendu | Vérification |
 |---|----------|-------|----------------|--------------|
@@ -108,7 +106,7 @@ def test_composant_valid_input():
     assert result.data == expected_data
 ```
 
-#### [Composant 2] (Y tests)
+### [Composant 2] (Y tests)
 
 [Répéter tableau tests + exemple pour chaque composant]
 
@@ -116,7 +114,7 @@ def test_composant_valid_input():
 
 ---
 
-### Tests intégration
+## Tests intégration
 
 **Format recommandé: Given/When/Then (BDD)**
 
@@ -151,7 +149,7 @@ def test_integration_happy_path():
 
 ---
 
-### Exemples JSON
+## Exemples JSON
 
 **Exemple 1: Request valide**:
 ```json
@@ -181,11 +179,6 @@ def test_integration_happy_path():
 
 ---
 
-## ✅ Critères d'acceptation
+# ✅ Critères d'acceptation
 
 _À remplir_
-
----
-
-**Template version**: 1.0
-**Last updated**: 2025-01-18
