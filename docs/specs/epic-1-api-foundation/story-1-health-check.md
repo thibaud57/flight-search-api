@@ -306,4 +306,26 @@ def test_health_endpoint_response_structure():
 
 # ✅ Critères d'acceptation
 
-_À remplir_
+## Critères fonctionnels
+
+1. **Endpoint accessible** : `GET /health` retourne status code 200
+2. **Format response valide** : JSON conforme au schéma `HealthCheckResponse` (status, timestamp, version, checks)
+3. **Performance** : Temps de réponse < 50ms (99th percentile)
+4. **Champ status** : Valeur `"healthy"` quand application opérationnelle
+
+## Critères techniques
+
+5. **Type safety** : Modèle Pydantic avec validation stricte (Literal types)
+6. **Synchrone** : Endpoint implémenté avec `def` (pas `async def`)
+7. **Sans dépendances externes** : Pas d'appel DB/API (check minimal MVP)
+
+## Critères qualité
+
+8. **Coverage tests** : Minimum 95% sur endpoint + modèle
+9. **Tests passent** : 5 tests unitaires + 4 tests intégration tous verts
+10. **Standards respect** : Ruff + Mypy + Type hints PEP 695
+
+## Critères production (Phase 6.4)
+
+11. **HEALTHCHECK Dockerfile** : Instruction configurée avec paramètres (interval 30s, timeout 5s, retries 3)
+12. **Intégration Dokploy** : Health check détecte conteneur unhealthy et trigger rollback auto
