@@ -13,23 +13,23 @@ technologies: []
 
 ## 🎯 Contexte Business
 
-**Besoin utilisateur**:
+### Besoin utilisateur
 - [Décrire le besoin métier concret]
 - [Qui utilise cette feature ?]
 - [Quel problème résout-elle ?]
 
-**Contraintes métier**:
+### Contraintes métier
 - [Contrainte 1: limites techniques, budgets, SLA]
 - [Contrainte 2]
 - [Contrainte 3]
 
-**Valeur business**:
+### Valeur business
 - ✅ [Valeur 1: qu'apporte cette story au client final ?]
 - ✅ [Valeur 2: feedback rapide, validation early, dérisquage]
 - ✅ [Valeur 3: foundation pour stories futures]
 - ✅ [Valeur 4: métriques observables]
 
-**Métriques succès**:
+### Métriques succès
 - [Métrique 1: temps de réponse, taux d'erreur, etc.]
 - [Métrique 2: adoption client, feedback qualitatif]
 - [Métrique 3: coverage tests, qualité code]
