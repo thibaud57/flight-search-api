@@ -307,16 +307,14 @@ Pour chaque story → Remplir template TEMPLATE_SPECS.md
 📝 **Output** : Story 2 specs complètes (3 story points)
 
 ### 4.4 Story 3: Search endpoint basique (mock)
-- [ ] Specs : Models (SearchRequest, SearchResponse)
-- [ ] Specs : SearchService (mock data), Route POST /search-flights
-- [ ] Contexte business : API testable client, contrat validé
-- [ ] Tests : Tests unitaires Models + Service + Route + intégration (à spécifier)
-- [ ] Ajouter à `docs/specs/epic-1-api-foundation/story-3-search-endpoint.md`
-- [ ] Commit : `docs(specs): complete story 3 specifications`
+- [x] Specs : Models (SearchRequest, SearchResponse)
+- [x] Specs : SearchService (mock data), Route POST /search-flights
+- [x] Contexte business : API testable client, contrat validé
+- [x] Tests : Tests unitaires Models + Service + Route + intégration (à spécifier)
+- [x] Ajouter à `docs/specs/epic-1-api-foundation/story-3-search-endpoint.md`
+- [x] Commit : `docs(specs): complete story 3 specifications`
 
 📝 **Output** : Story 3 specs complètes (8 story points)
-
-**Note** : SearchStats corrigé → `captcha_detected` retiré (Phase 7 post-MVP uniquement)
 
 ---
 
