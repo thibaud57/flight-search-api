@@ -1,9 +1,10 @@
 ---
-title: "Spécifications Techniques MVP"
-description: "Spécifications détaillées par user story"
-date: 2025-01-18
-scope: "specs"
-category: "index"
+title: "SPECS - Index Spécifications Techniques MVP"
+description: "Index centralisé des spécifications techniques détaillées par user story. Consulter pour naviguer vers specs Epic/Story spécifique."
+date: "2025-18-11"
+keywords: ["specs", "specifications", "user-stories", "epic", "tdd", "mvp", "api", "models", "services", "tests"]
+scope: ["docs"]
+technologies: ["fastapi", "pydantic", "crawl4ai", "decodo", "tenacity", "pytest"]
 ---
 
 # Spécifications Techniques - flight-search-api
@@ -33,7 +34,7 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 - [Story 2: Configuration & Logging](specs/epic-1-api-foundation/story-2-config-logging.md) - 3 pts
 - [Story 3: Search endpoint (mock)](specs/epic-1-api-foundation/story-3-search-endpoint.md) - 8 pts
 
-**Total** : 13 story points, ~49 tests
+**Total** : 13 story points
 
 **Valeur business** : API testable par client, contrat validé
 
@@ -50,7 +51,7 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 - [Story 5: Multi-destinations](specs/epic-2-google-flights/story-5-multi-destinations.md) - 5 pts
 - [Story 6: Proxies Decodo](specs/epic-2-google-flights/story-6-proxies.md) - 5 pts
 
-**Total** : 18 story points, ~50 tests
+**Total** : 18 story points
 
 **Valeur business** : Feature MVP complète (vraies données multi-destinations)
 
@@ -65,7 +66,7 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 **Stories** :
 - [Story 7: Retry + Error handling](specs/epic-3-production-ready/story-7-retry.md) - 5 pts
 
-**Total** : 5 story points, ~15 tests
+**Total** : 5 story points
 
 **Valeur business** : SLA production, robustesse
 
@@ -77,7 +78,6 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 
 - **Total stories** : 7
 - **Total story points** : 36
-- **Tests estimés** : ~114 tests (unitaires + intégration)
 - **Epics** : 3
 - **Releases** : v0.5.0, v0.6.0, v0.7.0 → v1.0.0
 
@@ -85,11 +85,28 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 
 ## 🔄 Process
 
-**Phase 4** : Specs détaillées (1 story = 1 fichier .md)
+**Phase 4 : Spécifications**
+- 4.1 : Créer structure `docs/specs/epic-X/`
+- 4.2-4.8 : Remplir stories (1 fichier .md par story)
+- 4.9 : Mise à jour CHANGELOG v0.4.0-specs
 
-**Phase 5** : Implémentation TDD (1 story = 1 branche feature + PR)
+**Phase 5 : Implémentation TDD**
+- Par Epic : Implémenter stories → CHANGELOG → Release
+- Epic 1 (Stories 1-3) → CHANGELOG → v0.5.0
+- Epic 2 (Stories 4-6) → CHANGELOG → v0.6.0
+- Epic 3 (Story 7) → CHANGELOG → v0.7.0
 
-**Ordre exécution** : Story 1 → 2 → 3 → 4 → 5 → 6 → 7
+**Phase 6 : Documentation & Production**
+- 6.1 : Documentation utilisateur (README, API docs)
+- 6.2 : CHANGELOG consolidé v1.0.0
+- 6.3 : Tests end-to-end manuels
+- 6.4 : Déploiement Dokploy MVP
+
+**Phase 7 : Captcha (Post-MVP - Optionnel)**
+- 7A : Specs Story 8 (si monitoring >5% blocages)
+- 7B : Implémentation Story 8 → v1.1.0
+
+**Ordre exécution** : Story 1 → 2 → 3 → 4 → 5 → 6 → 7 (→ 8 si Phase 7)
 
 ---
 
@@ -100,8 +117,10 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 **Metadata complètes** : Chaque story contient :
 - `story_points` : Estimation complexité (1, 2, 3, 5, 8)
 - `dependencies` : Stories prérequises
-- `business_value` : Valeur métier 1-2 phrases
-- `acceptance_criteria` : Critères validation
+- `date` : Date dernière mise à jour (YYYY-DD-MM)
+- `keywords` : Mots-clés techniques pour découverte
+- `scope` : Portée documentation (["specs"])
+- `technologies` : Stack technique utilisée
 
 **Workflow TDD** : Voir `.claude/CLAUDE.md` - Section Tests / Workflow TDD par story
 

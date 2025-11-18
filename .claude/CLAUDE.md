@@ -245,16 +245,7 @@ flight-search-api/
 │
 ├── docs/
 │   ├── references/         # Documentation technique modulaire
-│   │   ├── anti-detection.md
-│   │   ├── captcha-detection.md
-│   │   ├── crawl4ai.md
-│   │   ├── decodo-proxies.md
-│   │   ├── dokploy.md
-│   │   ├── fastapi.md
-│   │   ├── github-actions.md
-│   │   ├── google-flights.md
-│   │   ├── pydantic-v2.md
-│   │   └── tenacity.md
+│   ├── specs/              # Documentation specs modulaire
 │   ├── ARCHITECTURE.md     # Architecture + ADR
 │   ├── CHANGELOG.md        # Historique versions
 │   ├── SPECS.md            # Spécifications techniques détaillées (Phase 4)
