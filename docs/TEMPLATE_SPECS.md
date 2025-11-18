@@ -181,4 +181,34 @@ def test_integration_happy_path():
 
 # ✅ Critères d'acceptation
 
-_À remplir_
+## Critères fonctionnels
+1. **[Critère fonctionnel 1]** : Description vérifiable (ex: endpoint retourne status code 200)
+2. **[Critère fonctionnel 2]** : Description quantifiable (ex: response time < 100ms au 99th percentile)
+3. **[Critère fonctionnel 3]** : Description testable (ex: format JSON conforme au schéma Pydantic)
+4. **[Critère N...]** : Ajouter autant de critères fonctionnels que nécessaire pour couvrir tous les comportements
+
+## Critères techniques
+5. **[Critère technique 1]** : Contrainte technique (ex: type safety strict avec Literal types)
+6. **[Critère technique 2]** : Architecture (ex: endpoint synchrone `def` pas `async def`)
+7. **[Critère technique 3]** : Dépendances (ex: sans appel DB/API externe)
+8. **[Critère N...]** : Ajouter selon besoins de la story
+
+## Critères qualité
+9. **[Critère qualité 1]** : Coverage minimum (ex: ≥95% sur composants critiques)
+10. **[Critère qualité 2]** : Tests passent (ex: X tests unitaires + Y tests intégration tous verts)
+11. **[Critère qualité 3]** : Standards projet (ex: Ruff + Mypy + Type hints PEP 695)
+12. **[Critère N...]** : Documentation, conventions nommage, etc.
+
+## Critères production (si applicable)
+13. **[Critère production 1]** : Déploiement (ex: HEALTHCHECK Dockerfile configuré)
+14. **[Critère production 2]** : Monitoring (ex: intégration plateforme observabilité)
+15. **[Critère N...]** : Scaling, error handling, logging structuré, etc.
+
+---
+
+**💡 Note importante** : Le nombre de critères varie selon la complexité de la story :
+- Story simple (2 story points) : 8-12 critères typiquement
+- Story moyenne (5 story points) : 12-18 critères
+- Story complexe (8 story points) : 18-25+ critères
+
+**Principe SMART** : Chaque critère doit être **S**pécifique, **M**esurable, **A**tteignable, **R**elevant, **T**emporel.
