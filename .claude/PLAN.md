@@ -331,13 +331,13 @@ Pour chaque story → Remplir template TEMPLATE_SPECS.md
 📝 **Output** : Story 4 specs complètes (8 story points)
 
 ### 4.6 Story 5: Multi-destinations (CombinationGenerator)
-- [ ] Specs : CombinationGenerator (itertools.product, permutations multi-city)
-- [ ] Specs : SearchService orchestration (multiple crawls)
-- [ ] Specs : Top 10 ranking (tri prix + limite 10 résultats)
-- [ ] Contexte business : Feature MVP complète (2-10 destinations)
-- [ ] Tests : Tests unitaires Generator + Service + intégration (à spécifier)
-- [ ] Ajouter à `docs/specs/epic-2-google-flights/story-5-multi-destinations.md`
-- [ ] Commit : `docs(specs): add story 5 specifications`
+- [x] Specs : CombinationGenerator (itertools.product, permutations multi-city)
+- [x] Specs : SearchService orchestration (multiple crawls)
+- [x] Specs : Top 10 ranking (tri prix + limite 10 résultats)
+- [x] Contexte business : Feature MVP complète (2-10 destinations)
+- [x] Tests : Tests unitaires Generator + Service + intégration (à spécifier)
+- [x] Ajouter à `docs/specs/epic-2-google-flights/story-5-multi-destinations.md`
+- [x] Commit : `docs(specs): add story 5 specifications`
 
 📝 **Output** : Story 5 specs complètes (5 story points)
 
