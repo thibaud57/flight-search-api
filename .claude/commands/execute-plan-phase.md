@@ -209,6 +209,8 @@ Task(
 
 **Résultat attendu** : Markdown avec checklist niveau 2 + stratégie
 
+**⚠️ IMPORTANT** : Stocker le plan retourné pour retry éventuel.
+
 **Validation user avec retry** :
 
 ```
@@ -227,22 +229,21 @@ Afficher le plan généré :
 
 **Si user répond "non"** ou demande ajustements :
 1. Capturer feedback user
-2. Relancer Task(subagent_type="plan") avec retry_context :
+2. Relancer Task(subagent_type="plan") avec le prompt suivant :
    ```
-   Task(
-     subagent_type="plan",
-     prompt="""
-     Le plan précédent a été rejeté. Voici le feedback :
+   Le plan précédent a été rejeté. Voici le feedback :
 
-     {user_feedback}
+   {user_feedback}
 
-     Plan précédent :
-     {previous_plan}
+   Plan précédent (AJUSTER selon feedback, NE PAS refaire from scratch) :
+   {plan_complet_précédent}
 
-     Ajuste le plan selon le feedback et re-génère.
-     """
-   )
+   Ajuste le plan ci-dessus selon le feedback et re-génère.
+   Conserve la structure existante, modifie uniquement ce qui est mentionné dans le feedback.
    ```
+
+   ⚠️ **CRITIQUE** : Inclure le plan précédent complet dans le prompt, sinon l'agent va tout refaire.
+
 3. Afficher nouveau plan
 4. Redemander validation
 5. **Répéter jusqu'à validation "oui"**
