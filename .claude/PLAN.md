@@ -102,11 +102,6 @@
 
 📝 **Output** : `docs/REFERENCES.md` (index) + `docs/references/*.md` (10 fichiers : 9 de Phase 1.2 + github-actions.md de Phase 0.2)
 
-**Avantages structure modulaire** :
-- Chargement ciblé des références nécessaires (~44% économie tokens)
-- Navigation rapide dans IDE
-- Meilleure gestion Git (historique, conflits)
-
 **Note** : Si features additionnelles nécessaires pendant l'implémentation, créer nouveau fichier dans `docs/references/` et mettre à jour l'index REFERENCES.md.
 
 ### 1.3 Standards Python modernes
@@ -277,42 +272,45 @@
 
 **Objectif** : Écrire specs détaillées par user story (business + technique)
 
-**Branche** : `feature/technical-specs` (continuer branche actuelle)
+**Branche** : `feature/technical-specs`
 
-**Structure** : `docs/specs/epic-X/story-Y.md` (1 fichier par story)
+### 4.1 Structure documentation specs
+- [x] Créer structure des epics dans `docs/specs/epic-X/story-Y.md` (1 fichier par story)
+- [x] Compléter `docs/SPECS.md` comme index avec liens vers fichiers modulaires
+- [x] Commit : `docs: add specs references`
 
-**Process** : Pour chaque story → Remplir template TEMPLATE_SPECS.md
+📝 **Output** : `docs/SPECS.md` (index) + `docs/specs/*.md` (? epics, ? stories)
+
+**Note** : Si specs additionnelles nécessaires pendant l'implémentation, créer nouveau fichier dans `docs/specs/*` suivant l'epics et la story et mettre à jour l'index SPECS.md.
+Pour chaque story → Remplir template TEMPLATE_SPECS.md 
 
 ---
 
-### Epic 1: API Foundation (v0.5.0)
+## Epic 1: API Foundation
 
-#### Story 1: Health check endpoint
-
+### 4.2 Story 1: Health check endpoint
 - [ ] Specs : Route GET /health, healthcheck logic
 - [ ] Contexte business : Monitoring production ready
-- [ ] Tests : 3 unitaires + 2 intégration
+- [ ] Tests : Tests unitaires + intégration (à spécifier)
 - [ ] Ajouter à `docs/specs/epic-1-api-foundation/story-1-health-check.md`
 - [ ] Commit : `docs(specs): add story 1 specifications`
 
 📝 **Output** : Story 1 specs complètes (2 story points)
 
-#### Story 2: Configuration & Logging
-
+### 4.3 Story 2: Configuration & Logging
 - [ ] Specs : Settings (Pydantic BaseSettings), Logger (JSON structuré)
 - [ ] Contexte business : Config sécurisée (.env), monitoring logs
-- [ ] Tests : 6 unitaires (3 Settings + 3 Logger)
+- [ ] Tests : Tests unitaires Settings + Logger (à spécifier)
 - [ ] Ajouter à `docs/specs/epic-1-api-foundation/story-2-config-logging.md`
 - [ ] Commit : `docs(specs): add story 2 specifications`
 
 📝 **Output** : Story 2 specs complètes (3 story points)
 
-#### Story 3: Search endpoint basique (mock)
-
+### 4.4 Story 3: Search endpoint basique (mock)
 - [x] Specs : Models (SearchRequest, SearchResponse) ← **DÉJÀ FAIT ✅**
 - [ ] Specs : SearchService (mock data), Route POST /search-flights
 - [ ] Contexte business : API testable client, contrat validé
-- [ ] Tests : 38 tests (21 Models + 5 Service + 8 Route + 4 intégration)
+- [ ] Tests : Tests unitaires Models + Service + Route + intégration (à spécifier)
 - [ ] Ajouter à `docs/specs/epic-1-api-foundation/story-3-search-endpoint.md`
 - [ ] Commit : `docs(specs): complete story 3 specifications`
 
@@ -322,37 +320,34 @@
 
 ---
 
-### Epic 2: Google Flights Integration (v0.6.0)
+## Epic 2: Google Flights Integration
 
-#### Story 4: Crawler + Parser (1 destination)
-
+### 4.5 Story 4: Crawler + Parser (1 destination)
 - [ ] Specs : CrawlerService (Crawl4AI + AsyncWebCrawler)
 - [ ] Specs : FlightParser (JsonCssExtractionStrategy, sélecteurs CSS)
 - [ ] Contexte business : Vraies données Google Flights (proof of concept)
-- [ ] Tests : 22 tests (10 Crawler + 8 Parser + 4 intégration)
+- [ ] Tests : Tests unitaires Crawler + Parser + intégration (à spécifier)
 - [ ] Ajouter à `docs/specs/epic-2-google-flights/story-4-crawler-parser.md`
 - [ ] Commit : `docs(specs): add story 4 specifications`
 
 📝 **Output** : Story 4 specs complètes (8 story points)
 
-#### Story 5: Multi-destinations (CombinationGenerator)
-
+### 4.6 Story 5: Multi-destinations (CombinationGenerator)
 - [ ] Specs : CombinationGenerator (itertools.product, permutations multi-city)
 - [ ] Specs : SearchService orchestration (multiple crawls)
 - [ ] Specs : Top 10 ranking (tri prix + limite 10 résultats)
 - [ ] Contexte business : Feature MVP complète (2-10 destinations)
-- [ ] Tests : 17 tests (8 Generator + 6 Service + 3 intégration)
+- [ ] Tests : Tests unitaires Generator + Service + intégration (à spécifier)
 - [ ] Ajouter à `docs/specs/epic-2-google-flights/story-5-multi-destinations.md`
 - [ ] Commit : `docs(specs): add story 5 specifications`
 
 📝 **Output** : Story 5 specs complètes (5 story points)
 
-#### Story 6: Proxies Decodo (anti-détection)
-
+### 4.7 Story 6: Proxies Decodo (anti-détection)
 - [ ] Specs : ProxyService (Decodo config, residential FR)
 - [ ] Specs : Rotation proxies (round-robin ou random)
 - [ ] Contexte business : Anti-détection Google, coûts optimisés
-- [ ] Tests : 11 tests (8 unitaires + 3 intégration)
+- [ ] Tests : Tests unitaires ProxyService + intégration (à spécifier)
 - [ ] Ajouter à `docs/specs/epic-2-google-flights/story-6-proxies.md`
 - [ ] Commit : `docs(specs): add story 6 specifications`
 
@@ -360,15 +355,14 @@
 
 ---
 
-### Epic 3: Production Ready (v0.7.0)
+## Epic 3: Production Ready
 
-#### Story 7: Retry + Error handling
-
+### 4.8 Story 7: Retry + Error handling
 - [ ] Specs : Tenacity retry logic (exponential backoff + jitter)
 - [ ] Specs : Error handling (5xx retry, 4xx non-retry)
 - [ ] Specs : Logging before_sleep callback
 - [ ] Contexte business : Robustesse production, SLA garantis
-- [ ] Tests : 15 tests (10 unitaires + 5 intégration)
+- [ ] Tests : Tests unitaires retry + error handling + intégration (à spécifier)
 - [ ] Ajouter à `docs/specs/epic-3-production-ready/story-7-retry.md`
 - [ ] Commit : `docs(specs): add story 7 specifications`
 
@@ -376,16 +370,11 @@
 
 ---
 
-### Finalisation Phase 4
+### 4.9 Mise à jour CHANGELOG
+- [ ] Ajouter entrée v0.4.0-specs dans `docs/CHANGELOG.md`
+- [ ] Commit : `docs: update changelog for specs phase`
 
-- [ ] Vérifier cohérence globale (7 stories, metadata complètes)
-- [ ] Vérifier dépendances entre stories
-- [ ] Vérifier total tests estimés (~103 tests)
-- [ ] Mettre à jour `docs/SPECS.md` (index avec liens vers stories)
-- [ ] Mise à jour CHANGELOG : v0.4.0-specs
-- [ ] Commit : `docs(changelog): update for specs phase`
-
-📝 **Output** : 7 stories spécifiées, 36 story points, ~103 tests estimés
+📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.4.0-specs sur master
 
@@ -397,295 +386,167 @@
 
 **Branche** : `feature/story-X` (1 branche par story)
 
-**Workflow TDD** : Voir `.claude/CLAUDE.md` - Section Tests / Workflow TDD par story
+**Workflow TDD** : Voir `.claude/CLAUDE.md` - Section "Workflow TDD par story"
 
-**Process** :
-1. **TDD Phase 1** : Tests unitaires composant 1 → Implémentation → Tests passent ✅
-2. **TDD Phase 2** : Tests unitaires composant 2 → Implémentation → Tests passent ✅
-3. **TDD Phase 3** : Tests intégration end-to-end → Validation ✅
-4. **Validation manuelle** : curl/Postman + logs
-5. **Commit** + **PR** → develop
+**Workflow Release Epic** :
+1. Toutes stories Epic mergées sur develop ✅
+2. Mise à jour CHANGELOG (section dédiée par Epic)
+3. Merge develop → master → Tag version → GitHub Release (workflow automatique)
+
+**Note** : Si specs incomplètes détectées durant implémentation, compléter `docs/specs/epic-X/story-Y.md` puis continuer TDD
 
 ---
 
-### Epic 1: API Foundation (v0.5.0)
+## Epic 1: API Foundation
 
-#### Story 1: Health check endpoint
+### 5.1 Story 1: Health check endpoint
 
 **Branche** : `feature/story-1-health-check`
 
 - [ ] **RAPPEL : Réactiver step "Tests with coverage" dans `.github/workflows/ci.yml`** (décommenter lignes 46-47)
-- [ ] **TDD** : Tests unitaires → Implémentation route GET /health
-- [ ] **Tests intégration** : TestClient end-to-end (2 tests)
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-1-health-check.md
 - [ ] **Validation manuelle** : `curl http://localhost:8000/health` → `{"status": "ok"}`
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit** : `feat(api): add health check endpoint`
 - [ ] **PR** : feature/story-1 → develop
 
-📝 **Output** : Story 1 complétée (2 story points, ~5 tests)
+📝 **Output** : Story 1 complétée (2 story points)
 
-#### Story 2: Configuration & Logging
+### 5.2 Story 2: Configuration & Logging
 
 **Branche** : `feature/story-2-config-logging`
 
-- [ ] **TDD Phase 1** : Tests unitaires Settings → Implémentation Settings
-- [ ] **TDD Phase 2** : Tests unitaires Logger → Implémentation Logger
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-2-config-logging.md
 - [ ] **Validation manuelle** : App lit .env, logs JSON structurés avec extra context
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit** : `feat(core): add config and structured logging`
 - [ ] **PR** : feature/story-2 → develop
 
-📝 **Output** : Story 2 complétée (3 story points, 6 tests)
+📝 **Output** : Story 2 complétée (3 story points)
 
-#### Story 3: Search endpoint basique (mock)
+### 5.3 Story 3: Search endpoint basique (mock)
 
 **Branche** : `feature/story-3-search-endpoint`
 
-- [ ] **TDD Phase 1 : Models**
-  - Écrire 21 tests unitaires (test_models.py)
-  - Implémenter Models (request.py, response.py)
-  - Tests Models passent ✅
-- [ ] **TDD Phase 2 : SearchService mock**
-  - Écrire 5 tests unitaires (test_search_service.py)
-  - Implémenter SearchService mock (retourne 3 résultats aléatoires)
-  - Tests Service passent ✅
-- [ ] **TDD Phase 3 : Route**
-  - Écrire 8 tests unitaires (test_api_routes.py)
-  - Implémenter Route POST /search-flights
-  - Tests Route passent ✅
-- [ ] **Tests intégration** : 4 tests end-to-end (TestClient)
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-3-search-endpoint.md
 - [ ] **Validation manuelle** : `curl -X POST http://localhost:8000/api/v1/search-flights`
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit** : `feat(api): add search endpoint with mock data`
 - [ ] **PR** : feature/story-3 → develop
 
-📝 **Output** : Story 3 complétée (8 story points, 38 tests)
+📝 **Output** : Story 3 complétée (8 story points)
 
-**Fin Epic 1** : Merge develop → master → Tag v0.5.0 → GitHub Release (workflow automatique)
+### 5.4 Mise à jour CHANGELOG
+- [ ] Ajouter entrée v0.5.0 dans `docs/CHANGELOG.md`
+- [ ] Commit : `docs: update changelog for v0.5.0`
+
+📝 **Output** : `docs/CHANGELOG.md` mis à jour
+
+**Fin Epic 1** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.5.0 sur master → GitHub Release (workflow automatique)
 
 ---
 
-### Epic 2: Google Flights Integration (v0.6.0)
+## Epic 2: Google Flights Integration
 
-#### Story 4: Crawler + Parser (1 destination)
+### 5.5 Story 4: Crawler + Parser (1 destination)
 
 **Branche** : `feature/story-4-crawler-parser`
 
-- [ ] **TDD Phase 1** : Tests unitaires CrawlerService → Implémentation
-- [ ] **TDD Phase 2** : Tests unitaires FlightParser → Implémentation
-- [ ] **TDD Phase 3** : Intégrer dans SearchService (remplacer mock)
-- [ ] **Tests intégration** : 4 tests end-to-end (vraies données 1 destination)
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-4-crawler-parser.md
 - [ ] **Validation manuelle** : Vraies données Google Flights, logs parsing success
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit** : `feat(services): add crawler and parser with real Google Flights data`
 - [ ] **PR** : feature/story-4 → develop
 
-📝 **Output** : Story 4 complétée (8 story points, 22 tests)
+📝 **Output** : Story 4 complétée (8 story points)
 
-#### Story 5: Multi-destinations (CombinationGenerator)
+### 5.6 Story 5: Multi-destinations (CombinationGenerator)
 
 **Branche** : `feature/story-5-multi-destinations`
 
-- [ ] **TDD Phase 1** : Tests unitaires CombinationGenerator → Implémentation
-- [ ] **TDD Phase 2** : Tests unitaires SearchService orchestration → Implémentation
-- [ ] **TDD Phase 3** : Tests unitaires Top 10 ranking → Implémentation
-- [ ] **Tests intégration** : 3 tests end-to-end (3 destinations → Top 10 vols)
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-5-multi-destinations.md
 - [ ] **Validation manuelle** : 3 destinations, vérifier Top 10 triés par prix
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit** : `feat(services): add multi-city search and top 10 ranking`
 - [ ] **PR** : feature/story-5 → develop
 
-📝 **Output** : Story 5 complétée (5 story points, 17 tests)
+📝 **Output** : Story 5 complétée (5 story points)
 
-#### Story 6: Proxies Decodo (anti-détection)
+### 5.7 Story 6: Proxies Decodo (anti-détection)
 
 **Branche** : `feature/story-6-proxies`
 
-- [ ] **TDD Phase 1** : Tests unitaires ProxyService → Implémentation
-- [ ] **TDD Phase 2** : Tests unitaires rotation proxies → Implémentation
-- [ ] **TDD Phase 3** : Intégrer CrawlerService avec ProxyService
-- [ ] **Tests intégration** : 3 tests end-to-end (vraies clés Decodo)
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-6-proxies.md
 - [ ] **Validation manuelle** : Logs montrent proxies actifs + rotation
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit** : `feat(services): add Decodo proxies with rotation`
 - [ ] **PR** : feature/story-6 → develop
 
-📝 **Output** : Story 6 complétée (5 story points, 11 tests)
+📝 **Output** : Story 6 complétée (5 story points)
 
-**Fin Epic 2** : Merge develop → master → Tag v0.6.0 → GitHub Release (workflow automatique)
+### 5.8 Mise à jour CHANGELOG
+- [ ] Ajouter entrée v0.6.0 dans `docs/CHANGELOG.md`
+- [ ] Commit : `docs: update changelog for v0.6.0`
+
+📝 **Output** : `docs/CHANGELOG.md` mis à jour
+
+**Fin Epic 2** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.6.0 sur master → GitHub Release (workflow automatique)
 
 ---
 
-### Epic 3: Production Ready (v0.7.0)
+## Epic 3: Production Ready
 
-#### Story 7: Retry + Error handling
+### 5.9 Story 7: Retry + Error handling
 
 **Branche** : `feature/story-7-retry`
 
-- [ ] **TDD Phase 1** : Tests unitaires retry decorators (Tenacity) → Implémentation
-- [ ] **TDD Phase 2** : Tests unitaires error handling + logging → Implémentation
-- [ ] **TDD Phase 3** : Intégrer CrawlerService avec retry logic
-- [ ] **Tests intégration** : 5 tests end-to-end (échecs simulés : timeouts, 5xx)
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-7-retry.md
 - [ ] **Validation manuelle** : Simuler échec, vérifier retry dans logs
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit** : `feat(services): add retry logic and error handling`
 - [ ] **PR** : feature/story-7 → develop
 
-📝 **Output** : Story 7 complétée (5 story points, 15 tests)
+📝 **Output** : Story 7 complétée (5 story points)
 
-**Fin Epic 3** : Merge develop → master → Tag v0.7.0 → GitHub Release (workflow automatique)
+### 5.10 Mise à jour CHANGELOG
+- [ ] Ajouter entrée v0.7.0 dans `docs/CHANGELOG.md`
+- [ ] Commit : `docs: update changelog for v0.7.0`
 
----
+📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-### Finalisation Phase 5 (Validation v0.7.0)
-
-**Validation complète avant v1.0.0** :
-
-- [ ] **Tests end-to-end complets** : Lancer 10+ recherches avec vraies clés Decodo
-- [ ] **Démo client final** : Validation UX, performance, format JSON
-- [ ] **Validation business** : Feedback client, acceptation MVP
-- [ ] **Analyse logs** : Taux de succès, taux d'erreurs, temps réponse
-- [ ] **Build Docker final** : `docker build -t flight-search-api:v0.7.0 .`
-- [ ] **Tests Docker** : `docker run -p 8000:8000 --env-file .env flight-search-api:v0.7.0`
-
-**Décision release v1.0.0** :
-
-- **Si v0.7.0 OK sans bugs** :
-  - Tag v1.0.0 sur même commit que v0.7.0
-  - GitHub Release v1.0.0 (workflow automatique)
-  - Pas de nouveau commit nécessaire
-
-- **Si bugs trouvés** :
-  - Fix bugs → Commit → Nouveau tag v1.0.0
-  - GitHub Release v1.0.0 (workflow automatique)
-
-📝 **Output** : MVP Production Ready (v0.7.0) → MVP Release (v1.0.0)
+**Fin Epic 3** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.7.0 sur master → GitHub Release (workflow automatique)
 
 ---
 
-## Releases & Milestones
+### 5.11 Validation complète
 
-### v0.5.0 - Epic 1: API Foundation
+**Tests end-to-end complets** :
 
-**Date cible** : TBD après Story 3
+- [ ] Lancer 10+ recherches multi-destinations avec vraies clés Decodo
+- [ ] Démo client : Validation UX, performance, format JSON
+- [ ] Validation business : Feedback client, acceptation MVP
+- [ ] Analyse logs : Taux de succès, taux d'erreurs, temps réponse, captcha detection
+- [ ] Build Docker : `docker build -t flight-search-api:v0.7.0 .`
+- [ ] Tests Docker : `docker run -p 8000:8000 --env-file .env flight-search-api:v0.7.0`
 
-**Stories incluses** :
-- Story 1: Health check endpoint (2 pts)
-- Story 2: Configuration & Logging (3 pts)
-- Story 3: Search endpoint basique mock (8 pts)
+**Décision Phase 6** :
 
-**Total** : 13 story points, ~49 tests
+- **Si v0.7.0 OK sans bugs critiques** : Passer à Phase 6 (Documentation + Release v1.0.0)
+- **Si bugs critiques trouvés** : Fix via hotfix → Nouveau tag v0.7.1 → Revalider
 
-**Déployable** : ✅ API testable (mock data), contrat validé
-
-**Valeur business** : Client peut tester API, feedback UX format JSON
-
-**Process release** :
-1. Toutes stories Epic 1 mergées sur develop ✅
-2. Merge develop → master : `git checkout develop && git pull && git checkout master && git merge develop --ff-only`
-3. Tag v0.5.0 : `git tag v0.5.0 && git push origin master --tags`
-4. GitHub Release auto-créée via workflow release.yml
-5. Marquer "Pre-release" (version dev <1.0.0)
+📝 **Output** : v0.7.0 validé, prêt pour Phase 6 (Documentation finale)
 
 ---
 
-### v0.6.0 - Epic 2: Google Flights Integration
+## Phase 6 : Documentation finale & Release MVP (v1.0.0)
 
-**Date cible** : TBD après Story 6
-
-**Stories incluses** :
-- Story 4: Crawler + Parser (8 pts)
-- Story 5: Multi-destinations (5 pts)
-- Story 6: Proxies Decodo (5 pts)
-
-**Total** : 18 story points, ~50 tests
-
-**Déployable** : ✅ Vraies données multi-destinations, feature MVP complète
-
-**Valeur business** : Recherche multi-city fonctionne, Top 10 vols
-
-**Process release** :
-1. Toutes stories Epic 2 mergées sur develop ✅
-2. Merge develop → master
-3. Tag v0.6.0 : `git tag v0.6.0 && git push origin master --tags`
-4. GitHub Release auto-créée
-5. Marquer "Pre-release"
-
----
-
-### v0.7.0 - Epic 3: Production Ready
-
-**Date cible** : TBD après Story 7
-
-**Story incluse** :
-- Story 7: Retry + Error handling (5 pts)
-
-**Total** : 5 story points, ~15 tests
-
-**Déployable** : ✅ Production-ready, robuste, SLA garantis
-
-**Valeur business** : Retry automatique, logs détaillés, monitoring
-
-**Process release** :
-1. Story 7 mergée sur develop ✅
-2. Merge develop → master
-3. Tag v0.7.0 : `git tag v0.7.0 && git push origin master --tags`
-4. GitHub Release auto-créée
-5. Marquer "Pre-release"
-
----
-
-### v1.0.0 - MVP Release (Production)
-
-**Date cible** : TBD après validation complète v0.7.0
-
-**Prérequis** :
-- ✅ v0.7.0 mergé sur master
-- ✅ Tests end-to-end complets (10+ recherches vraies clés Decodo)
-- ✅ Démo client final (validation UX, performance)
-- ✅ Validation business (feedback client, acceptation)
-
-**Process release** :
-
-**Cas 1 : v0.7.0 parfait (aucun bug trouvé)** :
-1. Tag v1.0.0 sur **même commit** que v0.7.0 :
-   ```bash
-   git checkout master
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
-2. GitHub Release auto-créée via workflow
-3. Marquer "Latest release" (enlever Pre-release)
-4. Pas de nouveau commit nécessaire
-
-**Cas 2 : Bugs trouvés après v0.7.0** :
-1. Créer branche hotfix : `git checkout -b hotfix/v1.0.0`
-2. Fix bugs → Commits
-3. PR hotfix → master
-4. Merge hotfix sur master
-5. Tag v1.0.0 sur nouveau commit :
-   ```bash
-   git checkout master
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
-6. GitHub Release auto-créée
-7. Marquer "Latest release"
-
-**Valeur business** : MVP validé en production, clients peuvent utiliser API
-
-**Distinction versions** :
-- **v0.x.x-xxx** : Dev releases (Pre-release GitHub)
-- **v1.0.0** : Production release (Latest release GitHub)
-- Détection auto dans workflow : `contains(github.ref, '-')`
-
----
-
-## Phase 6 : Documentation finale & Release MVP
-
-**Objectif** : README professionnel et release v1.0.0
+**Objectif** : Documentation complète + Release production v1.0.0
 
 **Branche** : `feature/documentation`
+
+**Prérequis** : v0.7.0 validé en Phase 5.11 ✅
+
+---
 
 ### 6.1 README.md complet
 - [ ] Section Description projet
@@ -701,28 +562,38 @@
 
 📝 **Output** : README.md professionnel
 
-### 6.2 CHANGELOG v1.0.0
-- [ ] Consolider toutes les entrées précédentes
-- [ ] Créer section v1.0.0 avec features complètes
-- [ ] Commit : `docs: release v1.0.0 changelog`
+---
 
-📝 **Output** : CHANGELOG.md complet
+### 6.2 CHANGELOG consolidé v1.0.0
+- [ ] Vérifier entrées v0.5.0, v0.6.0, v0.7.0 complètes dans CHANGELOG.md
+- [ ] Créer section v1.0.0 avec résumé features MVP complètes
+- [ ] Enrichir SPECS.md section Statistiques avec timeline releases
+- [ ] Commit : `docs: release v1.0.0 changelog and specs`
 
-### 6.3 Release v1.0.0
+📝 **Output** : CHANGELOG.md v1.0.0 complet + SPECS.md enrichi avec releases
+
+---
+
+### 6.3 Release v1.0.0 Production
 - [ ] Push branche : `git push origin feature/documentation`
 - [ ] Créer Pull Request sur GitHub : `feature/documentation` → `develop`
 - [ ] (Manuel) Merger la PR sur GitHub
 - [ ] Pull develop en local : `git checkout develop && git pull`
-- [ ] Créer Pull Request sur GitHub : `develop` → `master` (Release v1.0.0)
-- [ ] (Manuel) Merger la PR sur GitHub
-- [ ] Pull master en local : `git checkout master && git pull`
-- [ ] Tag : `git tag v1.0.0 && git push origin v1.0.0` (déclenche workflow release.yml)
+- [ ] Merge develop → master : `git checkout master && git merge develop --ff-only`
+- [ ] Tag v1.0.0 : `git tag v1.0.0 && git push origin master --tags` (déclenche workflow release.yml)
+- [ ] Vérifier GitHub Release auto-créée
+- [ ] Marquer "Latest release" (pas Pre-release)
 
-📝 **Output** : Release v1.0.0 publique sur GitHub (automatique via workflow)
+📝 **Output** : v1.0.0 Production release sur GitHub
+
+**Distinction versions** :
+- **v0.x.x** : Dev releases (Pre-release GitHub)
+- **v1.0.0** : Production release (Latest release GitHub)
+- Workflow détecte automatiquement : `contains(github.ref, '-')` → Pre-release
 
 ---
 
-## Déploiement Dokploy
+## 6.4 Déploiement Dokploy
 
 **Objectif** : Déployer MVP en production
 
@@ -744,95 +615,114 @@
 
 ---
 
-## Phase 7 : Captcha Solving (Post-MVP - Optionnelle)
+## Phase 7A : Analyse & Spécifications Captcha (Post-MVP - Optionnel)
 
-**Objectif** : Ajouter résolution automatique captchas **uniquement si monitoring Phase 6 montre trop de blocages**
+**Objectif** : Décision data-driven + spécifications techniques si GO
 
-**Pré-requis** : 
-- ✅ MVP déployé et monitoring actif
+**Pré-requis** :
+- ✅ MVP v1.0.0 déployé (Phase 6.4) et monitoring actif
 - ✅ Logs captcha rate analysés sur 1-2 semaines minimum
-- ✅ Décision data-driven basée sur métriques réelles
+- ✅ Décision basée sur métriques réelles
 
-**Branche** : `feature/captcha-solving`
+**Branche** : `feature/technical-specs-captcha`
 
-### 7.1 Analyse & décision
-- [ ] Analyser logs monitoring : calculer taux de captcha (nombre captchas / nombre total requêtes) sur 1-2 semaines minimum
-- [ ] Calculer impact business : % de recherches échouées à cause captchas
+---
+
+### 7A.1 Analyse & Décision GO/NO-GO
+- [ ] Analyser logs monitoring : calculer taux captcha (nombre captchas / total requêtes) sur 1-2 semaines
+- [ ] Calculer impact business : % recherches échouées à cause captchas
 - [ ] Décider si 2Captcha nécessaire (seuil recommandé : >5% blocages)
-- [ ] Si taux < 5%, STOP ici (pas besoin de Phase 7)
-- [ ] Si taux ≥ 5%, continuer Phase 7
-- [ ] Documenter décision dans ADR #007 : "2Captcha Integration Decision"
+- [ ] Si taux < 5% : STOP ici (pas besoin Phase 7)
+- [ ] Si taux ≥ 5% : Documenter décision ADR #007 "2Captcha Integration Decision"
+- [ ] Commit : `docs: add captcha decision ADR`
 
-📝 **Output** : Décision documentée (GO ou NO-GO Phase 7)
+📝 **Output** : Décision GO/NO-GO documentée
 
-### 7.2 Recherche 2Captcha
-- [ ] Documentation 2Captcha : API, pricing, types captchas supportés
-      → https://2captcha.com/2captcha-api
-- [ ] Estimation coûts : nombre captchas/mois × $0.001-0.003
-- [ ] Comparer avec coût des recherches perdues
+---
+
+### 7A.2 Recherche & Documentation 2Captcha
+- [ ] Documentation 2Captcha : API, pricing, types captchas supportés (https://2captcha.com/2captcha-api)
+- [ ] Estimation coûts : captchas/mois × $0.001-0.003
+- [ ] Comparer avec coût recherches perdues
 - [ ] Valider ROI positif
-- [ ] Créer `docs/references/2captcha.md` et mettre à jour l'index REFERENCES.md
+- [ ] Créer `docs/references/2captcha.md`
+- [ ] Mettre à jour `docs/REFERENCES.md` (index)
+- [ ] Commit : `docs: add 2captcha technical reference`
 
-### 7.3 Intégration 2Captcha
-- [ ] Ajouter `2captcha-python` à pyproject.toml
-- [ ] Créer `app/services/captcha_solver.py`
-- [ ] Écrire tests `tests/unit/test_captcha_solver.py` (avec mocks)
-- [ ] Modifier `CrawlerService` pour fallback 2Captcha si détection captcha
-- [ ] Ajouter env vars :
-      - TWOCAPTCHA_API_KEY
-      - CAPTCHA_SOLVING_ENABLED (default: false)
-- [ ] Mettre à jour `.env.example`
-- [ ] Vérifier tests passent
-- [ ] Commit : `feat(services): add 2captcha fallback for captcha solving`
+📝 **Output** : Documentation technique 2Captcha complète
 
-### 7.4 Tests & validation
-- [ ] Tests intégration avec mock 2Captcha
-- [ ] Test complet local avec vraie clé 2Captcha
-- [ ] Vérifier coûts réels par captcha résolu
-- [ ] Vérifier temps résolution acceptable (<30s)
-- [ ] Coverage >80%
-- [ ] Commit : `test: add captcha solver integration tests`
+---
 
-### 7.5 Monitoring coûts
-- [ ] Logger coûts 2Captcha par recherche
-- [ ] Ajouter métriques Prometheus/Grafana :
-      - Nombre captchas résolus/jour
-      - Coût 2Captcha/jour
-      - Taux de succès résolution
-      - Temps moyen résolution
-- [ ] Dashboard monitoring dédié
-- [ ] Documentation ROI : coût captcha vs perte de données
-- [ ] Commit : `feat(monitoring): add 2captcha cost tracking`
+## Epic 4: Captcha Solving
 
-### 7.6 Documentation
-- [ ] Mettre à jour README : section Captcha Solving
-- [ ] Mettre à jour SPECS.md : stratégie captcha complète
-- [ ] Ajouter ADR #007 dans ARCHITECTURE.md
-- [ ] Commit : `docs: add captcha solving documentation`
+### 7A.3 Story 8: Captcha Solver (spécifications)
+- [ ] Créer structure : `docs/specs/epic-4-captcha-solving/story-8-captcha-solver.md`
+- [ ] Specs : CaptchaSolverService (2Captcha integration, fallback logic)
+- [ ] Specs : Intégration CrawlerService (détection → résolution)
+- [ ] Specs : Monitoring coûts (métriques, ROI tracking)
+- [ ] Contexte business : Réduction blocages, ROI positif
+- [ ] Tests : Tests unitaires + intégration (à spécifier)
+- [ ] Commit : `docs(specs): add story 8 captcha solver specifications`
 
-### 7.7 Mise à jour CHANGELOG
-- [ ] Ajouter entrée v1.1.0-captcha dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for captcha solving phase`
+📝 **Output** : Story 8 specs complètes
 
-### 7.8 Release v1.1.0
-- [ ] Push branche : `git push origin feature/captcha-solving`
-- [ ] Créer Pull Request sur GitHub : `feature/captcha-solving` → `develop`
-- [ ] (Manuel) Merger la PR sur GitHub
-- [ ] Pull develop en local : `git checkout develop && git pull`
-- [ ] Tests complets sur develop : `pytest -v && ruff check . && mypy app/`
-- [ ] Créer Pull Request sur GitHub : `develop` → `master` (Release v1.1.0)
-- [ ] (Manuel) Merger la PR sur GitHub
-- [ ] Pull master en local : `git checkout master && git pull`
-- [ ] Tag : `git tag v1.1.0 && git push origin v1.1.0` (déclenche workflow release.yml)
+---
 
-### 7.9 Déploiement
-- [ ] Ajouter TWOCAPTCHA_API_KEY dans Dokploy
+### 7A.4 Mise à jour CHANGELOG
+- [ ] Ajouter entrée v0.8.0-specs dans `docs/CHANGELOG.md`
+- [ ] Commit : `docs: update changelog for captcha specs phase`
+
+📝 **Output** : `docs/CHANGELOG.md` mis à jour
+
+**Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.8.0-specs sur master
+
+---
+
+## Phase 7B : Implémentation Captcha Solving
+
+**Objectif** : Implémenter story 8 avec TDD
+
+**Branche** : `feature/story-8-captcha-solver`
+
+**Workflow TDD** : Voir `.claude/CLAUDE.md` - Section "Workflow TDD par story"
+
+**Note** : Si specs incomplètes détectées durant implémentation, compléter `docs/specs/epic-4-captcha-solving/story-8-captcha-solver.md` puis continuer TDD
+
+---
+
+## Epic 4: Captcha Solving
+
+### 7B.1 Story 8: Captcha Solver (implémentation)
+
+**Branche** : `feature/story-8-captcha-solver`
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-8-captcha-solver.md
+- [ ] **Validation manuelle** : Test avec vraie clé 2Captcha, vérifier coûts/temps résolution
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(services): add 2captcha solver integration`
+- [ ] **PR** : feature/story-8 → develop
+
+📝 **Output** : Story 8 complétée
+
+---
+
+### 7B.2 Mise à jour CHANGELOG
+- [ ] Ajouter entrée v1.1.0 dans `docs/CHANGELOG.md`
+- [ ] Commit : `docs: update changelog for v1.1.0`
+
+📝 **Output** : `docs/CHANGELOG.md` mis à jour
+
+**Fin Epic 4** : Push branche → PR → Merge develop → Merge develop→master → Tag v1.1.0 sur master → GitHub Release (workflow automatique)
+
+---
+
+### 7B.3 Déploiement Dokploy v1.1.0
+- [ ] Ajouter TWOCAPTCHA_API_KEY dans Dokploy UI
 - [ ] Activer CAPTCHA_SOLVING_ENABLED=true
-- [ ] Déployer v1.1.0
+- [ ] Déployer v1.1.0 sur production
 - [ ] Monitorer coûts et efficacité pendant 1 semaine
 - [ ] Ajuster seuils si nécessaire
 
-📝 **Output** : Captcha solving en production avec ROI positif
+📝 **Output** : v1.1.0 en production avec monitoring ROI actif
 
 ---
 
@@ -922,9 +812,23 @@ flight-search-api/
 │   │   ├── google-flights.md
 │   │   ├── pydantic-v2.md
 │   │   └── tenacity.md
+│   ├── specs/          # Spécifications détaillées par story (Phase 4)
+│   │   ├── epic-1-api-foundation/
+│   │   │   ├── story-1-health-check.md
+│   │   │   ├── story-2-config-logging.md
+│   │   │   └── story-3-search-endpoint.md
+│   │   ├── epic-2-google-flights/
+│   │   │   ├── story-4-crawler-parser.md
+│   │   │   ├── story-5-multi-destinations.md
+│   │   │   └── story-6-proxies.md
+│   │   ├── epic-3-production-ready/
+│   │   │   └── story-7-retry.md
+│   │   └── epic-4-captcha-solving/    # Phase 7A optionnelle
+│   │       └── story-8-captcha-solver.md
 │   ├── ARCHITECTURE.md
 │   ├── CHANGELOG.md
-│   ├── SPECS.md
+│   ├── SPECS.md        # Index specs (liens vers stories)
+│   ├── TEMPLATE_SPECS.md
 │   ├── REFERENCES.md   # Index léger avec liens
 │   └── VERSIONS.md
 ├── app/
