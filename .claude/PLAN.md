@@ -280,10 +280,10 @@
 **Branche** : `feature/technical-specs`
 
 ### 4.1 Spécifications Models
-- [ ] Specs SearchRequest (Flight, DateRange, validation)
-- [ ] Specs SearchResponse (FlightResult, SearchStats)
-- [ ] Liste tests unitaires
-- [ ] Ajouter à `docs/SPECS.md`
+- [x] Specs SearchRequest (Flight, DateRange, validation)
+- [x] Specs SearchResponse (FlightResult, SearchStats)
+- [x] Liste tests unitaires
+- [x] Ajouter à `docs/SPECS.md`
 
 ### 4.2 Spécifications Configuration & Logging
 - [ ] Specs Settings class (Pydantic Settings)
