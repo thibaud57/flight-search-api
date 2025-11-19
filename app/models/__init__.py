@@ -1,1 +1,3 @@
-"""TODO: À implémenter en Phase 5"""
+from app.models.response import HealthResponse
+
+__all__ = ["HealthResponse"]
