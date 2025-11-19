@@ -51,22 +51,18 @@ technologies: ["FastAPI", "Pydantic", "pytest", "TestClient", "Docker"]
 **Interface** :
 
 ```python
-from fastapi import FastAPI
-from typing import Literal
-
-app = FastAPI()
-
-@app.get("/health")
 def health_check() -> HealthResponse:
     """Retourne le statut santé de l'application."""
 ```
 
+**Configuration route** :
+- Décorateur : GET sur endpoint `/health`
+- Response model : `HealthResponse`
+- Status code par défaut : `200`
+
 **Response Model** :
 
 ```python
-from pydantic import BaseModel
-from typing import Literal
-
 class HealthResponse(BaseModel):
     """Schéma response endpoint health check."""
 
@@ -159,20 +155,25 @@ class HealthResponse(BaseModel):
 }
 ```
 
-**Exemple 3 : Format attendu Dokploy HEALTHCHECK (Dockerfile)**
+---
+
+# 🐳 Configuration Production
+
+## Docker HEALTHCHECK
 
 Le endpoint `/health` doit retourner :
 - **Status code 200** : Container considéré healthy
 - **Status code 5xx** : Container considéré unhealthy (Dokploy redémarre container)
 
-Configuration Dockerfile compatible :
+**Configuration Dockerfile requise** :
+- Directive HEALTHCHECK avec intervalle 30s
+- Timeout 5s maximum
+- Start period 10s (warmup)
+- 3 retries avant unhealthy
+- Commande : curl vers `http://localhost:8000/health`
+- Exit code 0 si healthy, 1 si unhealthy
 
-```dockerfile
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8000/health || exit 1
-```
-
-**Exemple 4 : Intégration Dokploy Health Checks**
+## Intégration Dokploy Health Checks
 
 Le endpoint `/health` s'intègre nativement avec le système de health checks Dokploy :
 
