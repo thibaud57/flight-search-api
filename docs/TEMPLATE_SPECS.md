@@ -9,7 +9,8 @@ scope: ["specs"]
 technologies: []
 ---
 
-# ⚠️ RÈGLES IMPORTANTES - Spécifications
+<!--
+⚠️ RÈGLES IMPORTANTES - Spécifications (à titre informatif, ne pas inclure dans stories)
 
 **Ce template doit contenir UNIQUEMENT** :
 - ✅ Interfaces/signatures (SANS implémentation)
@@ -23,10 +24,11 @@ technologies: []
 - ❌ Tests Python écrits
 
 **Principe fondamental** :
-- **(Specs)** = QUOI faire → Décrire comportements attendus
-- **(TDD)** = COMMENT faire → Implémenter code production
+- (Specs) = QUOI faire → Décrire comportements attendus
+- (TDD) = COMMENT faire → Implémenter code production
 
----
+Note: Agent DOCUMENT respecte automatiquement ces règles selon type "specs"
+-->
 
 # 🎯 Contexte Business
 
