@@ -2,30 +2,11 @@
 title: "Story X: [Nom story]"
 epic: "Epic X: [Nom epic]"
 story_points: 0
-dependencies: []
+dependencies: []  # Format: ["epic-X/story-Y"] ex: ["epic-1/story-1", "epic-2/story-4"]
 date: "YYYY-DD-MM"
 keywords: []
 scope: ["specs"]
 technologies: []
----
-
-# ⚠️ RÈGLES IMPORTANTES - Spécifications
-
-**Ce template doit contenir UNIQUEMENT** :
-- ✅ Interfaces/signatures (SANS implémentation)
-- ✅ Descriptions comportements (texte structuré)
-- ✅ Tableaux scénarios tests (descriptif, PAS code Python)
-- ✅ Exemples JSON (inputs/outputs)
-
-**CODE PRODUCTION INTERDIT** :
-- ❌ Implémentation complète fonctions/classes
-- ❌ Logique métier (algorithmes, boucles, conditions)
-- ❌ Tests Python écrits
-
-**Principe fondamental** :
-- **(Specs)** = QUOI faire → Décrire comportements attendus
-- **(TDD)** = COMMENT faire → Implémenter code production
-
 ---
 
 # 🎯 Contexte Business

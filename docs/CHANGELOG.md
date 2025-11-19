@@ -210,6 +210,72 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [v0.4.0-specs] - 2025-11-19
+
+### Added
+
+**Documentation Spécifications Techniques MVP**
+- Structure documentation specs dans `docs/specs/` :
+  - `docs/specs/epic-1-api-foundation/` : Stories 1-3 (Foundation API)
+  - `docs/specs/epic-2-google-flights/` : Stories 4-6 (Intégration Google Flights)
+  - `docs/specs/epic-3-production-ready/` : Story 7 (Robustesse production)
+- Index centralisé `docs/SPECS.md` :
+  - Vue d'ensemble MVP (36 story points, 7 stories, 3 epics)
+  - Navigation vers specs Epic/Story spécifique
+  - Statistiques projet (releases v0.5.0, v0.6.0, v0.7.0 → v1.0.0)
+  - Process Phase 4 à 7 (Specs → TDD → Production → Captcha optionnel)
+
+**Epic 1 : API Foundation (v0.5.0) - 13 story points**
+- [Story 1 : Health check endpoint](specs/epic-1-api-foundation/story-1-health-check.md) - 2 pts
+  - Tests GET /health (status 200, format JSON)
+  - Configuration TestClient FastAPI
+  - Validation contrat API minimal
+- [Story 2 : Configuration & Logging](specs/epic-1-api-foundation/story-2-config-logging.md) - 3 pts
+  - Pydantic Settings v2 (BaseSettings, Field, SettingsConfigDict)
+  - Structured logging JSON (pythonjsonlogger, extra contexte métier)
+  - Variables environnement (.env, validation types)
+- [Story 3 : Search endpoint (mock)](specs/epic-1-api-foundation/story-3-search-endpoint.md) - 8 pts
+  - POST /api/v1/search-flights (SearchRequest → SearchResponse)
+  - Models Pydantic : SearchRequest, SearchResponse, FlightResult, SearchStats, Flight, DateRange
+  - SearchService mock (données hardcodées Top 10)
+  - Tests intégration TestClient (validation contrat)
+
+**Epic 2 : Google Flights Integration (v0.6.0) - 18 story points**
+- [Story 4 : Crawler + Parser](specs/epic-2-google-flights/story-4-crawler-parser.md) - 8 pts
+  - CrawlerService : AsyncWebCrawler + BrowserConfig stealth
+  - FlightParser : JsonCssExtractionStrategy (extraction prix, compagnie, horaires, durée depuis HTML Google Flights)
+  - Captcha detection (patterns reCAPTCHA, hCaptcha) + CaptchaDetectedError
+  - Tests unitaires avec mocks (HTML Google Flights simulé)
+- [Story 5 : Multi-destinations](specs/epic-2-google-flights/story-5-multi-destinations.md) - 5 pts
+  - CombinationGenerator : Génération permutations multi-city (Paris → Tokyo → Paris)
+  - URLBuilder : Construction URLs Google Flights multi-city (format f=CDG&t=NRT&d=2025-06-01)
+  - SearchService orchestration (crawl + parse + ranking Top 10 par prix)
+  - Tests combinaisons complexes (3-5 destinations, 15-30 jours)
+- [Story 6 : Proxies Decodo](specs/epic-2-google-flights/story-6-proxies.md) - 5 pts
+  - ProxyService : Configuration Decodo (residential, France targeting)
+  - Proxy rotation (1 IP par recherche, authentication via username/password)
+  - Integration AsyncWebCrawler (proxy_config param)
+  - Tests mock proxies (validation format credentials, rotation logic)
+
+**Epic 3 : Production Ready (v0.7.0) - 5 story points**
+- [Story 7 : Retry + Error handling](specs/epic-3-production-ready/story-7-retry.md) - 5 pts
+  - Tenacity retry logic : wait_exponential (min 1s, max 10s) + jitter + stop_after_attempt(3)
+  - Error handling : CaptchaDetectedError (retry + rotation), NetworkError (retry), ParsingError (fail fast)
+  - Logging structured : retry attempts, proxy used, parsing errors, search_id contexte
+  - Tests scenarios échec (captcha détecté, timeout, parsing invalide)
+
+### Notes
+
+**Phase** : Spécifications Techniques Détaillées
+**Branche** : `feature/technical-specs`
+**Objectif** : Définir comportements MVP complets (models, services, API, tests) avant implémentation TDD Phase 5
+
+**Specs** : 7 user stories documentées (36 story points) selon template `docs/TEMPLATE_SPECS.md` (signatures sans implémentation, tableaux tests descriptifs, critères acceptation SMART)
+
+**Prochaine étape** : Phase 5 - Implémentation TDD Epic 1 (Stories 1-3) → Release v0.5.0
+
+---
+
 # Ressources
 
 ## Documentation Officielle

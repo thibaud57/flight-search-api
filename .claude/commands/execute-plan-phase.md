@@ -1,6 +1,6 @@
 ---
 description: Orchestrateur intelligent d'exécution de phases de projet selon PLAN.md
-argument-hint: '[--force] [<phase_number>]' (ex: /execute-plan-phase, /execute-plan-phase 4.2, /execute-plan-phase --force 4.1)
+argument-hint: '[--force] [<phase_number>] (ex: /execute-plan-phase, /execute-plan-phase 4.2, /execute-plan-phase --force 4.1)'
 allowed-tools: TodoWrite, Read, Bash, Task, Edit
 ---
 
@@ -115,13 +115,27 @@ Lire **uniquement** `.claude/PLAN.md` et parser :
 **Phase parente** (ex: Phase 1 pour 1.1) :
 - Objectif global
 - Branche Git
+  - Stocker dans variable : `nom_branche`
 
 **Sous-phase** (ex: 1.1) :
 - Titre complet
 - Type de tâche (`🏷️ **Type**` : config|code|docs|docker|test)
-- Checklist complète (toutes `- [ ]`)
+  - Stocker dans variable : `task_type`
+- **Checklist niveau 1** : Toutes lignes `- [ ]` ou `- [x]`
+  - Stocker dans variable : `checklist_niveau_1` (liste de strings bruts)
 - Output attendu (`📝 **Output**`)
+  - Stocker dans variable : `expected_output`
 - Notes
+
+**Exemple** :
+```
+checklist_niveau_1 = [
+  "Specs : CrawlerService (Crawl4AI + AsyncWebCrawler)",
+  "Specs : FlightParser (JsonCssExtractionStrategy, sélecteurs CSS)",
+  "Ajouter à `docs/specs/epic-2-google-flights/story-4-crawler-parser.md`",
+  "Commit : `docs(specs): add story 4 specifications`"
+]
+```
 
 Marquer → completed
 
@@ -134,19 +148,19 @@ Marquer "Lancer agent EXPLORE" → in_progress
 ```
 Task(
   subagent_type="explore",
-  description="Explorer codebase et docs pour phase X.Y",
+  description="Explorer codebase et docs",
   prompt="""
-  Explorer le projet pour la Phase {phase_number} : {phase_title}
+  Explorer le projet pour cette tâche :
 
   **Checklist niveau 1** :
-  {checklist_from_plan_md}
+  {checklist_niveau_1}
 
   **Output attendu** :
   {expected_output}
 
   Explorer :
-  1. Codebase (Phase 0A) : stack, conventions, fichiers existants
-  2. Documentation (Phase 0B) : fichiers pertinents selon metadata YAML
+  1. Codebase : stack, conventions, fichiers existants
+  2. Documentation : fichiers pertinents selon metadata YAML
 
   Retourner JSON avec :
   - codebase (stack, conventions, existing_files)
@@ -220,15 +234,13 @@ Marquer "Lancer agent PLAN" → in_progress
 ```
 Task(
   subagent_type="plan",
-  description="Planification détaillée phase X.Y",
+  description="Planification détaillée",
   prompt="""
   Créer plan d'implémentation détaillé (checklist niveau 2) pour :
 
-  **Phase** : {phase_number} - {phase_title}
-
   **Type tâche** : {task_type}
 
-  **Checklist niveau 1** (depuis PLAN.md) :
+  **Checklist niveau 1** :
   {checklist_niveau_1}
 
   **Output attendu** :
@@ -271,26 +283,43 @@ Afficher le plan généré :
 
 **Si user répond "non"** ou demande ajustements :
 1. Capturer feedback user
-2. Relancer Task(subagent_type="plan") avec le prompt suivant :
-   ```
-   Le plan précédent a été rejeté. Voici le feedback :
-
-   {user_feedback}
-
-   Plan précédent (AJUSTER selon feedback, NE PAS refaire from scratch) :
-   {plan_complet_précédent}
-
-   Ajuste le plan ci-dessus selon le feedback et re-génère.
-   Conserve la structure existante, modifie uniquement ce qui est mentionné dans le feedback.
-   ```
-
-   ⚠️ **CRITIQUE** : Inclure le plan précédent complet dans le prompt, sinon l'agent va tout refaire.
-
-3. Afficher nouveau plan
+2. **Ajuster le plan markdown directement** sans relancer l'agent :
+   - Appliquer les modifications demandées sur le plan
+   - Exemples : inverser étapes, changer mots, ajouter détails, retirer ligne, etc.
+   - Conserver la structure markdown du plan
+3. Afficher plan ajusté
 4. Redemander validation
 5. **Répéter jusqu'à validation "oui"**
 
 **Si user répond "oui"** :
+
+**Stocker et parser metadata orchestration** :
+
+1. **Stocker plan complet** :
+   - Variable `plan_details` = plan markdown complet retourné par agent PLAN
+   - Ce plan sera transmis intégralement aux agents d'exécution et de validation
+
+2. **Extraire metadata orchestration** (parsing minimal pour workflow uniquement) :
+
+   **a) Déterminer agent d'exécution** :
+   - Rechercher section `## 🤖 Agent d'Exécution`
+   - Ligne `**Agent** : [CODE|DOCUMENT]`
+   - Stocker dans variable `agent_type`
+
+   **b) Extraire `document_type`** (si agent=DOCUMENT) :
+   - Ligne `**Type document** : [specs|references|docs]`
+   - Stocker dans variable `document_type`
+
+   **c) Extraire stratégie d'exécution** :
+   - Rechercher section `## 🚀 Stratégie`
+   - Ligne `**Exécution** : [UNIQUE|PARALLÈLE]`
+   - Stocker dans variable `strategie`
+
+   **d) Si PARALLÈLE** :
+   - Ligne `**Nombre d'agents** : [N agents]`
+   - Ligne `**Division** : [description division]`
+   - Stocker division pour orchestration
+
 → Continuer à ÉTAPE 6
 
 Marquer → completed
@@ -299,17 +328,12 @@ Marquer → completed
 
 Marquer "Lancer agent d'exécution" → in_progress
 
-**Parser agent d'exécution du plan validé** :
-
-Le plan contient une section `## 🤖 Agent d'Exécution` avec :
-- **Agent** : CODE ou DOCUMENT
-- **Type document** (si agent=DOCUMENT) : specs, references, ou docs
-
-**Parser stratégie du plan validé** :
-
-Le plan contient une section `## 🚀 Stratégie` avec :
-- **Parallèle** : Plusieurs agents en parallèle
-- **Unique** : Un seul agent
+**Variables disponibles depuis ÉTAPE 5** :
+- `plan_details` : Plan markdown complet (transmis aux agents)
+- `agent_type` : Agent d'exécution (CODE|DOCUMENT)
+- `document_type` : Type de document (specs|references|docs) si agent=DOCUMENT
+- `strategie` : Stratégie d'exécution (UNIQUE|PARALLÈLE)
+- Division : Description répartition agents (si PARALLÈLE)
 
 **Cas 1 : Stratégie PARALLÈLE**
 
@@ -335,28 +359,50 @@ Lancer tous agents en **1 seul message** multi-invoke :
 **Si agent=CODE** :
 ```
 Task(subagent_type="code", prompt="""
-Implémenter partie {N} :
+Implémenter partie {N} du plan d'implémentation :
 
-**Checklist** : {sous-checklist_N}
-**Contexte** : {codebase}
-**Fichiers** : {documentation_files}
-**Output** : {expected_output_partial}
+**Plan d'implémentation** :
+{plan_details}
 
-Exécuter strictement la checklist, respecter conventions projet.
+**checklist** :
+{sous-checklist_N}
+
+**Contexte codebase** : {codebase}
+**Fichiers documentation** : {documentation_files}
+
+**Instructions** :
+1. Lire le plan complet pour comprendre le contexte global
+2. Implémenter UNIQUEMENT la checklist assignée (variable `checklist`)
+3. Respecter les Points d'Attention mentionnés dans le plan
+4. Viser les Critères de Validation Finale du plan
+5. Respecter conventions projet (codebase)
+
+⚠️ Ne pas implémenter les étapes des autres agents.
 """)
 ```
 
 **Si agent=DOCUMENT** :
 ```
 Task(subagent_type="document", prompt="""
-Rédiger partie {N} :
+Rédiger partie {N} du plan d'implémentation :
 
-**Type** : {type_from_plan}
-**Checklist** : {sous-checklist_N}
-**Fichiers** : {documentation_files}
-**Output** : {expected_output_partial}
+**Plan d'implémentation** :
+{plan_details}
 
-Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}.
+**checklist** :
+{sous-checklist_N}
+
+**Type document** : {document_type}
+**Fichiers documentation** : {documentation_files}
+
+**Instructions** :
+1. Lire le plan complet pour comprendre le contexte global
+2. Rédiger UNIQUEMENT la checklist assignée (variable `checklist`)
+3. Respecter les Points d'Attention mentionnés dans le plan
+4. Viser les Critères de Validation Finale du plan
+5. Suivre template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}
+
+⚠️ Ne pas rédiger les sections des autres agents.
 """)
 ```
 
@@ -365,32 +411,48 @@ Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLA
 **Si agent=CODE** :
 ```
 Task(subagent_type="code", prompt="""
-Implémenter phase complète :
+Implémenter phase complète selon plan d'implémentation :
 
-**Checklist** : {checklist_niveau_2_complete}
-**Contexte** : {codebase}
-**Fichiers** : {documentation_files}
-**Output** : {expected_output}
+**Plan d'implémentation** :
+{plan_details}
 
-Exécuter strictement la checklist, respecter conventions projet.
+**Contexte codebase** : {codebase}
+**Fichiers documentation** : {documentation_files}
+
+**Instructions** :
+1. Lire le plan complet (Objectif, Checklist, Points d'Attention, Critères Validation)
+2. Implémenter TOUTES les étapes de la checklist niveau 2 dans l'ordre
+3. Respecter les Points d'Attention mentionnés dans le plan
+4. Viser les Critères de Validation Finale du plan
+5. Respecter conventions projet (codebase)
 """)
 ```
 
 **Si agent=DOCUMENT** :
 ```
 Task(subagent_type="document", prompt="""
-Rédiger documentation complète :
+Rédiger documentation complète selon plan d'implémentation :
 
-**Type** : {type_from_plan}
-**Checklist** : {checklist_niveau_2_complete}
-**Fichiers** : {documentation_files}
-**Output** : {expected_output}
+**Plan d'implémentation** :
+{plan_details}
 
-Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}.
+**Type document** : {document_type}
+**Fichiers documentation** : {documentation_files}
+
+**Instructions** :
+1. Lire le plan complet (Objectif, Checklist, Points d'Attention, Critères Validation)
+2. Rédiger TOUTES les sections de la checklist niveau 2 dans l'ordre
+3. Respecter les Points d'Attention mentionnés dans le plan
+4. Viser les Critères de Validation Finale du plan
+5. Suivre template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}
 """)
 ```
 
 **Résultat attendu** : Rapport d'implémentation avec fichiers créés/modifiés
+
+**Stocker résultat** :
+- Variable `implementation_report` : Rapport(s) markdown retourné(s) par agent(s) CODE/DOCUMENT
+- Si PARALLÈLE : Concaténer tous les rapports en un seul texte
 
 Marquer → completed
 
@@ -403,15 +465,15 @@ Marquer "Lancer agent TEST" → in_progress
 ```
 Task(
   subagent_type="test",
-  description="Validation phase X.Y",
+  description="Validation implémentation",
   prompt="""
-  Valider la phase {phase_number} :
+  Valider l'implémentation réalisée selon le plan d'implémentation :
 
-  **Checklist niveau 2** (ce qui devait être fait) :
-  {checklist_details}
+  **Checklist Niveau 1 (PLAN.md - Macro)** :
+  {checklist_niveau_1}
 
-  **Output attendu** :
-  {expected_output}
+  **Plan d'implémentation complet** :
+  {plan_details}
 
   **Contexte codebase** :
   {codebase}
@@ -419,20 +481,33 @@ Task(
   **Rapports d'implémentation** :
   {implementation_report}
 
-  Vérifier :
-  1. Conformité checklist (toutes étapes implémentées)
-  2. Output produit (fichier existe, contenu valide)
-  3. Qualité code (tests appropriés selon type output)
+  **Instructions de validation** :
 
-  Retourner rapport validation.
+  1. Lire le plan complet pour comprendre :
+     - Checklist Niveau 2 (critères détaillés par étape)
+     - Points d'Attention (risques/contraintes à vérifier en priorité)
+     - Critères de Validation Finale (objectifs globaux de réussite)
+
+  2. Vérifier conformité selon PRIORITÉ STRICTE (5 niveaux) :
+     - **PRIORITÉ 1** : Checklist Niveau 1 (chemins fichiers exacts, outputs macro)
+     - **PRIORITÉ 2** : Checklist Niveau 2 (contenu détaillé, critères succès par étape)
+     - **PRIORITÉ 3** : Critères de Validation Finale (objectifs globaux du plan)
+     - **PRIORITÉ 4** : Points d'Attention (risques/contraintes du plan)
+     - **PRIORITÉ 5** : Tests techniques (selon type output + stack)
+
+  3. Tenir compte des Points d'Attention du plan lors de la validation
+
+  ⚠️ IMPORTANT : Si niveau 1 FAIL → ARRÊTER, ne pas valider niveaux suivants
+
+  Retourner rapport validation complet (5 niveaux de validation).
   """
 )
 ```
 
-**Résultat attendu** : Rapport validation avec conformité + tests exécutés
+**Résultat attendu** : Rapport validation avec conformité niveau 1 + niveau 2 + critères globaux + points d'attention + tests techniques exécutés
 
 **Si TEST échoue** :
-- Afficher erreurs détectées
+- Afficher erreurs détectées (différencier niveau 1 vs niveau 2)
 - Demander au user : "Corriger et relancer TEST ? (oui/non)"
 - Si oui : Relancer CODE puis TEST
 - Si non : Arrêter (phase incomplète)
@@ -480,7 +555,7 @@ PR_URL=$(gh pr create \
   --body "Implements Phase {X.Y}
 
 ## Story Changes
-{checklist_niveau_1_resumé}
+{checklist_niveau_1}
 
 ## Output
 {expected_output}" \
