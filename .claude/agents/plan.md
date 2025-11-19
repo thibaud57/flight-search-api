@@ -18,7 +18,7 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
 
 **Tu reçois dans le prompt :**
 - `checklist_niveau_1` : Checklist macro de la phase
-- `codebase_context` : Stack, conventions, fichiers existants
+- `codebase` : Stack, conventions, fichiers existants
 - `documentation_files` : Fichiers documentation pertinents (utiliser Read() pour les lire)
 - `expected_output` : Output attendu
 - `task_type` : Type (config|code|docs|docker|test)
@@ -43,7 +43,7 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
 8. Commit avec message conventional commits
 ```
 
-**Adaptation automatique** : Détecter stack via `codebase_context.stack` et adapter (Python → pyproject.toml, Node.js → package.json, Go → go.mod, etc.).
+**Adaptation automatique** : Détecter stack via `codebase.stack` et adapter (Python → pyproject.toml, Node.js → package.json, Go → go.mod, etc.).
 
 ## 🚀 Process
 
@@ -62,6 +62,16 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
 
 3. **Générer plan détaillé**
    - Marquer "Générer plan" comme in_progress
+   - Déterminer agent d'exécution selon `task_type` :
+     - `task_type: "docs"` → Agent DOCUMENT
+       - Détecter sous-type selon `expected_output` :
+         - Si chemin commence par `docs/specs/` → type="specs"
+         - Si chemin commence par `docs/references/` → type="references"
+         - Autres chemins dans `docs/` → type="docs"
+     - `task_type: "config|code|docker|test"` → Agent CODE
+   - Déterminer stratégie d'exécution :
+     - **UNIQUE** (défaut) : Checklist courte (<10 étapes) OU étapes interdépendantes
+     - **PARALLÈLE** : Checklist longue (≥15 étapes) ET étapes indépendantes (ex: plusieurs fichiers sans dépendances)
    - Pour chaque étape : Action précise (verbe + objet) + détails concrets + critère succès
    - Principes : Atomique, Exécutable, Séquentielle, Vérifiable
    - Niveau de détail : Directif sans coder (pas "configurer X" ni code complet ligne par ligne)
@@ -80,10 +90,25 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
 ## 📤 Format de Sortie
 
 ```markdown
-# 📋 Plan d'Implémentation - Phase X.Y
+# 📋 Plan d'Implémentation
 
 ## 🎯 Objectif
 [1-2 lignes sur ce qui sera accompli]
+
+## 🤖 Agent d'Exécution
+
+**Agent** : [CODE | DOCUMENT]
+
+[Si agent=DOCUMENT, ajouter cette ligne :]
+**Type document** : [specs | references | docs]
+
+## 🚀 Stratégie
+
+**Exécution** : [UNIQUE | PARALLÈLE]
+
+[Si PARALLÈLE, ajouter :]
+**Nombre d'agents** : [N agents]
+**Division** : [Décrire comment diviser la checklist entre agents]
 
 ## 📝 Checklist Niveau 2 (N étapes)
 
@@ -117,7 +142,8 @@ checklist_niveau_1:
 - Configuration metadata projet + dependencies principales
 - Configuration linting + type checking
 expected_output: Fichier configuration projet complet
-codebase_context:
+task_type: "config"
+codebase:
   stack: "python"
   conventions: {linter: "ruff", type_checker: "mypy"}
 documentation_files: [VERSIONS.md, CLAUDE.md]
@@ -125,10 +151,18 @@ documentation_files: [VERSIONS.md, CLAUDE.md]
 
 **Output** :
 ```markdown
-# 📋 Plan d'Implémentation - Phase Config
+# 📋 Plan d'Implémentation
 
 ## 🎯 Objectif
 Créer fichier configuration projet (pyproject.toml) avec metadata, dependencies, et outils qualité.
+
+## 🤖 Agent d'Exécution
+
+**Agent** : CODE
+
+## 🚀 Stratégie
+
+**Exécution** : UNIQUE
 
 ## 📝 Checklist Niveau 2 (8 étapes)
 
@@ -166,9 +200,72 @@ Créer fichier configuration projet (pyproject.toml) avec metadata, dependencies
 - Commit effectué avec message conventional
 ```
 
+### Phase Docs (Documentation Specs)
+
+**Input** :
+```
+checklist_niveau_1:
+- Rédaction spécifications story 5
+expected_output: docs/specs/story-5.md
+task_type: "docs"
+codebase:
+  stack: "python"
+documentation_files: [TEMPLATE_SPECS.md, CLAUDE.md, docs/specs/story-4.md]
+```
+
+**Output** :
+```markdown
+# 📋 Plan d'Implémentation
+
+## 🎯 Objectif
+Rédiger documentation story 5 selon template applicable.
+
+## 🤖 Agent d'Exécution
+
+**Agent** : DOCUMENT
+**Type document** : specs
+
+## 🚀 Stratégie
+
+**Exécution** : UNIQUE
+
+## 📝 Checklist Niveau 2 (7 étapes)
+
+1. **Créer fichier documentation** : docs/specs/story-5.md avec metadata YAML
+   - Critère succès : Fichier créé avec frontmatter valide
+
+2. **Rédiger section Contexte Business** : Besoin utilisateur, contraintes, valeur, métriques
+   - Critère succès : Section complète et structurée
+
+3. **Définir Spécifications Techniques** : Composants avec interfaces
+   - Critère succès : Composants définis avec comportements décrits
+
+4. **Créer tableaux tests unitaires** : Scénarios tests unitaires structurés
+   - Critère succès : Tableaux tests présents et complets
+
+5. **Créer tableaux tests intégration** : Scénarios tests intégration structurés
+   - Critère succès : Tests intégration décrits
+
+6. **Définir Critères Acceptation** : Critères SMART
+   - Critère succès : Critères acceptation définis
+
+7. **Commit** : Message conventional commits
+   - Format : docs(specs): add story 5 specifications
+
+## 🔍 Points d'Attention
+- Respecter template applicable selon type
+- Critères acceptation mesurables
+
+## ✅ Critères de Validation Finale
+- Documentation créée et conforme template
+- Toutes sections requises présentes
+- Commit effectué avec message conventional
+```
+
 # Message Final
 
 ✅ **Plan d'implémentation généré**
 📄 **Livrables** : Plan Markdown avec N étapes détaillées (adapté à checklist niveau 1)
 🔗 **Documentation utilisée** : [Liste fichiers lus avec Read()]
-➡️ **Prochaine étape** : Exécuter checklist niveau 2 via agent CODE
+🤖 **Agent d'exécution** : [CODE | DOCUMENT]
+➡️ **Prochaine étape** : Exécuter checklist niveau 2 via agent déterminé

@@ -7,9 +7,13 @@ scope: ["code"]
 technologies: ["crawl4ai", "tenacity", "python"]
 ---
 
-# 1. Patterns HTML de reCAPTCHA
+# Patterns HTML de reCAPTCHA
 
-## reCAPTCHA v2 (Checkbox)
+## Description
+
+Les patterns reCAPTCHA permettent d'identifier les différentes versions (v2 Checkbox, v2 Invisible, v3) via des éléments HTML spécifiques. La détection repose sur les classes CSS, attributs data, iframes et scripts caractéristiques. reCAPTCHA v2 affiche un challenge interactif, tandis que v3 fonctionne en arrière-plan sans interaction utilisateur.
+
+## Exemple - reCAPTCHA v2 (Checkbox)
 
 ```html
 <!-- Élément conteneur principal -->
@@ -22,31 +26,34 @@ technologies: ["crawl4ai", "tenacity", "python"]
         title="reCAPTCHA"></iframe>
 ```
 
-### Patterns de détection
-- Classes CSS: `g-recaptcha`, `grecaptcha`
-- Attributs: `data-sitekey`, `data-callback`
-- Iframes depuis `google.com/recaptcha/api`
-- Token caché: `<input name="g-recaptcha-response" type="hidden">`
-
-## reCAPTCHA v2 Invisible
-
+**reCAPTCHA v2 Invisible** :
 ```html
 <div class="g-recaptcha"
      data-sitekey="VOTRE_SITE_KEY"
      data-size="invisible"></div>
 ```
 
-## reCAPTCHA v3
-
+**reCAPTCHA v3** :
 ```javascript
-// Pas d'élément DOM visible
-// Détection par les requêtes réseau
 <script src="https://www.google.com/recaptcha/api.js?render=VOTRE_SITE_KEY"></script>
 ```
 
-# 2. Patterns HTML de hCaptcha
+## Points clés
 
-## hCaptcha Standard
+- **Classes CSS** : `g-recaptcha`, `grecaptcha` identifient le conteneur
+- **Attributs** : `data-sitekey` contient la clé du site, `data-callback` définit la fonction de succès
+- **Iframes** : Source depuis `google.com/recaptcha/api` confirme la présence
+- **Token caché** : `<input name="g-recaptcha-response" type="hidden">` stocke la réponse
+- **v2 vs v3** : v2 affiche challenge visible, v3 est invisible (détection par script uniquement)
+- **Détection v3** : Pas d'élément DOM visible, identifier via script `recaptcha/api.js?render=`
+
+# Patterns HTML de hCaptcha
+
+## Description
+
+hCaptcha est une alternative à reCAPTCHA axée sur la confidentialité. La détection repose sur des éléments HTML similaires : classe CSS distinctive, attributs data, scripts de chargement spécifiques et iframes. hCaptcha utilise un challenge visuel accessible avec options de personnalisation (thème, langue).
+
+## Exemple - hCaptcha Standard
 
 ```html
 <!-- Conteneur avec classe h-captcha -->
@@ -62,13 +69,16 @@ technologies: ["crawl4ai", "tenacity", "python"]
         title="hCaptcha"></iframe>
 ```
 
-### Patterns de détection
-- Classes CSS: `h-captcha`
-- Attributs: `data-sitekey`, `data-theme`, `data-callback`
-- Iframes depuis `hcaptcha.com`
-- Token response: `<textarea id="h-captcha-response"></textarea>`
+## Points clés
 
-# 3. Code de Détection Python
+- **Classe CSS** : `h-captcha` identifie le conteneur (vs `g-recaptcha` pour reCAPTCHA)
+- **Attributs** : `data-sitekey` (clé site), `data-theme` (light/dark), `data-callback` (fonction succès)
+- **Script** : Domaine spécifique `js.hcaptcha.com` vs `google.com/recaptcha`
+- **Iframes** : Source depuis `hcaptcha.com/captcha/`
+- **Token response** : Stocké dans `<textarea id="h-captcha-response"></textarea>`
+- **Détection double** : Rechercher à la fois div `.h-captcha` ET script `js.hcaptcha.com` pour fiabilité maximale
+
+# Code de Détection Python
 
 ```python
 from html.parser import HTMLParser
@@ -125,7 +135,7 @@ class CaptchaDetector:
         }
 ```
 
-# 4. Stratégie de Retry avec Rotation IP (Tenacity + Proxies)
+# Stratégie de Retry avec Rotation IP (Tenacity + Proxies)
 
 ## Architecture Recommandée
 ```
@@ -236,7 +246,7 @@ class CaptchaHandlingCrawler:
         return result
 ```
 
-# 5. Configuration Optimale de Retry
+# Configuration Optimale de Retry
 
 ## Paramètres et Justifications
 
@@ -258,7 +268,7 @@ Tentative 4: Proxy 3, attendre 16s (2^3 * 2)
 Tentative 5: Proxy 4, attendre 32s (2^4 * 2)
 ```
 
-# 6. Best Practices pour Minimiser les Captchas
+# Best Practices pour Minimiser les Captchas
 
 ## Approche Préventive
 ```python

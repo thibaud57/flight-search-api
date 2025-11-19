@@ -1,19 +1,24 @@
 ---
 description: Orchestrateur intelligent d'exécution de phases de projet selon PLAN.md
-argument-hint: <phase_number> (ex: 1.1, 1.2, 5.3)
+argument-hint: '[--force] [<phase_number>]' (ex: /execute-plan-phase, /execute-plan-phase 4.2, /execute-plan-phase --force 4.1)
 allowed-tools: TodoWrite, Read, Bash, Task, Edit
 ---
 
 # Commande execute-plan-phase
 
-Tu orchestres l'exécution autonome d'une sous-phase du PLAN.md avec stratégie adaptative (agents parallèles ou séquentiel).
+Tu orchestres l'exécution autonome d'une sous-phase du PLAN.md avec stratégie adaptative (agents parallèles ou unique).
 
 ## Usage
 
 ```bash
-/execute-plan-phase 1.1
-/execute-plan-phase 1.2
-/execute-plan-phase 5.3
+# Auto-détection : lance la première phase non cochée
+/execute-plan-phase
+
+# Phase spécifique
+/execute-plan-phase 4.2
+
+# Re-exécution forcée d'une phase déjà réalisée
+/execute-plan-phase --force 4.1
 ```
 
 ## 🎯 Mission
@@ -23,31 +28,65 @@ Tu orchestres l'exécution autonome d'une sous-phase du PLAN.md avec stratégie 
 3. Stocker liste fichiers (sans lire le contenu)
 4. Setup Git (checkout/create branche)
 5. Lancer agent PLAN (génère checklist niveau 2 + stratégie, avec retry si validation fail)
-6. Lancer agent(s) CODE (selon stratégie PLAN : parallèle/séquentiel/unique)
+6. Lancer agent(s) CODE ou DOCUMENT (selon stratégie PLAN : parallèle/unique)
 7. Lancer agent TEST (validation conformité)
 8. Cocher cases dans PLAN.md
 
 ## 🚀 Process Exécution
 
-### ÉTAPE PRÉLIMINAIRE : Validation argument
+### ÉTAPE PRÉLIMINAIRE : Parsing arguments & Validation
 
-Vérifier que `<phase_number>` est fourni.
+**A. Parser arguments** :
+1. **Aucun arg** : Auto-détection première phase non cochée
+2. **`--force <phase>`** : Re-exécution forcée
+3. **`<phase>`** : Phase spécifique
 
-**Si manquant** :
+**B. Déterminer phase cible** :
+
+**Cas 1 : Auto-détection**
 ```
-❌ Erreur : Numéro de phase manquant
-
-Usage : /execute-plan-phase <phase_number>
-
-Exemples :
-  /execute-plan-phase 1.1
-  /execute-plan-phase 2.3
-  /execute-plan-phase 5.1
-
-💡 Consulte .claude/PLAN.md pour voir les phases disponibles
+🔍 Recherche première phase non cochée...
 ```
+- Lire `.claude/PLAN.md`, parser sous-phases `### X.Y`
+- Identifier première avec `- [ ]` → stocker `phase_number`
+- **Si toutes cochées** :
+  ```
+  ✅ Toutes phases terminées !
+  💡 Re-exécuter : /execute-plan-phase --force <phase>
+  ```
+  **ARRÊTER.**
+- **Si phase détectée** :
+  ```
+  📌 Phase {X.Y} détectée : {titre}
+  ```
+  → Continuer **Étape C**
 
-**ARRÊTER l'exécution si argument manquant.**
+**Cas 2 : `--force <phase>`**
+```
+⚠️ Mode force : re-exécution phase {X.Y}
+```
+- Stocker `phase_number`, `force_mode=true`
+- **Sauter Étape C**, aller ÉTAPE 0
+
+**Cas 3 : `<phase>`**
+- Stocker `phase_number`, `force_mode=false`
+- → Continuer **Étape C**
+
+**C. Vérifier checkbox (si `force_mode=false`)** :
+
+Lire `.claude/PLAN.md`, parser sous-phase `{phase_number}` :
+- **Si toutes `- [x]`** (déjà réalisée) :
+  ```
+  ❌ Phase {X.Y} déjà réalisée
+  💡 Re-exécuter : /execute-plan-phase --force {X.Y}
+      Lancer prochaine : /execute-plan-phase
+  ```
+  **ARRÊTER.**
+- **Si au moins 1 `- [ ]`** :
+  ```
+  ✅ Phase valide
+  ```
+  → Continuer ÉTAPE 0
 
 ### ÉTAPE 0 : Initialisation Todo List
 
@@ -60,7 +99,7 @@ TodoWrite([
   {content: "Stocker liste fichiers", status: "pending", activeForm: "Stockage liste"},
   {content: "Setup Git", status: "pending", activeForm: "Configuration Git"},
   {content: "Lancer agent PLAN", status: "pending", activeForm: "Lancement PLAN"},
-  {content: "Lancer agent(s) CODE", status: "pending", activeForm: "Lancement CODE"},
+  {content: "Lancer agent d'exécution", status: "pending", activeForm: "Lancement agent"},
   {content: "Lancer agent TEST", status: "pending", activeForm: "Lancement TEST"},
   {content: "Cocher PLAN.md", status: "pending", activeForm: "Mise à jour PLAN"},
   {content: "Commit, Push & Pull Request", status: "pending", activeForm: "Création Pull Request"}
@@ -79,6 +118,7 @@ Lire **uniquement** `.claude/PLAN.md` et parser :
 
 **Sous-phase** (ex: 1.1) :
 - Titre complet
+- Type de tâche (`🏷️ **Type**` : config|code|docs|docker|test)
 - Checklist complète (toutes `- [ ]`)
 - Output attendu (`📝 **Output**`)
 - Notes
@@ -148,7 +188,7 @@ Marquer "Stocker liste fichiers" → in_progress
 ```
 
 **Stocker dans variables** :
-- `codebase_context` : Tout le bloc `codebase`
+- `codebase` : Tout le bloc `codebase`
 - `documentation_files` : Liste de `documentation.files_to_read`
 
 Marquer → completed
@@ -186,6 +226,8 @@ Task(
 
   **Phase** : {phase_number} - {phase_title}
 
+  **Type tâche** : {task_type}
+
   **Checklist niveau 1** (depuis PLAN.md) :
   {checklist_niveau_1}
 
@@ -193,14 +235,14 @@ Task(
   {expected_output}
 
   **Contexte codebase** :
-  {codebase_context}
+  {codebase}
 
   **Fichiers pertinents** :
   {documentation_files}
 
   Génère :
   1. Checklist niveau 2 (détaillée, exécutable)
-  2. Stratégie d'exécution (parallèle/séquentiel/unique)
+  2. Stratégie d'exécution (parallèle/unique)
   3. Points d'attention
   4. Critères validation finale
   """
@@ -208,6 +250,8 @@ Task(
 ```
 
 **Résultat attendu** : Markdown avec checklist niveau 2 + stratégie
+
+**⚠️ IMPORTANT** : Stocker le plan retourné pour retry éventuel.
 
 **Validation user avec retry** :
 
@@ -227,22 +271,21 @@ Afficher le plan généré :
 
 **Si user répond "non"** ou demande ajustements :
 1. Capturer feedback user
-2. Relancer Task(subagent_type="plan") avec retry_context :
+2. Relancer Task(subagent_type="plan") avec le prompt suivant :
    ```
-   Task(
-     subagent_type="plan",
-     prompt="""
-     Le plan précédent a été rejeté. Voici le feedback :
+   Le plan précédent a été rejeté. Voici le feedback :
 
-     {user_feedback}
+   {user_feedback}
 
-     Plan précédent :
-     {previous_plan}
+   Plan précédent (AJUSTER selon feedback, NE PAS refaire from scratch) :
+   {plan_complet_précédent}
 
-     Ajuste le plan selon le feedback et re-génère.
-     """
-   )
+   Ajuste le plan ci-dessus selon le feedback et re-génère.
+   Conserve la structure existante, modifie uniquement ce qui est mentionné dans le feedback.
    ```
+
+   ⚠️ **CRITIQUE** : Inclure le plan précédent complet dans le prompt, sinon l'agent va tout refaire.
+
 3. Afficher nouveau plan
 4. Redemander validation
 5. **Répéter jusqu'à validation "oui"**
@@ -252,80 +295,102 @@ Afficher le plan généré :
 
 Marquer → completed
 
-### ÉTAPE 6 : Lancer agent(s) CODE
+### ÉTAPE 6 : Lancer agent(s) d'exécution (CODE ou DOCUMENT)
 
-Marquer "Lancer agent(s) CODE" → in_progress
+Marquer "Lancer agent d'exécution" → in_progress
+
+**Parser agent d'exécution du plan validé** :
+
+Le plan contient une section `## 🤖 Agent d'Exécution` avec :
+- **Agent** : CODE ou DOCUMENT
+- **Type document** (si agent=DOCUMENT) : specs, references, ou docs
 
 **Parser stratégie du plan validé** :
 
 Le plan contient une section `## 🚀 Stratégie` avec :
-- **Parallèle** : Plusieurs agents CODE en parallèle
-- **Séquentiel** : Un seul agent CODE ou plusieurs séquentiels
-- **Unique** : Un seul agent CODE
+- **Parallèle** : Plusieurs agents en parallèle
+- **Unique** : Un seul agent
 
-**Cas 1 : Stratégie PARALLÈLE** (ex: "lancer 3 agents en parallèle")
+**Cas 1 : Stratégie PARALLÈLE**
 
-Lancer tous agents CODE en **1 seul message** avec multi-invoke :
+**📋 Division Manuelle**
 
+**Étape 1 : Lire division** dans `## 🚀 Stratégie` du plan :
+- Nombre d'agents : N
+- Division : "Agent 1: Étapes 1-3, Agent 2: Étapes 4-6, ..."
+
+**Étape 2 : Parser checklist** (dans `## 📝 Checklist Niveau 2`) :
+- Identifier étapes assignées par agent selon division
+- Créer N sous-checklists contenant **UNIQUEMENT** les étapes respectives de chaque agent
+
+**Étape 3 : Préparer N prompts** :
+- Checklist : Sous-checklist agent
+- Contexte : `codebase`, `documentation_files`, `expected_output`
+- Type : Si DOCUMENT, ajouter `type` from plan
+
+---
+
+Lancer tous agents en **1 seul message** multi-invoke :
+
+**Si agent=CODE** :
 ```
-# Message unique avec 3 Task calls
-Task(subagent_type="code", prompt="Agent 1: {instructions}") +
-Task(subagent_type="code", prompt="Agent 2: {instructions}") +
-Task(subagent_type="code", prompt="Agent 3: {instructions}")
-```
+Task(subagent_type="code", prompt="""
+Implémenter partie {N} :
 
-Chaque agent reçoit :
-```
-Implémenter partie {N} de la checklist niveau 2 :
-
-**Checklist niveau 2** :
-{sous-ensemble_checklist_pour_cet_agent}
-
-**Contexte codebase** :
-{codebase}
-
-**Fichiers pertinents** :
-{documentation_files}
-
-**Output attendu** :
-{expected_output_partial}
+**Checklist** : {sous-checklist_N}
+**Contexte** : {codebase}
+**Fichiers** : {documentation_files}
+**Output** : {expected_output_partial}
 
 Exécuter strictement la checklist, respecter conventions projet.
+""")
 ```
 
-**Cas 2 : Stratégie SÉQUENTIEL**
-
-Lancer agent(s) CODE un par un :
-
+**Si agent=DOCUMENT** :
 ```
-Task(
-  subagent_type="code",
-  description="Implémentation phase X.Y",
-  prompt="""
-  Implémenter la phase complète :
+Task(subagent_type="document", prompt="""
+Rédiger partie {N} :
 
-  **Checklist niveau 2** :
-  {checklist}
+**Type** : {type_from_plan}
+**Checklist** : {sous-checklist_N}
+**Fichiers** : {documentation_files}
+**Output** : {expected_output_partial}
 
-  **Contexte codebase** :
-  {codebase}
-
-  **Fichiers pertinents** :
-  {documentation_files}
-
-  **Output attendu** :
-  {expected_output}
-
-  Exécuter strictement la checklist, respecter conventions projet.
-  """
-)
+Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}.
+""")
 ```
 
-**Cas 3 : Stratégie UNIQUE**
+**Cas 2 : Stratégie UNIQUE**
 
-Même que séquentiel, un seul agent CODE.
+**Si agent=CODE** :
+```
+Task(subagent_type="code", prompt="""
+Implémenter phase complète :
 
-**Résultat attendu** : Rapport(s) d'implémentation avec fichiers créés/modifiés
+**Checklist** : {checklist_niveau_2_complete}
+**Contexte** : {codebase}
+**Fichiers** : {documentation_files}
+**Output** : {expected_output}
+
+Exécuter strictement la checklist, respecter conventions projet.
+""")
+```
+
+**Si agent=DOCUMENT** :
+```
+Task(subagent_type="document", prompt="""
+Rédiger documentation complète :
+
+**Type** : {type_from_plan}
+**Checklist** : {checklist_niveau_2_complete}
+**Fichiers** : {documentation_files}
+**Output** : {expected_output}
+
+Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}.
+""")
+```
+
+**Résultat attendu** : Rapport d'implémentation avec fichiers créés/modifiés
 
 Marquer → completed
 
@@ -351,7 +416,7 @@ Task(
   **Contexte codebase** :
   {codebase}
 
-  **Rapports CODE** :
+  **Rapports d'implémentation** :
   {implementation_report}
 
   Vérifier :
@@ -400,21 +465,6 @@ Dans la sous-phase parsée (ÉTAPE 1), chercher pattern(s) :
 git add .
 git commit -m "{message}"
 LAST_COMMIT_MSG="{message}"
-```
-
-**Cas 2 : Plusieurs commits** (ex: Phase 0.2 a 2 commits)
-```bash
-# Parser ordre commits dans PLAN.md
-# Identifier fichiers concernés par chaque étape avant le commit
-
-# Commit 1
-git add {fichiers_avant_premier_commit}
-git commit -m "{message_1}"
-
-# Commit 2
-git add {fichiers_avant_deuxième_commit}
-git commit -m "{message_2}"
-LAST_COMMIT_MSG="{message_2}"
 ```
 
 **9B. Push branche** :
@@ -467,16 +517,17 @@ Marquer → completed
 ✅ Valider ce plan ? (oui/non)
 ```
 
-### Pendant CODE
+### Pendant Exécution (CODE ou DOCUMENT)
 ```
-💻 Lancement agent(s) CODE...
+{si CODE} → 💻 Lancement agent(s) CODE...
+{si DOCUMENT} → 📝 Lancement agent(s) DOCUMENT ({type})...
 {si parallèle} → 🔀 {N} agents en parallèle
-{si séquentiel} → 🔄 Exécution séquentielle
+{si unique} → 🎯 1 agent unique
 ```
 
-### Après CODE
+### Après Exécution
 ```
-✅ Implémentation terminée
+✅ {Implémentation | Rédaction} terminée
 📝 Fichiers créés : {liste}
 ✏️ Fichiers modifiés : {liste}
 ```
@@ -514,7 +565,8 @@ Corriger et relancer TEST ? (oui/non)
    Ouvrir {pr_url} et cliquer sur "Merge pull request"
 
 2. **Continuer l'Epic** :
-   ➡️ Prochaine story : /execute-plan-phase {X.Y+1}
+   ➡️ Lancer prochaine story automatiquement : /execute-plan-phase
+   ➡️ Ou cibler manuellement : /execute-plan-phase {X.Y+1}
    (Attendre que la PR soit mergée avant de lancer)
 
 3. **Si Epic complet** (voir "Fin de phase" dans PLAN.md) :

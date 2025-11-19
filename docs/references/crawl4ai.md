@@ -7,7 +7,7 @@ scope: ["code"]
 technologies: ["crawl4ai", "playwright"]
 ---
 
-# 1. AsyncWebCrawler - Crawler Asynchrone
+# AsyncWebCrawler - Crawler Asynchrone
 
 ## Description
 
@@ -41,7 +41,7 @@ asyncio.run(main())
 - Séparer BrowserConfig (global) et CrawlerRunConfig (par crawl)
 - Le CrawlResult contient `cleaned_html`, `markdown`, et `extracted_content`
 
-# 2. BrowserConfig - Configuration Browser
+# BrowserConfig - Configuration Browser
 
 ## Description
 
@@ -79,7 +79,7 @@ async with AsyncWebCrawler(config=browser_conf) as crawler:
 - Recommandé pour les sites avec protection anti-bot
 - Peut être combiné avec UndetectedAdapter pour une protection accrue
 
-# 3. JsonCssExtractionStrategy - Extraction CSS
+# JsonCssExtractionStrategy - Extraction CSS
 
 ## Description
 
@@ -141,12 +141,13 @@ asyncio.run(extract_crypto_prices())
 - `html` : HTML brut
 - `regex` : Extraction via expression régulière
 
-## Avantages
+## Points clés
 
-- Performance : Exécution quasi-instantanée
-- Fiabilité : Résultats consistants et reproductibles
-- Scalabilité : Traitement parallèle de milliers de pages
-- Coût : Zéro appel API ou surcharge computationnelle
+- **Performance** : Exécution quasi-instantanée (pas de LLM)
+- **Fiabilité** : Résultats consistants et reproductibles
+- **Scalabilité** : Traitement parallèle de milliers de pages
+- **Coût zéro** : Aucun appel API ou surcharge computationnelle
+- **Précision** : Sélecteurs CSS permettent extraction ciblée exacte
 
 # Ressources
 

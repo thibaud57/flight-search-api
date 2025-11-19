@@ -245,19 +245,10 @@ flight-search-api/
 │
 ├── docs/
 │   ├── references/         # Documentation technique modulaire
-│   │   ├── anti-detection.md
-│   │   ├── captcha-detection.md
-│   │   ├── crawl4ai.md
-│   │   ├── decodo-proxies.md
-│   │   ├── dokploy.md
-│   │   ├── fastapi.md
-│   │   ├── github-actions.md
-│   │   ├── google-flights.md
-│   │   ├── pydantic-v2.md
-│   │   └── tenacity.md
+│   ├── specs/              # Documentation specs modulaire
 │   ├── ARCHITECTURE.md     # Architecture + ADR
 │   ├── CHANGELOG.md        # Historique versions
-│   ├── PLANNING.md         # Specs détaillées (Phase 4)
+│   ├── SPECS.md            # Spécifications techniques détaillées (Phase 4)
 │   ├── REFERENCES.md       # Index références
 │   └── VERSIONS.md         # Matrice compatibilité
 │
@@ -917,6 +908,101 @@ def test_raises_validation_error():
 - ✅ Coverage minimum 80% (Phase 3+)
 - ❌ Tests intégration en local uniquement (coût Decodo)
 - ❌ Tests E2E manuels (pré-release)
+
+---
+
+### Workflow TDD par story
+
+Pour chaque story (Phase 5) :
+
+```
+┌─────────────────────────────────────────┐
+│ PHASE 1: TDD Tests Unitaires            │
+├─────────────────────────────────────────┤
+│ Pour chaque composant:                  │
+│ 1. Écrire tests composant (red)        │
+│ 2. Implémenter composant (green)       │
+│ 3. Tests passent ✅                     │
+│ 4. Refactor (si nécessaire)            │
+│                                         │
+│ Répéter pour tous composants story      │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│ PHASE 2: Tests Intégration              │
+├─────────────────────────────────────────┤
+│ 5. Écrire tests end-to-end              │
+│    (TestClient si API route)            │
+│ 6. Tests intégration passent ✅         │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│ PHASE 3: Validation Manuelle            │
+├─────────────────────────────────────────┤
+│ 7. Test manuel (curl/Postman)          │
+│ 8. Valider UX réelle                    │
+│ 9. Commit si OK                         │
+└─────────────────────────────────────────┘
+```
+
+**Règles TDD strictes** :
+- ✅ Tests unitaires AVANT implémentation (red → green → refactor)
+- ✅ Tests intégration APRÈS tous tests unitaires de la story
+- ✅ Commit seulement si TOUS les tests passent (unitaires + intégration)
+- ❌ Ne JAMAIS commencer intégration si tests unitaires échouent
+- ❌ Ne JAMAIS skipper tests (coverage minimum 80%)
+
+**Quand faire tests intégration** :
+- Après tous les tests unitaires de la story
+- Avant le commit final
+- Si story inclut API route → TestClient FastAPI obligatoire
+
+**Formats recommandés** :
+
+**AAA (Arrange/Act/Assert)** - Tests unitaires :
+```python
+def test_exemple():
+    # Arrange: Setup initial
+    input_data = {"key": "value"}
+
+    # Act: Exécuter fonction
+    result = fonction(input_data)
+
+    # Assert: Vérifier résultat
+    assert result == expected
+```
+
+**Given/When/Then** - Tests intégration (BDD) :
+```python
+def test_integration_exemple():
+    # Given: État initial
+    client = TestClient(app)
+    request_data = {"key": "value"}
+
+    # When: Action
+    response = client.post("/endpoint", json=request_data)
+
+    # Then: Résultat attendu
+    assert response.status_code == 200
+    assert response.json() == expected
+```
+
+**Exemple Story 3 (Search endpoint mock)** :
+
+**Phase 1 - TDD Composants** :
+1. Models (21 tests) → Implémentation → Tests passent ✅
+2. SearchService mock (5 tests) → Implémentation → Tests passent ✅
+3. Route POST /search (8 tests) → Implémentation → Tests passent ✅
+
+**Phase 2 - Tests Intégration** :
+4. End-to-end API (4 tests) → Tests passent ✅
+
+**Phase 3 - Validation** :
+5. Test manuel `curl -X POST http://localhost:8000/api/v1/search-flights`
+6. Vérifier response JSON valide
+7. Commit : `feat(api): add search endpoint with mock data`
+
+**Total Story 3** : 38 tests (34 unitaires + 4 intégration), coverage ≥ 80%
 
 ---
 

@@ -44,6 +44,7 @@ Analyser une checklist/description de tâche pour identifier les fichiers pertin
 
 **Extraire conventions** :
 - Lire config : `pyproject.toml` ([tool.ruff], [tool.mypy]), `package.json` (scripts), `Makefile`
+- Détecter : linter, formatter, type_checker (null si N/A pour Go/Rust), test_runner
 
 **Identifier fichiers existants pertinents** :
 - Selon checklist + task_type (ex: "dependencies" → chercher `pyproject.toml`, `package.json`)
@@ -55,7 +56,12 @@ Analyser une checklist/description de tâche pour identifier les fichiers pertin
   "package_manager": "uv",
   "markers": ["pyproject.toml"],
   "structure": {"source": "app/", "tests": "tests/"},
-  "conventions": {"linter": "ruff", "type_checker": "mypy"},
+  "conventions": {
+    "linter": "ruff",
+    "formatter": "ruff",
+    "type_checker": "mypy",
+    "test_runner": "pytest"
+  },
   "existing_files": {"config": ["pyproject.toml"]}
 }
 ```
@@ -74,7 +80,7 @@ Analyser une checklist/description de tâche pour identifier les fichiers pertin
 - Identifier sections via regex `^## (.+)$`
 - Extraire mots-clés implicites par section
 
-**Format metadata attendu** (selon `docs/TEMPLATE.md`) :
+**Format metadata attendu** :
 ```yaml
 ---
 title: "Technology - Technical Reference"
@@ -154,7 +160,12 @@ Valider que fichiers recommandés existent :
     "package_manager": "string",
     "markers": ["string"],
     "structure": {"source": "string", "tests": "string"},
-    "conventions": {"linter": "string", "type_checker": "string"},
+    "conventions": {
+      "linter": "string",
+      "formatter": "string",
+      "type_checker": "string | null",
+      "test_runner": "string"
+    },
     "existing_files": {"config": ["string"], "code": ["string"]}
   },
   "documentation": {
@@ -227,7 +238,12 @@ Phase 6: Prioritization
     "package_manager": "uv",
     "markers": ["pyproject.toml"],
     "structure": {"source": "app/", "tests": "tests/"},
-    "conventions": {"linter": "ruff", "type_checker": "mypy"},
+    "conventions": {
+      "linter": "ruff",
+      "formatter": "ruff",
+      "type_checker": "mypy",
+      "test_runner": "pytest"
+    },
     "existing_files": {"config": ["pyproject.toml"]}
   },
   "documentation": {
