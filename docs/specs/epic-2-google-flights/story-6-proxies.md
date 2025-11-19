@@ -3,7 +3,7 @@ title: "Story 6: Proxies (ProxyService + Rotation Decodo)"
 epic: "Epic 2: Google Flights Integration"
 story_points: 5
 dependencies: ["epic-2/story-4"]
-date: "2025-11-19"
+date: "2025-19-11"
 keywords: ["proxies", "decodo", "residential", "rotation", "anti-detection", "france-targeting"]
 scope: ["specs"]
 technologies: ["decodo", "pydantic"]

@@ -355,13 +355,13 @@
 ## Epic 3: Production Ready
 
 ### 4.8 Story 7: Retry + Error handling
-- [ ] Specs : Tenacity retry logic (exponential backoff + jitter)
-- [ ] Specs : Error handling (5xx retry, 4xx non-retry)
-- [ ] Specs : Logging before_sleep callback
-- [ ] Contexte business : Robustesse production, SLA garantis
-- [ ] Tests : Tests unitaires retry + error handling + intégration (à spécifier)
-- [ ] Ajouter à `docs/specs/epic-3-production-ready/story-7-retry.md`
-- [ ] Commit : `docs(specs): add story 7 specifications`
+- [x] Specs : Tenacity retry logic (exponential backoff + jitter)
+- [x] Specs : Error handling (5xx retry, 4xx non-retry)
+- [x] Specs : Logging before_sleep callback
+- [x] Contexte business : Robustesse production, SLA garantis
+- [x] Tests : Tests unitaires retry + error handling + intégration (à spécifier)
+- [x] Ajouter à `docs/specs/epic-3-production-ready/story-7-retry.md`
+- [x] Commit : `docs(specs): add story 7 specifications`
 
 📝 **Output** : Story 7 specs complètes (5 story points)
 
