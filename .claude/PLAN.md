@@ -418,11 +418,11 @@
 
 **Branche** : `feature/story-2-config-logging`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-2-config-logging.md
-- [ ] **Validation manuelle** : App lit .env, logs JSON structurés avec extra context
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(core): add config and structured logging`
-- [ ] **PR** : feature/story-2 → develop
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-2-config-logging.md
+- [x] **Validation manuelle** : App lit .env, logs JSON structurés avec extra context
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(core): add config and structured logging`
+- [x] **PR** : feature/story-2 → develop
 
 📝 **Output** : Story 2 complétée (3 story points)
 
