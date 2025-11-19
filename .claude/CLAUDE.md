@@ -195,6 +195,27 @@ def parse_price(html: str) -> float:
 
 ---
 
+### 7. Fichiers __init__.py
+
+**Code applicatif (`app/`)** :
+```python
+# Exports explicites avec __all__
+from app.main import app
+__all__ = ["app"]
+```
+- ✅ Définir `__all__` (API publique du package)
+- ✅ Facilite imports : `from app import app`
+
+**Tests (`tests/`)** :
+```python
+# Vides (juste docstring)
+"""Tests package."""
+```
+- ✅ Fichiers présents (marque package Python)
+- ❌ Pas d'exports ni `__all__` (convention pytest)
+
+---
+
 ## 🚫 Anti-Patterns
 
 ### Commentaires Inline Interdits
