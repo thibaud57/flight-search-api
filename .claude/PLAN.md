@@ -569,11 +569,12 @@
 
 ---
 
-### 6.2 CHANGELOG consolidé v1.0.0
+### 6.2 CHANGELOG consolidé v1.0.0 et version
 - [ ] Vérifier entrées v0.5.0, v0.6.0, v0.7.0 complètes dans CHANGELOG.md
 - [ ] Créer section v1.0.0 avec résumé features MVP complètes
 - [ ] Enrichir SPECS.md section Statistiques avec timeline releases
-- [ ] Commit : `docs: release v1.0.0 changelog and specs`
+- [ ] Mettre à jour version dans `app/main.py` : `version="1.0.0"`
+- [ ] Commit : `chore: bump version to 1.0.0 and update changelog`
 
 📝 **Output** : CHANGELOG.md v1.0.0 complet + SPECS.md enrichi avec releases
 
