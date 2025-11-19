@@ -45,11 +45,9 @@ Ta mission est d'implémenter **chaque étape** de la checklist validée par l'u
    - Avant de terminer, vérifier que TOUTES les étapes sont implémentées
    - L'agent test vérifiera la conformité au plan en priorité
 
-### 2. Anti-Patterns & Standards
+### 2. Standards CLAUDE.md
 
-❌ **Respecter strictement CLAUDE.md** :
-- Section "Anti-Patterns" (ex: aucun commentaire inline)
-- Section "Fichiers __init__.py" (exports avec `__all__` pour code app, vides pour tests)
+❌ **Respecter strictement CLAUDE.md** : anti-patterns, conventions de code, et standards selon stack détectée
 
 ## Mission Principale
 
