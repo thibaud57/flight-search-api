@@ -119,9 +119,23 @@ Lire **uniquement** `.claude/PLAN.md` et parser :
 **Sous-phase** (ex: 1.1) :
 - Titre complet
 - Type de tâche (`🏷️ **Type**` : config|code|docs|docker|test)
-- Checklist complète (toutes `- [ ]`)
+- **Checklist niveau 1 (MACRO)** : Toutes lignes `- [ ]` ou `- [x]`
+  - Parser CHAQUE item pour extraire pattern backtick : `chemin/fichier.ext`
+  - Stocker : `checklist_niveau_1_items[]` avec `{text, file_path (si trouvé)}`
 - Output attendu (`📝 **Output**`)
 - Notes
+
+**Exemple parsing checklist niveau 1** :
+```
+- [ ] Specs : CrawlerService (Crawl4AI + AsyncWebCrawler)
+  → {text: "Specs : CrawlerService...", file_path: null}
+
+- [ ] Ajouter à `docs/specs/epic-2-google-flights/story-4-crawler-parser.md`
+  → {text: "Ajouter à...", file_path: "docs/specs/epic-2-google-flights/story-4-crawler-parser.md"}
+
+- [ ] Commit : `docs(specs): add story 4 specifications`
+  → {text: "Commit...", file_path: null}
+```
 
 Marquer → completed
 
@@ -407,8 +421,11 @@ Task(
   prompt="""
   Valider la phase {phase_number} :
 
-  **Checklist niveau 2** (ce qui devait être fait) :
-  {checklist_details}
+  **Checklist Niveau 1 (PLAN.md - Macro)** :
+  {checklist_niveau_1_items}
+
+  **Checklist Niveau 2 (Détaillée - PLAN)** :
+  {checklist_niveau_2_details}
 
   **Output attendu** :
   {expected_output}
@@ -419,20 +436,22 @@ Task(
   **Rapports d'implémentation** :
   {implementation_report}
 
-  Vérifier :
-  1. Conformité checklist (toutes étapes implémentées)
-  2. Output produit (fichier existe, contenu valide)
-  3. Qualité code (tests appropriés selon type output)
+  Vérifier (PRIORITÉ STRICTE) :
+  1. **PRIORITÉ 1 : Checklist niveau 1** (chemins fichiers exacts, outputs macro)
+  2. **PRIORITÉ 2 : Checklist niveau 2** (contenu détaillé, qualité)
+  3. **PRIORITÉ 3 : Tests techniques** (selon type output)
 
-  Retourner rapport validation.
+  ⚠️ IMPORTANT : Si niveau 1 FAIL → ARRÊTER, ne pas valider niveau 2
+
+  Retourner rapport validation avec les 2 checklists.
   """
 )
 ```
 
-**Résultat attendu** : Rapport validation avec conformité + tests exécutés
+**Résultat attendu** : Rapport validation avec conformité niveau 1 + niveau 2 + tests exécutés
 
 **Si TEST échoue** :
-- Afficher erreurs détectées
+- Afficher erreurs détectées (différencier niveau 1 vs niveau 2)
 - Demander au user : "Corriger et relancer TEST ? (oui/non)"
 - Si oui : Relancer CODE puis TEST
 - Si non : Arrêter (phase incomplète)

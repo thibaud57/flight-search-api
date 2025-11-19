@@ -29,7 +29,40 @@ Valider que l'output produit par une phase est conforme aux critères attendus v
 
 ## 🚀 Process
 
-### 1. Analyse et Détection Type
+### 1. Validation à 2 Niveaux (PRIORITÉ STRICTE)
+
+**ÉTAPE 1 : Validation Checklist Niveau 1 (MACRO - PLAN.md)**
+
+Pour chaque item de `checklist_niveau_1_items[]` :
+
+1. **Parser pattern backtick** : Extraire `chemin/fichier.ext` si présent
+   - Exemple : `"Ajouter à \`docs/specs/epic-2-google-flights/story-4.md\`"` → `"docs/specs/epic-2-google-flights/story-4.md"`
+
+2. **Si `file_path` trouvé** :
+   - Vérifier fichier existe : `Read(file_path)`
+   - Si fichier manquant → ❌ **FAIL CRITIQUE** : "Fichier `{file_path}` introuvable"
+   - Si fichier vide → ❌ **FAIL CRITIQUE** : "Fichier `{file_path}` existe mais vide"
+   - Si fichier OK → ✅ Validé
+
+3. **Si item sans file_path** :
+   - Vérifier présence dans rapport d'implémentation (keywords matching)
+   - Si trouvé → ✅ Validé
+   - Si absent → ❌ FAIL : "Item non implémenté"
+
+4. **Résultat niveau 1** :
+   - Si AU MOINS 1 item ❌ FAIL → **STOP** : Ne pas valider niveau 2
+   - Si TOUS items ✅ → Continuer niveau 2
+
+**ÉTAPE 2 : Validation Checklist Niveau 2 (DÉTAIL)**
+
+**Pré-requis** : Niveau 1 ✅ PASS
+
+Pour chaque étape de `checklist_niveau_2_details[]` :
+1. Vérifier critère de succès respecté
+2. Croiser avec rapport d'implémentation
+3. Marquer ✅ ou ❌
+
+**ÉTAPE 3 : Détection Type & Tests Techniques**
 
 **Parser `expected_output` pour identifier type** :
 
@@ -84,21 +117,21 @@ curl -f http://localhost:8000/health # Health check
 kill $!
 ```
 
-### 3. Génération Rapport
+### 3. Génération Rapport à 2 Niveaux
 
 **Vérifier conformité** :
-- Fichiers créés vs attendus (implementation_report vs checklist)
-- Configurations complètes
-- Critères succès respectés
+- **Niveau 1 MACRO** : Fichiers créés aux bons chemins, outputs macro présents
+- **Niveau 2 DÉTAIL** : Configurations complètes, critères succès détaillés respectés
+- **Tests techniques** : Selon type output
 
 **Si échec** :
-- Classifier criticité : 🔴 Critique | 🟡 Majeur | 🟢 Mineur
-- Analyser cause (syntax, deps, incompatibilité)
-- Proposer stratégie : Replan | Fix manuel | Skip
+- Classifier criticité : 🔴 Critique (niveau 1) | 🟡 Majeur (niveau 2) | 🟢 Mineur (tests)
+- Analyser cause (chemin incorrect, contenu manquant, syntax, deps)
+- Proposer stratégie : Fix chemin | Replan | Fix manuel
 
 ## Livrables
 
-**Format Markdown** :
+**Format Markdown avec 2 Checklists** :
 
 ```markdown
 # 🧪 Rapport de Validation
@@ -106,43 +139,82 @@ kill $!
 ## 📊 Résumé
 **Status Global** : ✅ PASS | ❌ FAIL | ⚠️ WARNINGS
 - Type output : [type]
-- Validations : [N]
+- Validations niveau 1 : [N]
+- Validations niveau 2 : [M]
 - Durée totale : [X]s
 
-## 🔍 Résultats
+---
+
+## ✅ Conformité Checklist Niveau 1 (PLAN.md - Macro)
+
+| # | Item | Attendu | Implémenté | Status |
+|---|------|---------|------------|--------|
+| 1 | [Item texte] | [Critère macro] | ✅ Présent / ❌ Absent | ✅ / ❌ |
+| 2 | Ajouter à `chemin/fichier.md` | Fichier au chemin exact | ✅ Fichier existe / ❌ Créé ailleurs | ✅ / ❌ |
+| N | [Item] | [Critère] | [Résultat] | ✅ / ❌ |
+
+**Résultat Niveau 1** : ✅ PASS (N/N items validés) | ❌ FAIL (X erreurs critiques)
+
+---
+
+## ✅ Conformité Checklist Niveau 2 (Détaillée)
+
+[**Si niveau 1 ❌ FAIL** : Section skippée avec message "⏭️ VALIDATION SKIPPÉE (niveau 1 échoué)"]
+
+[**Si niveau 1 ✅ PASS** :]
+
+| # | Étape | Critère succès | Implémenté | Status |
+|---|-------|----------------|------------|--------|
+| 1 | [Étape détaillée] | [Critère] | ✅ OK / ❌ NON | ✅ / ❌ |
+| M | [Étape] | [Critère] | [Résultat] | ✅ / ❌ |
+
+**Résultat Niveau 2** : ✅ PASS (M/M étapes validées) | ❌ FAIL (Y erreurs)
+
+---
+
+## 🔍 Tests Techniques
+
+[Exécutés UNIQUEMENT si niveau 1 + 2 PASS]
+
 ### Validation 1 : [Nom]
 - Commande : `[cmd]`
 - Status : ✅ | ❌
 - Durée : [X]s
 - Output : [pertinent]
 
-## ✅ Conformité Plan
-- ✅ Étape 1 : [critère] → Validé
-- ❌ Étape 2 : [critère] → NON VALIDÉ : [raison]
+---
 
 ## 🎯 Décision Finale
 
-[Si PASS] :
-✅ VALIDATION RÉUSSIE
+[Si PASS complet] :
+✅ **VALIDATION RÉUSSIE**
+- Niveau 1 (Macro) : ✅ PASS
+- Niveau 2 (Détail) : ✅ PASS
+- Tests techniques : ✅ PASS
+
 ➡️ Marquer phase complétée dans PLAN.md
 
 [Si FAIL] :
-❌ VALIDATION ÉCHOUÉE
+❌ **VALIDATION ÉCHOUÉE**
 
-### Problèmes
-🔴 Critique : [Description]
-- Validation : [laquelle]
-- Erreur : [message]
+### Problèmes Critiques (Niveau 1)
+🔴 Fichier créé au mauvais chemin
+- Attendu : `[chemin_attendu]`
+- Créé : `[chemin_réel]`
+- Impact : Fichier introuvable par phases suivantes
+
+### Problèmes Majeurs (Niveau 2)
+🟡 Étape X non implémentée : [raison]
 
 ### Diagnostic
 Cause probable : [analyse]
 
-### Stratégie
-- Option A (Replan) : Retour Phase 2, ajuster checklist
-- Option B (Fix manuel) : User corrige
-- Option C (Skip) : Assumer risque (déconseillé)
+### Recommandation
+[Fix chemin fichier] : Copier contenu vers bon emplacement
+[Replan] : Retour Phase PLAN, ajuster checklist
+[Fix manuel] : User corrige [détails]
 
-➡️ Recommandation : [Option + justification]
+➡️ Action requise : [Recommandation prioritaire]
 ```
 
 ## Exemple : Config Python - PASS
@@ -188,13 +260,26 @@ Toutes les étapes validées
 
 # Message Final
 
-**Si PASS** :
-✅ Phase validée avec succès
+**Si PASS complet** :
+✅ **Phase validée avec succès**
+- ✅ Niveau 1 (Macro) : Tous fichiers aux bons chemins
+- ✅ Niveau 2 (Détail) : Toutes étapes implémentées
+- ✅ Tests techniques : Validations OK
 📄 Rapport détaillé ci-dessus
 ➡️ Marquer phase complétée dans PLAN.md
 
-**Si FAIL** :
-❌ Validation échouée - Problèmes critiques détectés
+**Si FAIL niveau 1** :
+❌ **Validation échouée - Erreur critique détectée**
+🔴 Niveau 1 (Macro) : Fichier(s) au mauvais chemin / manquant(s)
+⏭️ Niveau 2 (Détail) : Validation skippée
 📄 Diagnostic complet ci-dessus
-🔧 Stratégie correction recommandée : [Option A/B/C]
+🔧 Action requise : [Fix chemin fichier | Correction manuelle]
+➡️ Correction OBLIGATOIRE avant de continuer
+
+**Si FAIL niveau 2** :
+❌ **Validation échouée - Erreurs majeures détectées**
+✅ Niveau 1 (Macro) : OK
+🟡 Niveau 2 (Détail) : Étape(s) incomplète(s)
+📄 Diagnostic complet ci-dessus
+🔧 Stratégie recommandée : [Replan | Fix manuel | Clarification]
 ➡️ Correction requise avant de continuer
