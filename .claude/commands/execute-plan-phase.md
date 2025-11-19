@@ -115,13 +115,16 @@ Lire **uniquement** `.claude/PLAN.md` et parser :
 **Phase parente** (ex: Phase 1 pour 1.1) :
 - Objectif global
 - Branche Git
+  - Stocker dans variable : `nom_branche`
 
 **Sous-phase** (ex: 1.1) :
 - Titre complet
 - Type de tâche (`🏷️ **Type**` : config|code|docs|docker|test)
+  - Stocker dans variable : `task_type`
 - **Checklist niveau 1** : Toutes lignes `- [ ]` ou `- [x]`
   - Stocker dans variable : `checklist_niveau_1[]` (liste de strings bruts)
 - Output attendu (`📝 **Output**`)
+  - Stocker dans variable : `expected_output`
 - Notes
 
 **Exemple** :
@@ -199,9 +202,8 @@ Marquer "Stocker liste fichiers" → in_progress
 ```
 
 **Stocker dans variables** :
-- `codebase` : Tout le bloc `codebase` (objet complet)
-- `documentation_files` : Extraire `documentation.files_to_read` du JSON EXPLORE
-  - Contient : Liste d'objets `{path, priority, score, reason, sections}`
+- `codebase` : Tout le bloc `codebase`
+- `documentation_files` : Liste de `documentation.files_to_read`
 
 Marquer → completed
 
@@ -303,6 +305,25 @@ Afficher le plan généré :
 5. **Répéter jusqu'à validation "oui"**
 
 **Si user répond "oui"** :
+
+**Parser le plan validé pour extraire les données nécessaires** :
+
+1. **Extraire `checklist_niveau_2`** :
+   - Rechercher section `## 📝 Checklist Niveau 2`
+   - Extraire toutes les lignes numérotées (format : `1. **[Action]** : [Détails]`)
+   - Stocker dans variable `checklist_niveau_2[]` (liste de strings)
+   - Exemple : `["1. **Créer fichier** : Nouveau fichier à docs/specs/...", "2. **Ajouter metadata** : ..."]`
+
+2. **Extraire `document_type`** (si agent=DOCUMENT) :
+   - Rechercher section `## 🤖 Agent d'Exécution`
+   - Ligne `**Type document** : [specs|references|docs]`
+   - Stocker dans variable `document_type`
+
+3. **Extraire stratégie** :
+   - Rechercher section `## 🚀 Stratégie`
+   - Ligne `**Exécution** : [UNIQUE|PARALLÈLE]`
+   - Si PARALLÈLE : extraire division des agents
+
 → Continuer à ÉTAPE 6
 
 Marquer → completed
@@ -311,20 +332,10 @@ Marquer → completed
 
 Marquer "Lancer agent d'exécution" → in_progress
 
-**Parser agent d'exécution du plan validé** :
-
-Le plan contient une section `## 🤖 Agent d'Exécution` avec :
-- **Agent** : CODE ou DOCUMENT
-- **Type document** (si agent=DOCUMENT) : specs, references, ou docs
-
-**Stocker** :
-- Variable `document_type` : Valeur de "Type document" (specs|references|docs) si agent=DOCUMENT
-
-**Parser stratégie du plan validé** :
-
-Le plan contient une section `## 🚀 Stratégie` avec :
-- **Parallèle** : Plusieurs agents en parallèle
-- **Unique** : Un seul agent
+**Variables disponibles depuis ÉTAPE 5** :
+- `checklist_niveau_2[]` : Checklist détaillée extraite du plan
+- `document_type` : Type de document (specs|references|docs) si agent=DOCUMENT
+- Stratégie : UNIQUE ou PARALLÈLE (avec division si applicable)
 
 **Cas 1 : Stratégie PARALLÈLE**
 
