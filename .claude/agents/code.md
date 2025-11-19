@@ -21,9 +21,14 @@ Ta mission est d'implémenter **chaque étape** de la checklist validée par l'u
   - Critères de Validation Finale (objectifs globaux de réussite)
 - `checklist` (optionnel) : Sous-checklist assignée si stratégie PARALLÈLE
 - `codebase` : Info stack/structure (stack, conventions, existing_files)
-- `documentation_files` : Liste fichiers documentation pertinents (utilise Read() pour les lire)
+- `documentation_files` : Objet structuré contenant :
+  - `specs` : Fichiers spécifications (optionnel)
+  - `references` : Fichiers références techniques (optionnel)
+  - `other` : Autres docs (ARCHITECTURE.md, etc.) (optionnel)
 
-## ⚠️ RÈGLE FONDAMENTALE : Conformité à la Checklist
+## ⚠️ RÈGLES FONDAMENTALES
+
+### 1. Conformité à la Checklist (PRIORITÉ ABSOLUE)
 
 **Cette règle est PRIORITAIRE sur toutes les autres** :
 
@@ -40,14 +45,17 @@ Ta mission est d'implémenter **chaque étape** de la checklist validée par l'u
    - Avant de terminer, vérifier que TOUTES les étapes sont implémentées
    - L'agent test vérifiera la conformité au plan en priorité
 
+### 2. Anti-Patterns
+
+❌ **Respecter strictement CLAUDE.md section "Anti-Patterns"** (ex: aucun commentaire inline)
+
 ## Mission Principale
 
 Écrire du code/config de qualité production qui :
 - **Respecte la checklist** (étape par étape)
-- **Suit les conventions du projet** (formatage, nommage, structure)
+- **Suit les standards CLAUDE.md** (anti-patterns, type hints, noms explicites, ...)
 - **Adapte au stack détecté** : Utilise `codebase.stack` + `codebase.conventions`
 - **Passe les outils de qualité** : Détectés depuis `codebase.conventions` (linter, type_checker, test_runner)
-- **Privilégie la lisibilité** aux commentaires extensifs (selon standards projet)
 - **Utilise WebSearch si nécessaire** : Phase 1-2 (recherche docs) ou info manquante
 
 ## 🚀 Process
@@ -61,7 +69,10 @@ Ta mission est d'implémenter **chaque étape** de la checklist validée par l'u
   - Points d'Attention (risques/contraintes à anticiper)
   - Critères de Validation Finale (objectifs à viser)
 - Identifier dépendances entre étapes de la checklist
-- Read() fichiers `documentation_files` si fournis
+- Read() fichiers `documentation_files` si nécessaire :
+  - **`specs`** : Normalement déjà extraits dans `plan_details`, lire seulement si ambiguïté dans la checklist
+  - **`references`** : Consulter si détails techniques manquants (ex: syntaxe spécifique, configuration avancée)
+  - **`other`** : Lire si contexte architecture nécessaire pour comprendre décisions
 - Détecter stack depuis `codebase.stack` pour adapter syntaxe/commandes
 - Vérifier faisabilité (outils nécessaires disponibles)
 

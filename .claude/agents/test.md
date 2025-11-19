@@ -161,11 +161,23 @@ curl -f http://localhost:8000/health # Health check
 kill $!
 ```
 
-### 3. Génération Rapport à 2 Niveaux
+### 3. Validation Code Quality (Standards Projet)
+
+**Validation Anti-Patterns CLAUDE.md** (CRITIQUE) :
+- Lire fichiers créés/modifiés depuis `implementation_report`
+- Chercher violations section "Anti-Patterns" (ex: commentaires inline)
+- **SI trouvés** → ❌ FAIL
+
+**Validation Quality Tools** (Python) :
+- `mypy app/` → strict mode
+- `ruff format . --check` → formatting
+
+### 4. Génération Rapport à 2 Niveaux
 
 **Vérifier conformité** :
 - **Niveau 1 MACRO** : Fichiers créés aux bons chemins, outputs macro présents
 - **Niveau 2 DÉTAIL** : Configurations complètes, critères succès détaillés respectés
+- **Standards Projet** : Commentaires inline, type hints, formatting
 - **Tests techniques** : Selon type output
 
 **Si échec** :
@@ -246,9 +258,32 @@ kill $!
 
 ---
 
-## 🔍 Tests Techniques
+## 🎨 Validation Standards Projet
 
 [Exécutés UNIQUEMENT si niveau 1 + 2 PASS]
+
+### Commentaires Inline
+- Fichiers vérifiés : [liste fichiers créés/modifiés]
+- Commentaires interdits trouvés : [0 / N]
+- Status : ✅ PASS | ❌ FAIL
+- Détails : [Si FAIL : lister fichiers + lignes avec commentaires]
+
+### Type Hints (Python)
+- Commande : `mypy app/`
+- Status : ✅ PASS | ❌ FAIL
+- Erreurs : [0 / N]
+
+### Formatting (Python)
+- Commande : `ruff format . --check`
+- Status : ✅ PASS | ❌ FAIL
+
+**Résultat Standards** : ✅ PASS | ❌ FAIL
+
+---
+
+## 🔍 Tests Techniques
+
+[Exécutés UNIQUEMENT si niveau 1 + 2 + Standards PASS]
 
 ### Validation 1 : [Nom]
 - Commande : `[cmd]`
@@ -293,121 +328,21 @@ Cause probable : [analyse]
 ➡️ Action requise : [Recommandation prioritaire]
 ```
 
-## Exemple Complet : Story 5 Specs - PASS
+## 📌 Règles Importantes
 
-**Input** :
-```
-checklist_niveau_1: [
-  "Specs : CombinationGenerator (itertools.product)",
-  "Specs : SearchService orchestration",
-  "Ajouter à `docs/specs/epic-2-google-flights/story-5.md`"
-]
+**Priorité validation** :
+1. **Niveau 1 FAIL** → STOP (ne pas valider niveaux suivants)
+2. **Niveau 2** → Validé seulement si niveau 1 PASS
+3. **Tests techniques** → Validés seulement si niveaux 1+2 PASS
 
-plan_details: """
-# 📋 Plan d'Implémentation
+**Adaptation stack** :
+- Python : `uv sync`, `ruff`, `mypy`, `pytest`
+- JavaScript : `npm install`, `eslint`, `vitest`
+- Go : `go mod download`, `golangci-lint`, `go test`
+- Rust : `cargo check`, `clippy`, `cargo test`
 
-## 🎯 Objectif
-Créer spécifications Story 5 avec CombinationGenerator et SearchService.
-
-## 📝 Checklist Niveau 2 (2 étapes)
-
-1. **Créer fichier** : docs/specs/story-5.md avec metadata YAML
-   - Critère succès : Fichier créé avec frontmatter valide
-
-2. **Rédiger section CombinationGenerator** : Algorithme complet
-   - Critère succès : Section présente et détaillée
-
-## 🔍 Points d'Attention
-- Respecter template TEMPLATE_SPECS.md strictement
-
-## ✅ Critères de Validation Finale
-- Fichier complet et structuré selon template
-- Métadata YAML valide
-"""
-
-codebase: {stack: "python", ...}
-
-implementation_report: "Fichier créé : docs/specs/epic-2-google-flights/story-5.md (250 lignes)\nSections : CombinationGenerator (80 lignes), SearchService (70 lignes)"
-```
-
-**Type détecté** : Docs (specs)
-
-**Rapport** :
-```markdown
-# 🧪 Rapport de Validation
-
-## 📊 Résumé
-**Status Global** : ✅ PASS
-- Type output : Docs (specs)
-- Validations niveau 1 : 3
-- Validations niveau 2 : 2
-- Durée totale : 5s
-
----
-
-## ✅ Conformité Checklist Niveau 1 (PLAN.md - Macro)
-
-| # | Item | Attendu | Implémenté | Status |
-|---|------|---------|------------|--------|
-| 1 | Specs : CombinationGenerator | Présent dans rapport | ✅ "CombinationGenerator" trouvé | ✅ |
-| 2 | Specs : SearchService | Présent dans rapport | ✅ "SearchService" trouvé | ✅ |
-| 3 | Ajouter à `docs/specs/epic-2-google-flights/story-5.md` | Fichier au chemin exact | ✅ Fichier existe (250 lignes) | ✅ |
-
-**Résultat Niveau 1** : ✅ PASS (3/3 items validés)
-
----
-
-## ✅ Conformité Checklist Niveau 2 (Détaillée)
-
-| # | Étape | Critère succès | Implémenté | Status |
-|---|-------|----------------|------------|--------|
-| 1 | Créer fichier docs/specs/story-5.md | Fichier créé avec frontmatter valide | ✅ Metadata YAML présent | ✅ |
-| 2 | Rédiger section CombinationGenerator | Section présente et détaillée | ✅ Section 80 lignes | ✅ |
-
-**Résultat Niveau 2** : ✅ PASS (2/2 étapes validées)
-
----
-
-## ✅ Conformité Critères de Validation Finale
-
-| # | Critère Global | Implémenté | Status |
-|---|----------------|------------|--------|
-| 1 | Fichier complet et structuré selon template | ✅ OK | ✅ |
-| 2 | Métadata YAML valide | ✅ OK | ✅ |
-
-**Résultat Critères Globaux** : ✅ PASS (2/2 critères validés)
-
----
-
-## ⚠️ Conformité Points d'Attention
-
-| # | Point d'Attention | Respecté | Status |
-|---|-------------------|----------|--------|
-| 1 | Respecter template TEMPLATE_SPECS.md strictement | ✅ Template suivi | ✅ |
-
-**Résultat Points d'Attention** : ✅ PASS (1/1 point respecté)
-
----
-
-## 🔍 Tests Techniques
-
-### Validation 1 : Format markdown
-- Commande : `remark --no-stdout docs/specs/epic-2-google-flights/story-5.md`
-- Status : ✅ PASS
-- Durée : 2s
-
----
-
-## 🎯 Décision Finale
-✅ **VALIDATION RÉUSSIE**
-- Niveau 1 (Macro) : ✅ PASS
-- Niveau 2 (Détail) : ✅ PASS
-- Critères Globaux : ✅ PASS
-- Points d'Attention : ✅ PASS
-- Tests techniques : ✅ PASS
-
-➡️ Marquer phase complétée dans PLAN.md
-```
+- Rapport structuré avec 5 niveaux de validation
+- Focus sur conformité checklist niveau 1 (prioritaire)
 
 # Message Final
 
