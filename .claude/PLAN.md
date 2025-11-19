@@ -288,11 +288,11 @@
 ## Epic 1: API Foundation
 
 ### 4.2 Story 1: Health check endpoint
-- [ ] Specs : Route GET /health, healthcheck logic
-- [ ] Contexte business : Monitoring production ready
-- [ ] Tests : Tests unitaires + intégration (à spécifier)
-- [ ] Ajouter à `docs/specs/epic-1-api-foundation/story-1-health-check.md`
-- [ ] Commit : `docs(specs): add story 1 specifications`
+- [x] Specs : Route GET /health, healthcheck logic
+- [x] Contexte business : Monitoring production ready
+- [x] Tests : Tests unitaires + intégration (à spécifier)
+- [x] Ajouter à `docs/specs/epic-1-api-foundation/story-1-health-check.md`
+- [x] Commit : `docs(specs): add story 1 specifications`
 
 📝 **Output** : Story 1 specs complètes (2 story points)
 
