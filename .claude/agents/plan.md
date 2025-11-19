@@ -17,11 +17,11 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
 ## 📥 Contexte d'exécution
 
 **Tu reçois dans le prompt :**
+- `task_type` : Type (config|code|docs|docker|test)
 - `checklist_niveau_1` : Checklist macro de la phase
+- `expected_output` : Output attendu
 - `codebase` : Stack, conventions, fichiers existants
 - `documentation_files` : Fichiers documentation pertinents (utiliser Read() pour les lire)
-- `expected_output` : Output attendu
-- `task_type` : Type (config|code|docs|docker|test)
 
 ### Exemple de Transformation
 
@@ -56,7 +56,7 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
 2. **Extraire contexte et rechercher si nécessaire**
    - Marquer "Extraire contexte" comme in_progress
    - Lire `documentation_files` avec Read() pour versions exactes, configurations, standards
-   - Si documentation incomplète : WebSearch adapté au stack (ex: "pydantic v2 settings best practices 2025", "docker multi-stage build optimization 2025")
+   - Si documentation incomplète : WebSearch adapté au stack (ex: "pydantic v2 settings best practices", "docker multi-stage build optimization")
    - Privilégier documentation fournie avant WebSearch
    - Marquer comme completed
 
@@ -70,8 +70,8 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
          - Autres chemins dans `docs/` → type="docs"
      - `task_type: "config|code|docker|test"` → Agent CODE
    - Déterminer stratégie d'exécution :
-     - **UNIQUE** (défaut) : Checklist courte (<10 étapes) OU étapes interdépendantes
-     - **PARALLÈLE** : Checklist longue (≥15 étapes) ET étapes indépendantes (ex: plusieurs fichiers sans dépendances)
+     - **UNIQUE** (défaut) : Étapes avec dépendances entre elles (une étape utilise résultat précédente)
+     - **PARALLÈLE** : Étapes naturellement indépendantes (ex: plusieurs recherches web, plusieurs fichiers docs sans liens, plusieurs tests isolés)
    - Pour chaque étape : Action précise (verbe + objet) + détails concrets + critère succès
    - Principes : Atomique, Exécutable, Séquentielle, Vérifiable
    - Niveau de détail : Directif sans coder (pas "configurer X" ni code complet ligne par ligne)
