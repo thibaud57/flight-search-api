@@ -341,12 +341,12 @@
 📝 **Output** : Story 5 specs complètes (5 story points)
 
 ### 4.7 Story 6: Proxies Decodo (anti-détection)
-- [ ] Specs : ProxyService (Decodo config, residential FR)
-- [ ] Specs : Rotation proxies (round-robin ou random)
-- [ ] Contexte business : Anti-détection Google, coûts optimisés
-- [ ] Tests : Tests unitaires ProxyService + intégration (à spécifier)
-- [ ] Ajouter à `docs/specs/epic-2-google-flights/story-6-proxies.md`
-- [ ] Commit : `docs(specs): add story 6 specifications`
+- [x] Specs : ProxyService (Decodo config, residential FR)
+- [x] Specs : Rotation proxies (round-robin ou random)
+- [x] Contexte business : Anti-détection Google, coûts optimisés
+- [x] Tests : Tests unitaires ProxyService + intégration (à spécifier)
+- [x] Ajouter à `docs/specs/epic-2-google-flights/story-6-proxies.md`
+- [x] Commit : `docs(specs): add story 6 specifications`
 
 📝 **Output** : Story 6 specs complètes (5 story points)
 
