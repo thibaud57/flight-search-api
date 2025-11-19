@@ -9,27 +9,6 @@ scope: ["specs"]
 technologies: []
 ---
 
-<!--
-⚠️ RÈGLES IMPORTANTES - Spécifications (à titre informatif, ne pas inclure dans stories)
-
-**Ce template doit contenir UNIQUEMENT** :
-- ✅ Interfaces/signatures (SANS implémentation)
-- ✅ Descriptions comportements (texte structuré)
-- ✅ Tableaux scénarios tests (descriptif, PAS code Python)
-- ✅ Exemples JSON (inputs/outputs)
-
-**CODE PRODUCTION INTERDIT** :
-- ❌ Implémentation complète fonctions/classes
-- ❌ Logique métier (algorithmes, boucles, conditions)
-- ❌ Tests Python écrits
-
-**Principe fondamental** :
-- (Specs) = QUOI faire → Décrire comportements attendus
-- (TDD) = COMMENT faire → Implémenter code production
-
-Note: Agent DOCUMENT respecte automatiquement ces règles selon type "specs"
--->
-
 # 🎯 Contexte Business
 
 ## Besoin utilisateur

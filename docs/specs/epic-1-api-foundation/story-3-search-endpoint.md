@@ -51,9 +51,6 @@ technologies: ["FastAPI", "Pydantic", "pytest", "TestClient"]
 **Interface** :
 
 ```python
-from pydantic import BaseModel, field_validator, model_validator
-from typing import Annotated
-
 class DateRange(BaseModel):
     """Plage de dates pour recherche vols."""
 
@@ -110,9 +107,6 @@ class SearchRequest(BaseModel):
 **Interface** :
 
 ```python
-from pydantic import BaseModel
-from typing import Annotated
-
 class FlightResult(BaseModel):
     """Résultat individuel vol (1 sur 10 retournés)."""
 
@@ -202,35 +196,17 @@ class SearchService:
 - **Routes cohérentes** : Chaque FlightResult.route reprend SearchRequest.destinations dans même ordre
 - **Statistiques mock** : search_stats.total_results = 10, search_time_ms = random 30-80ms, destinations_searched = request.destinations
 
-**Mock Data Exemple** (10 résultats hardcodés) :
+**Mock Data Comportement** :
 
-```python
-# Résultat 1 (prix le plus bas)
-FlightResult(
-    price=825.50,
-    airline="Air France",
-    departure_date="2025-06-01",
-    route=["Paris", "Tokyo"]  # Adapté selon request.destinations
-)
+La méthode `search_flights()` retourne une liste pré-définie de 10 résultats respectant les caractéristiques suivantes :
 
-# Résultat 2
-FlightResult(
-    price=950.00,
-    airline="Lufthansa",
-    departure_date="2025-06-02",
-    route=["Paris", "Tokyo"]
-)
-
-# ... (8 résultats intermédiaires)
-
-# Résultat 10 (prix le plus élevé)
-FlightResult(
-    price=2450.00,
-    airline="Qatar Airways",
-    departure_date="2025-06-15",
-    route=["Paris", "Tokyo"]
-)
-```
+- **Nombre résultats** : Exactement 10 FlightResult dans tous les cas
+- **Prix range** : Variation réaliste entre ~800€ (résultat 1) et ~2500€ (résultat 10)
+- **Tri automatique** : Résultats pré-triés par prix croissant
+- **Compagnies variées** : Mix compagnies européennes (Air France, Lufthansa, British Airways), moyen-orientales (Emirates, Qatar Airways), asiatiques (Singapore Airlines, Cathay Pacific, ANA), américaines (Delta, United)
+- **Dates départ** : Distribution sur 15 jours à partir de date_range.start
+- **Routes cohérentes** : Chaque FlightResult.route reprend exactement request.destinations dans le même ordre
+- **Statistiques mock** : search_stats.total_results fixé à 10, search_time_ms aléatoire entre 30-80ms, destinations_searched copie de request.destinations
 
 **Contraintes techniques** :
 
@@ -248,18 +224,19 @@ FlightResult(
 **Interface** :
 
 ```python
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Annotated
-
-router = APIRouter(prefix="/api/v1", tags=["search"])
-
-@router.post("/search-flights", response_model=SearchResponse, status_code=status.HTTP_200_OK)
 def search_flights_endpoint(
     request: SearchRequest,
     search_service: Annotated[SearchService, Depends(get_search_service)]
 ) -> SearchResponse:
     """Endpoint recherche vols multi-destinations (mock Phase 1)."""
 ```
+
+**Configuration route** :
+- Méthode HTTP : POST
+- Endpoint : `/api/v1/search-flights`
+- Response model : `SearchResponse` (validation automatique output)
+- Status code succès : `200 OK`
+- Router : Prefix `/api/v1` avec tag `search` pour documentation OpenAPI
 
 **Paramètres** :
 
@@ -437,7 +414,7 @@ curl -X POST http://localhost:8000/api/v1/search-flights \
 }
 ```
 
-**Exemple 4 : Response succès (10 résultats mock)**
+**Exemple 4 : Response succès (structure avec 10 résultats mock)**
 
 ```json
 {
@@ -449,67 +426,21 @@ curl -X POST http://localhost:8000/api/v1/search-flights \
       "route": ["Paris", "Tokyo"]
     },
     {
-      "price": 950.00,
+      "price": 1250.00,
       "airline": "Lufthansa",
-      "departure_date": "2025-06-02",
-      "route": ["Paris", "Tokyo"]
-    },
-    {
-      "price": 1120.75,
-      "airline": "Emirates",
-      "departure_date": "2025-06-03",
-      "route": ["Paris", "Tokyo"]
-    },
-    {
-      "price": 1280.00,
-      "airline": "Delta",
       "departure_date": "2025-06-05",
-      "route": ["Paris", "Tokyo"]
-    },
-    {
-      "price": 1450.25,
-      "airline": "United",
-      "departure_date": "2025-06-07",
-      "route": ["Paris", "Tokyo"]
-    },
-    {
-      "price": 1620.50,
-      "airline": "British Airways",
-      "departure_date": "2025-06-08",
-      "route": ["Paris", "Tokyo"]
-    },
-    {
-      "price": 1785.00,
-      "airline": "Qatar Airways",
-      "departure_date": "2025-06-10",
-      "route": ["Paris", "Tokyo"]
-    },
-    {
-      "price": 1950.75,
-      "airline": "Singapore Airlines",
-      "departure_date": "2025-06-12",
-      "route": ["Paris", "Tokyo"]
-    },
-    {
-      "price": 2150.00,
-      "airline": "Cathay Pacific",
-      "departure_date": "2025-06-13",
-      "route": ["Paris", "Tokyo"]
-    },
-    {
-      "price": 2450.00,
-      "airline": "ANA",
-      "departure_date": "2025-06-15",
       "route": ["Paris", "Tokyo"]
     }
   ],
   "search_stats": {
     "total_results": 10,
-    "search_time_ms": 52,
+    "search_time_ms": 50,
     "destinations_searched": ["Paris", "Tokyo"]
   }
 }
 ```
+
+**Note** : Array `results` contient exactement 10 FlightResult (seulement 2 montrés ici pour lisibilité). Mock data suit pattern : prix croissant (800-2500€), compagnies variées, dates sur 15 jours, tri automatique par prix.
 
 **Exemple 5 : Error 422 (destinations vide)**
 

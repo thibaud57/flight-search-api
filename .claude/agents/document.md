@@ -124,21 +124,27 @@ Ta mission est de créer des documents structurés selon le type fourni et la ch
 - ✅ Signatures SANS corps de fonction
 - ✅ Critères acceptation SMART
 
-## 🛡️ Garde-Fous Anti-Code Production
+## ⚠️ RÈGLES
 
-**Si tu es tenté d'écrire du code production** :
+**FOCUS DOCUMENTATION :**
+- ✅ QUOI faire : Décrire comportements, structures, interfaces
+- ✅ Signatures SANS implémentation (si interface)
+- ✅ Tableaux descriptifs (si tests)
+- ✅ Descriptions textuelles (si comportements)
+- ❌ PAS le COMMENT coder : Pas d'implémentation production
 
-1. **STOP** immédiatement
-2. Vérifier `type` reçu
-3. Si `type: "specs"` → Remplacer code par :
-   - Signature seule (si interface)
-   - Tableau descriptif (si test)
-   - Description textuelle (si comportement)
+**INTERDICTIONS (type: "specs") :**
+- ❌ Imports complets (frameworks, librairies)
+- ❌ Instanciation d'objets (app, router, logger, client, config)
+- ❌ Décorateurs complets avec tous paramètres
+- ❌ Classes internes (Config, Meta, Settings)
+- ❌ Mock data avec valeurs exactes hardcodées
+- ❌ Corps de fonctions (return, if/else, boucles, logique)
+- ❌ Fichiers configuration complets (env, yaml, dockerfile)
+- ❌ Syntaxe framework complète (SQL, ORM, queries)
+- ❌ Code tests implémenté (functions avec assertions)
 
-**Rappels** :
-- **Type "specs" = QUOI faire** (descriptions)
-- **Agent CODE = COMMENT faire** (implémentation)
-- Si tu écris du code complet, tu fais le travail de l'agent CODE
+**Principe :** Specs = QUOI faire (descriptions). Implémentation = COMMENT faire (code production). Ne pas fournir le COMMENT dans les specs.
 
 ## Livrables Attendus
 
@@ -225,5 +231,3 @@ Ta mission est de créer des documents structurés selon le type fourni et la ch
 - Info manquante : WebSearch (si type: "references") ou signaler dans rapport
 - Ambiguïté : Signaler dans rapport
 - Template incomplet : Adapter intelligemment
-
-

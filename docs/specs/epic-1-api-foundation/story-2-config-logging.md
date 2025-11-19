@@ -51,9 +51,6 @@ technologies: ["Pydantic", "pydantic-settings", "python-json-logger", "pytest"]
 **Interface** :
 
 ```python
-from pydantic_settings import BaseSettings
-from typing import Literal
-
 class Settings(BaseSettings):
     """Configuration application chargée depuis variables d'environnement."""
 
@@ -63,12 +60,13 @@ class Settings(BaseSettings):
     DECODO_PROXY_HOST: str
     PROXY_ROTATION_ENABLED: bool
     CAPTCHA_DETECTION_ENABLED: bool
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
 ```
+
+**Configuration chargement** :
+- Fichier source : `.env` en local
+- Encoding : UTF-8
+- Case sensitivity : activée (variables majuscules strictes)
+- Priorité : env vars système > fichier .env
 
 **Champs Settings** :
 
@@ -109,9 +107,6 @@ class Settings(BaseSettings):
 **Interface** :
 
 ```python
-import logging
-from pythonjsonlogger import jsonlogger
-
 def setup_logger(log_level: str) -> logging.Logger:
     """Configure logger avec format JSON structuré."""
 ```
@@ -221,65 +216,81 @@ def setup_logger(log_level: str) -> logging.Logger:
 
 ## Exemples JSON
 
-**Exemple 1 : Fichier .env valide (template .env.example)**
-
-```bash
-LOG_LEVEL=INFO
-
-DECODO_USERNAME=customer-abc123xyz-country-FR
-DECODO_PASSWORD=SecurePassword123!
-DECODO_PROXY_HOST=pr.decodo.com:8080
-
-PROXY_ROTATION_ENABLED=true
-CAPTCHA_DETECTION_ENABLED=true
-```
-
-**Exemple 2 : Settings model serialisé (model_dump JSON)**
+**Exemple 1 : Settings model serialisé (Pydantic model_dump())**
 
 ```json
 {
   "LOG_LEVEL": "INFO",
-  "DECODO_USERNAME": "customer-abc123xyz-country-FR",
-  "DECODO_PASSWORD": "SecurePassword123!",
+  "DECODO_USERNAME": "customer-apikey123-country-FR",
+  "DECODO_PASSWORD": "secretpass",
   "DECODO_PROXY_HOST": "pr.decodo.com:8080",
   "PROXY_ROTATION_ENABLED": true,
   "CAPTCHA_DETECTION_ENABLED": true
 }
 ```
 
-**Exemple 3 : Log entry structuré JSON (avec extra fields)**
+**Exemple 2 : Log JSON structuré (niveau INFO, sans extra fields)**
 
 ```json
 {
-  "asctime": "2025-11-19T14:22:30.456Z",
+  "asctime": "2025-11-19T10:30:00.123Z",
   "name": "flight-search-api",
   "levelname": "INFO",
-  "message": "Proxy rotation successful",
-  "pathname": "app/services/proxy_service.py",
-  "lineno": 78,
-  "funcName": "rotate_proxy",
-  "search_id": "search-uuid-12345",
-  "old_proxy": "pr.decodo.com:8080",
-  "new_proxy": "pr.decodo.com:8081"
+  "message": "Application started successfully",
+  "pathname": "app/main.py",
+  "lineno": 42,
+  "funcName": "startup"
 }
 ```
 
-**Exemple 4 : Log entry avec masquage secrets**
+**Exemple 3 : Log JSON avec extra fields contextuels**
 
 ```json
 {
-  "asctime": "2025-11-19T14:25:10.789Z",
+  "asctime": "2025-11-19T10:35:15.456Z",
   "name": "flight-search-api",
-  "levelname": "DEBUG",
-  "message": "Proxy authentication configured",
-  "pathname": "app/services/proxy_service.py",
-  "lineno": 42,
-  "funcName": "configure_proxy",
-  "decodo_username": "customer-***-country-FR",
-  "decodo_password": "***",
-  "proxy_host": "pr.decodo.com:8080"
+  "levelname": "INFO",
+  "message": "Flight search started",
+  "pathname": "app/services/search_service.py",
+  "lineno": 78,
+  "funcName": "search_flights",
+  "search_id": "abc123def456",
+  "destinations": ["Paris", "Tokyo"],
+  "proxy_used": "pr.decodo.com:8080"
 }
 ```
+
+**Exemple 4 : Log avec secrets masqués**
+
+```json
+{
+  "asctime": "2025-11-19T10:40:00.789Z",
+  "name": "flight-search-api",
+  "levelname": "DEBUG",
+  "message": "Proxy configuration loaded",
+  "pathname": "app/services/proxy_service.py",
+  "lineno": 25,
+  "funcName": "load_config",
+  "username": "customer-***-country-FR",
+  "password": "***"
+}
+```
+
+---
+
+# ⚙️ Configuration Environnement
+
+## Fichier .env.example (template)
+
+**Variables requises** :
+- `LOG_LEVEL` : Valeur parmi DEBUG, INFO, WARNING, ERROR
+- `DECODO_USERNAME` : Format customer-{key}-country-{code}
+- `DECODO_PASSWORD` : Minimum 8 caractères
+- `DECODO_PROXY_HOST` : Format host:port
+- `PROXY_ROTATION_ENABLED` : true ou false
+- `CAPTCHA_DETECTION_ENABLED` : true ou false
+
+**Note** : Fichier .env avec vraies valeurs jamais commité (dans .gitignore)
 
 ---
 
