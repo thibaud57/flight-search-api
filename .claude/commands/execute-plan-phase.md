@@ -119,23 +119,22 @@ Lire **uniquement** `.claude/PLAN.md` et parser :
 **Sous-phase** (ex: 1.1) :
 - Titre complet
 - Type de tâche (`🏷️ **Type**` : config|code|docs|docker|test)
-- **Checklist niveau 1 (MACRO)** : Toutes lignes `- [ ]` ou `- [x]`
-  - Parser CHAQUE item pour extraire pattern backtick : `chemin/fichier.ext`
-  - Stocker : `checklist_niveau_1_items[]` avec `{text, file_path (si trouvé)}`
+- **Checklist niveau 1** : Toutes lignes `- [ ]` ou `- [x]`
+  - Stocker dans variable : `checklist_niveau_1[]` (liste de strings bruts)
 - Output attendu (`📝 **Output**`)
 - Notes
 
-**Exemple parsing checklist niveau 1** :
+**Exemple** :
 ```
-- [ ] Specs : CrawlerService (Crawl4AI + AsyncWebCrawler)
-  → {text: "Specs : CrawlerService...", file_path: null}
-
-- [ ] Ajouter à `docs/specs/epic-2-google-flights/story-4-crawler-parser.md`
-  → {text: "Ajouter à...", file_path: "docs/specs/epic-2-google-flights/story-4-crawler-parser.md"}
-
-- [ ] Commit : `docs(specs): add story 4 specifications`
-  → {text: "Commit...", file_path: null}
+checklist_niveau_1 = [
+  "Specs : CrawlerService (Crawl4AI + AsyncWebCrawler)",
+  "Specs : FlightParser (JsonCssExtractionStrategy, sélecteurs CSS)",
+  "Ajouter à `docs/specs/epic-2-google-flights/story-4-crawler-parser.md`",
+  "Commit : `docs(specs): add story 4 specifications`"
+]
 ```
+
+⚠️ **Important** : Ne PAS parser les backticks ici, l'agent TEST le fera
 
 Marquer → completed
 
@@ -422,7 +421,7 @@ Task(
   Valider la phase {phase_number} :
 
   **Checklist Niveau 1 (PLAN.md - Macro)** :
-  {checklist_niveau_1_items}
+  {checklist_niveau_1}
 
   **Checklist Niveau 2 (Détaillée - PLAN)** :
   {checklist_niveau_2_details}

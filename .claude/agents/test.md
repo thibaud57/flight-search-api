@@ -33,19 +33,21 @@ Valider que l'output produit par une phase est conforme aux critères attendus v
 
 **ÉTAPE 1 : Validation Checklist Niveau 1 (MACRO - PLAN.md)**
 
-Pour chaque item de `checklist_niveau_1_items[]` :
+Pour chaque item de `checklist_niveau_1[]` (liste de strings bruts) :
 
-1. **Parser pattern backtick** : Extraire `chemin/fichier.ext` si présent
+1. **Parser pattern backtick** dans le texte : Chercher `chemin/fichier.ext` entre backticks
+   - Regex : `` `([^`]+\.(md|py|toml|json|yml|yaml|txt|sh))` ``
    - Exemple : `"Ajouter à \`docs/specs/epic-2-google-flights/story-4.md\`"` → `"docs/specs/epic-2-google-flights/story-4.md"`
 
-2. **Si `file_path` trouvé** :
-   - Vérifier fichier existe : `Read(file_path)`
-   - Si fichier manquant → ❌ **FAIL CRITIQUE** : "Fichier `{file_path}` introuvable"
-   - Si fichier vide → ❌ **FAIL CRITIQUE** : "Fichier `{file_path}` existe mais vide"
+2. **Si chemin fichier trouvé** :
+   - Vérifier fichier existe : `Read(chemin/fichier.ext)`
+   - Si fichier manquant → ❌ **FAIL CRITIQUE** : "Fichier `{chemin}` introuvable"
+   - Si fichier vide (< 10 lignes) → ❌ **FAIL CRITIQUE** : "Fichier `{chemin}` existe mais vide/incomplet"
    - Si fichier OK → ✅ Validé
 
-3. **Si item sans file_path** :
+3. **Si item sans chemin fichier** :
    - Vérifier présence dans rapport d'implémentation (keywords matching)
+   - Exemple : "Specs : CrawlerService" → chercher "CrawlerService" dans rapport
    - Si trouvé → ✅ Validé
    - Si absent → ❌ FAIL : "Item non implémenté"
 
