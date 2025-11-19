@@ -134,8 +134,6 @@ N. **Commit** : [message conventional commits]
 
 ## 📋 Exemple Complet
 
-### Phase Config (Projet Python)
-
 **Input** :
 ```
 checklist_niveau_1:
@@ -200,67 +198,9 @@ Créer fichier configuration projet (pyproject.toml) avec metadata, dependencies
 - Commit effectué avec message conventional
 ```
 
-### Phase Docs (Documentation Specs)
-
-**Input** :
-```
-checklist_niveau_1:
-- Rédaction spécifications story 5
-expected_output: docs/specs/story-5.md
-task_type: "docs"
-codebase:
-  stack: "python"
-documentation_files: [TEMPLATE_SPECS.md, CLAUDE.md, docs/specs/story-4.md]
-```
-
-**Output** :
-```markdown
-# 📋 Plan d'Implémentation
-
-## 🎯 Objectif
-Rédiger documentation story 5 selon template applicable.
-
-## 🤖 Agent d'Exécution
-
-**Agent** : DOCUMENT
-**Type document** : specs
-
-## 🚀 Stratégie
-
-**Exécution** : UNIQUE
-
-## 📝 Checklist Niveau 2 (7 étapes)
-
-1. **Créer fichier documentation** : docs/specs/story-5.md avec metadata YAML
-   - Critère succès : Fichier créé avec frontmatter valide
-
-2. **Rédiger section Contexte Business** : Besoin utilisateur, contraintes, valeur, métriques
-   - Critère succès : Section complète et structurée
-
-3. **Définir Spécifications Techniques** : Composants avec interfaces
-   - Critère succès : Composants définis avec comportements décrits
-
-4. **Créer tableaux tests unitaires** : Scénarios tests unitaires structurés
-   - Critère succès : Tableaux tests présents et complets
-
-5. **Créer tableaux tests intégration** : Scénarios tests intégration structurés
-   - Critère succès : Tests intégration décrits
-
-6. **Définir Critères Acceptation** : Critères SMART
-   - Critère succès : Critères acceptation définis
-
-7. **Commit** : Message conventional commits
-   - Format : docs(specs): add story 5 specifications
-
-## 🔍 Points d'Attention
-- Respecter template applicable selon type
-- Critères acceptation mesurables
-
-## ✅ Critères de Validation Finale
-- Documentation créée et conforme template
-- Toutes sections requises présentes
-- Commit effectué avec message conventional
-```
+**Note** : Pour `task_type: "docs"`, la structure output reste identique mais avec :
+- `Agent: DOCUMENT` + `Type document: [specs|references|docs]`
+- Checklist adaptée à la rédaction (sections markdown au lieu de code technique)
 
 # Message Final
 
