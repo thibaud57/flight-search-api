@@ -316,6 +316,9 @@ Le plan contient une section `## 🤖 Agent d'Exécution` avec :
 - **Agent** : CODE ou DOCUMENT
 - **Type document** (si agent=DOCUMENT) : specs, references, ou docs
 
+**Stocker** :
+- Variable `document_type` : Valeur de "Type document" (specs|references|docs) si agent=DOCUMENT
+
 **Parser stratégie du plan validé** :
 
 Le plan contient une section `## 🚀 Stratégie` avec :
@@ -351,7 +354,7 @@ Implémenter partie {N} :
 **Checklist** : {sous-checklist_N}
 **Contexte** : {codebase}
 **Fichiers** : {documentation_files}
-**Output** : {expected_output_partial}
+**Output** : {expected_output}
 
 Exécuter strictement la checklist, respecter conventions projet.
 """)
@@ -362,10 +365,10 @@ Exécuter strictement la checklist, respecter conventions projet.
 Task(subagent_type="document", prompt="""
 Rédiger partie {N} :
 
-**Type** : {type_from_plan}
+**Type** : {document_type}
 **Checklist** : {sous-checklist_N}
 **Fichiers** : {documentation_files}
-**Output** : {expected_output_partial}
+**Output** : {expected_output}
 
 Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}.
 """)
@@ -392,7 +395,7 @@ Exécuter strictement la checklist, respecter conventions projet.
 Task(subagent_type="document", prompt="""
 Rédiger documentation complète :
 
-**Type** : {type_from_plan}
+**Type** : {document_type}
 **Checklist** : {checklist_niveau_2}
 **Fichiers** : {documentation_files}
 **Output** : {expected_output}
@@ -402,6 +405,10 @@ Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLA
 ```
 
 **Résultat attendu** : Rapport d'implémentation avec fichiers créés/modifiés
+
+**Stocker résultat** :
+- Variable `implementation_report` : Rapport(s) markdown retourné(s) par agent(s) CODE/DOCUMENT
+- Si PARALLÈLE : Concaténer tous les rapports en un seul texte
 
 Marquer → completed
 
