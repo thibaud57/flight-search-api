@@ -46,9 +46,10 @@
 
 📝 **Output** : `.claude/CLAUDE.md` (Git), `docs/references/github-actions.md`, `.github/workflows/release.yml`
 
-### 0.3 Mise à jour CHANGELOG
+### 0.3 Mise à jour CHANGELOG et version
 - [x] Ajouter entrée v0.0.0-setup dans `docs/CHANGELOG.md`
-- [x] Commit : `docs: update changelog for setup phase`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.0.0"`
+- [x] Commit : `chore: bump version to 0.0.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -131,9 +132,10 @@
 
 📝 **Output** : `docs/ARCHITECTURE.md`
 
-### 1.5 Mise à jour CHANGELOG
+### 1.5 Mise à jour CHANGELOG et version
 - [x] Ajouter entrée v0.1.0-research dans `docs/CHANGELOG.md`
-- [x] Commit : `docs: update changelog for research phase`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.1.0"`
+- [x] Commit : `chore: bump version to 0.1.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -183,9 +185,10 @@
 
 📝 **Output** : `.claude/CLAUDE.md` complet
 
-### 2.4 Mise à jour CHANGELOG
+### 2.4 Mise à jour CHANGELOG et version
 - [x] Ajouter entrée v0.2.0-structure dans `docs/CHANGELOG.md`
-- [x] Commit : `docs: update changelog for structure phase`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.2.0"`
+- [x] Commit : `chore: bump version to 0.2.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -258,9 +261,10 @@
 
 **Note** : Step "Tests with coverage" temporairement désactivé (commenté dans ci.yml) car aucun test n'existe encore. À réactiver en Phase 5.1+ lors de l'implémentation TDD.
 
-### 3.6 Mise à jour CHANGELOG
+### 3.6 Mise à jour CHANGELOG et version
 - [x] Ajouter entrée v0.3.0-build dans `docs/CHANGELOG.md`
-- [x] Commit : `docs: update changelog for build phase`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.3.0"`
+- [x] Commit : `chore: bump version to 0.3.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -367,9 +371,10 @@
 
 ---
 
-### 4.9 Mise à jour CHANGELOG
+### 4.9 Mise à jour CHANGELOG et version
 - [x] Ajouter entrée v0.4.0-specs dans `docs/CHANGELOG.md`
-- [x] Commit : `docs: update changelog for specs phase`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.4.0"`
+- [x] Commit : `chore: bump version to 0.4.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -668,9 +673,10 @@
 
 ---
 
-### 7A.4 Mise à jour CHANGELOG
+### 7A.4 Mise à jour CHANGELOG et version
 - [ ] Ajouter entrée v0.8.0-specs dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for captcha specs phase`
+- [ ] Mettre à jour version dans `app/main.py` : `version="0.8.0"`
+- [ ] Commit : `chore: bump version to 0.8.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
