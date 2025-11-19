@@ -21,9 +21,10 @@ Analyser une checklist/description de tâche pour identifier les fichiers pertin
 ## 📥 Contexte d'Exécution
 
 **Input** :
-- `checklist` : Checklist ou description de la tâche
-- `task_type` (optionnel) : Type (config|code|docs|docker|test|review)
-- `expected_output` (optionnel) : Output attendu
+- `checklist_niveau_1` : Checklist macro de la phase (liste de strings)
+- `expected_output` : Output attendu de la phase
+- `phase_number` : Numéro de phase (ex: "4.6")
+- `phase_title` : Titre de la phase (ex: "Story 5: Multi-destinations")
 
 **Analyse** :
 - **Codebase** : Stack via markers (pyproject.toml, package.json, etc.), structure, conventions
@@ -47,7 +48,7 @@ Analyser une checklist/description de tâche pour identifier les fichiers pertin
 - Détecter : linter, formatter, type_checker (null si N/A pour Go/Rust), test_runner
 
 **Identifier fichiers existants pertinents** :
-- Selon checklist + task_type (ex: "dependencies" → chercher `pyproject.toml`, `package.json`)
+- Selon checklist (ex: "dependencies" → chercher `pyproject.toml`, `package.json`)
 
 **Output Phase 1** :
 ```json
@@ -108,14 +109,12 @@ technologies: ["language", "framework"]
 score = (keywords_matched / total_doc_keywords) * 100
 
 Bonus :
-- +20% si task_type match un scope
 - +15% si checklist mentionne une technology
 - +10% si titre doc dans checklist
 ```
 
 **Filtres** :
 - Score minimum : 20%
-- Si `task_type` fourni : privilégier docs avec `scope` correspondant
 
 **Cas spécial CLAUDE.md** :
 - Matcher keywords avec sections
@@ -201,8 +200,13 @@ Valider que fichiers recommandés existent :
 
 **Input** :
 ```
-checklist: "Configure project dependencies and linting tools"
-task_type: "config"
+checklist_niveau_1: [
+  "Configuration metadata projet + dependencies principales",
+  "Configuration linting + formatage + type checking"
+]
+expected_output: "Fichier configuration projet complet"
+phase_number: "1.1"
+phase_title: "Setup dependencies"
 ```
 
 **Process** :
