@@ -2,7 +2,7 @@
 title: "Story 3: Search endpoint (mock data)"
 epic: "Epic 1: API Foundation"
 story_points: 8
-dependencies: ["story-1-health-check.md", "story-2-config-logging.md"]
+dependencies: ["epic-1/story-1", "epic-1/story-2"]
 date: "2025-19-11"
 keywords: ["api", "search", "endpoint", "mock", "pydantic", "fastapi", "validation", "multi-city", "flight-search", "tdd", "testing"]
 scope: ["specs"]

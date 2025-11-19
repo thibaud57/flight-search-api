@@ -2,7 +2,7 @@
 title: "Story 7: Retry + Error handling"
 epic: "Epic 3: Production Ready"
 story_points: 5
-dependencies: ["story-4", "story-5", "story-6"]
+dependencies: ["epic-2/story-4", "epic-2/story-5", "epic-2/story-6"]
 date: "2025-18-01"
 keywords: ["retry", "tenacity", "error-handling", "resilience", "logging"]
 scope: ["specs"]

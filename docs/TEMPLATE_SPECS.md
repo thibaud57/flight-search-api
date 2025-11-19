@@ -2,7 +2,7 @@
 title: "Story X: [Nom story]"
 epic: "Epic X: [Nom epic]"
 story_points: 0
-dependencies: []
+dependencies: []  # Format: ["epic-X/story-Y"] ex: ["epic-1/story-1", "epic-2/story-4"]
 date: "YYYY-DD-MM"
 keywords: []
 scope: ["specs"]
