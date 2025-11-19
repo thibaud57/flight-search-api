@@ -22,6 +22,8 @@ Analyser une checklist/description de tâche pour identifier les fichiers pertin
 
 **Input** :
 - `checklist_niveau_1` : Checklist macro de la phase (liste de strings)
+  - ⚠️ **Peut contenir des chemins de fichiers** entre backticks (ex: `docs/specs/story-4.md`)
+  - Ces fichiers doivent être identifiés et ajoutés à `existing_files` si pertinents
 - `expected_output` : Output attendu de la phase
 
 **Analyse** :
@@ -46,7 +48,11 @@ Analyser une checklist/description de tâche pour identifier les fichiers pertin
 - Détecter : linter, formatter, type_checker (null si N/A pour Go/Rust), test_runner
 
 **Identifier fichiers existants pertinents** :
-- Selon checklist (ex: "dependencies" → chercher `pyproject.toml`, `package.json`)
+- **Parser checklist pour chemins fichiers** : Chercher pattern `` `chemin/fichier.ext` `` entre backticks
+  - Regex : `` `([^`]+\.(md|py|toml|json|yml|yaml|txt|sh|Dockerfile))` ``
+  - Exemple : `"Ajouter à \`docs/specs/story-4.md\`"` → extraire `docs/specs/story-4.md`
+  - Vérifier existence avec `Glob(chemin)`, ajouter à `existing_files` si trouvé
+- **Selon mots-clés checklist** : "dependencies" → chercher `pyproject.toml`, `package.json`, etc.
 
 **Output Phase 1** :
 ```json
