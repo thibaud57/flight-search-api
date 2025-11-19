@@ -3,7 +3,7 @@ title: "Story 7: Retry Logic avec Tenacity"
 epic: "Epic 3: Production Ready"
 story_points: 5
 dependencies: ["epic-2/story-4", "epic-2/story-5", "epic-2/story-6"]
-date: "2025-11-19"
+date: "2025-19-11"
 keywords: ["tenacity", "retry", "exponential-backoff", "jitter", "error-handling", "resilience", "async", "before-sleep", "logging", "production-ready"]
 scope: ["specs"]
 technologies: ["tenacity", "asyncio", "python"]
@@ -55,13 +55,8 @@ class RetryStrategy:
     """Configuration Tenacity centralisée pour retry logic production."""
 
     @staticmethod
-    def get_crawler_retry() -> Retrying:
-        """
-        Retourne configuration retry optimisée CrawlerService.
-
-        Returns:
-            Retrying instance avec exponential backoff + jitter
-        """
+    def get_crawler_retry():
+        """Retourne configuration retry optimisée CrawlerService."""
 ```
 
 **Paramètres Configuration** :
@@ -110,7 +105,6 @@ class RetryStrategy:
 class CrawlerService:
     """Service crawling Google Flights avec retry logic Tenacity."""
 
-    @retry(**RetryStrategy.get_crawler_retry())
     async def crawl_google_flights(
         self,
         url: str,
@@ -125,6 +119,8 @@ class CrawlerService:
             NetworkError: Si erreur réseau persistante après max_retries
         """
 ```
+
+**Décoration retry** : La méthode `crawl_google_flights` est décorée avec la configuration retry retournée par `RetryStrategy.get_crawler_retry()` pour appliquer automatiquement la logique de retry sur les erreurs CaptchaDetectedError et NetworkError.
 
 **Comportement Retry Intégré** :
 
@@ -193,25 +189,19 @@ class CrawlerService:
 class NetworkError(Exception):
     """Erreur réseau récupérable via retry."""
 
-    def __init__(self, url: str, status_code: int | None, attempts: int):
-        """
-        Args:
-            url: URL concernée
-            status_code: Code HTTP si disponible (None si timeout)
-            attempts: Nombre tentatives effectuées
-        """
-
 class CaptchaDetectedError(Exception):
     """Captcha détecté, récupérable via retry + rotation IP."""
-
-    def __init__(self, url: str, captcha_type: str, proxy_used: str):
-        """
-        Args:
-            url: URL concernée
-            captcha_type: Type captcha (recaptcha_v2, recaptcha_v3, hcaptcha)
-            proxy_used: Proxy ayant déclenché captcha (format masqué)
-        """
 ```
+
+**Attributs NetworkError** :
+- `url` (str) : URL concernée par l'erreur
+- `status_code` (int | None) : Code HTTP si disponible, None pour timeout
+- `attempts` (int) : Nombre de tentatives effectuées
+
+**Attributs CaptchaDetectedError** :
+- `url` (str) : URL concernée
+- `captcha_type` (str) : Type captcha détecté (recaptcha_v2, recaptcha_v3, hcaptcha)
+- `proxy_used` (str) : Proxy ayant déclenché captcha (format masqué)
 
 **Logging par Type Erreur** :
 
@@ -230,12 +220,7 @@ class CaptchaDetectedError(Exception):
 **Interface** :
 ```python
 def log_retry_attempt(retry_state: RetryCallState) -> None:
-    """
-    Callback Tenacity before_sleep pour logging structuré retry attempts.
-
-    Args:
-        retry_state: État retry fourni par Tenacity
-    """
+    """Callback Tenacity before_sleep pour logging structuré retry attempts."""
 ```
 
 **Paramètres Callback** :
@@ -250,39 +235,26 @@ def log_retry_attempt(retry_state: RetryCallState) -> None:
 
 **Extraction Contexte** :
 
-```python
-def log_retry_attempt(retry_state: RetryCallState) -> None:
-    """Callback before_sleep avec extraction contexte complet."""
-    # Extraire infos de base
-    attempt_number = retry_state.attempt_number
-    exception = retry_state.outcome.exception()
-    wait_time = retry_state.next_action.sleep
+Le callback extrait les informations suivantes depuis l'objet `retry_state` :
 
-    # Extraire URL depuis args (premier arg de crawl_google_flights)
-    url = retry_state.args[0] if retry_state.args else "unknown"
+- **Numéro tentative** : Depuis `retry_state.attempt_number` (valeur 1-indexed)
+- **Exception levée** : Depuis `retry_state.outcome.exception()` pour obtenir type et message
+- **Temps attente** : Depuis `retry_state.next_action.sleep` (secondes avant prochaine tentative)
+- **URL crawlée** : Depuis premier argument de la fonction retryée (`retry_state.args[0]`)
+- **Proxy utilisé** : Depuis attribut instance service si disponible
+- **Attempts restants** : Calculé comme `max_attempts - attempt_number`
 
-    # Extraire proxy utilisé si disponible (depuis service instance)
-    proxy_used = getattr(retry_state.args[0], 'current_proxy', 'unknown') if retry_state.args else 'unknown'
+**Logging JSON structuré** :
 
-    # Calculer attempts restants
-    max_attempts = 3  # Depuis RetryStrategy configuration
-    attempts_remaining = max_attempts - attempt_number
-
-    # Logging JSON structuré
-    logger.warning(
-        "Retry attempt triggered",
-        extra={
-            "url": url,
-            "proxy_used": proxy_used,
-            "exception_type": type(exception).__name__,
-            "exception_message": str(exception),
-            "attempt_number": attempt_number,
-            "attempts_remaining": attempts_remaining,
-            "wait_time_seconds": round(wait_time, 2),
-            "next_retry_at": (datetime.now() + timedelta(seconds=wait_time)).isoformat()
-        }
-    )
-```
+Logger un message WARNING avec extra fields JSON :
+- `url` : URL concernée
+- `proxy_used` : Proxy actuellement utilisé (format masqué)
+- `exception_type` : Nom classe exception (CaptchaDetectedError, NetworkError)
+- `exception_message` : Message exception
+- `attempt_number` : Numéro tentative actuelle
+- `attempts_remaining` : Tentatives restantes
+- `wait_time_seconds` : Temps attente avant retry (arrondi 2 décimales)
+- `next_retry_at` : Timestamp ISO 8601 prochaine tentative
 
 **Logging JSON Output Exemple** :
 
