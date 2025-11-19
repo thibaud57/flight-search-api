@@ -242,53 +242,14 @@ class CrawlerService:
         """
 ```
 
-**Pseudo-code Intégration** :
+**Comportement crawl_google_flights avec proxy** :
 
-```python
-async def crawl_google_flights(self, url: str, *, use_proxy: bool = True, max_retries: int = 3) -> CrawlResult:
-    # Étape 1: Obtenir proxy si activé
-    proxy_config = None
-    if use_proxy and self.proxy_service:
-        proxy_config = self.proxy_service.get_next_proxy()
-
-    # Étape 2: Construire BrowserConfig avec proxy
-    browser_config = BrowserConfig(
-        enable_stealth=True,
-        headless=False,
-        proxy=proxy_config.get_proxy_url() if proxy_config else None
-    )
-
-    # Étape 3: Crawl avec retry logic Tenacity
-    async with AsyncWebCrawler(config=browser_config) as crawler:
-        try:
-            result = await crawler.arun(url)
-
-            # Étape 4: Vérifier captcha detection
-            if self._is_captcha_detected(result.html):
-                logger.warning(
-                    "Captcha detected, rotating proxy",
-                    extra={"proxy_host": proxy_config.host if proxy_config else None}
-                )
-                # Retry logic Tenacity (Story 4) appelle automatiquement get_next_proxy()
-                raise CaptchaDetectedError(...)
-
-            # Étape 5: Logger succès avec proxy utilisé (masquer password)
-            logger.info(
-                "Crawl successful",
-                extra={
-                    "url": url,
-                    "proxy_host": proxy_config.host if proxy_config else "no_proxy",
-                    "proxy_country": proxy_config.country if proxy_config else None,
-                    "html_size": len(result.html)
-                }
-            )
-
-            return result
-
-        except Exception as e:
-            # Retry avec rotation proxy automatique via Tenacity
-            raise
-```
+- **Étape 1 : Obtenir proxy** → Si use_proxy=True et proxy_service disponible, appeler `proxy_service.get_next_proxy()` pour récupérer ProxyConfig suivant dans rotation
+- **Étape 2 : Construire BrowserConfig** → Créer instance BrowserConfig Crawl4AI avec enable_stealth=True, headless=False, proxy=proxy_config.get_proxy_url() (format http://user:pass@host:port) si proxy disponible, sinon None
+- **Étape 3 : Exécuter crawl** → Utiliser AsyncWebCrawler avec BrowserConfig, appeler crawler.arun(url) pour récupérer HTML
+- **Étape 4 : Détecter captcha** → Appeler méthode interne _is_captcha_detected(result.html) pour vérifier présence captcha dans HTML, si détecté → logger WARNING avec proxy_host et lever CaptchaDetectedError
+- **Étape 5 : Retry automatique** → CaptchaDetectedError déclenche retry logic Tenacity (Story 4) qui appelle automatiquement get_next_proxy() pour rotation IP → nouvelle tentative avec proxy différent
+- **Étape 6 : Logger succès** → Si crawl réussit, logger INFO avec extra fields url, proxy_host (hostname sans credentials), proxy_country, html_size (masquer password et username API key)
 
 **Points d'Attention Intégration** :
 
@@ -321,87 +282,50 @@ async def crawl_google_flights(self, url: str, *, use_proxy: bool = True, max_re
 class Settings(BaseSettings):
     """Configuration application avec support proxies Decodo."""
 
-    # Nouveaux champs Story 6
     DECODO_USERNAME: str
     DECODO_PASSWORD: SecretStr
     DECODO_PROXY_HOST: str = "pr.decodo.com:8080"
     DECODO_PROXY_ENABLED: bool = True
     DECODO_PROXY_POOL_SIZE: int = 3
-
-    # Génération automatique pool proxies
-    proxy_pool: list[ProxyConfig] | None = None
+    proxy_pool: list[ProxyConfig] = []
 
     @field_validator('DECODO_USERNAME', mode='after')
     @classmethod
     def validate_username_format(cls, v: str) -> str:
         """Valide format customer-XXX-country-FR."""
-        pattern = r'^customer-[a-z0-9]+-country-[a-z]{2}$'
-        if not re.match(pattern, v.lower()):
-            raise ValueError(
-                "DECODO_USERNAME must match format customer-{api_key}-country-{country}"
-            )
-        return v.lower()
 
     @field_validator('DECODO_PROXY_POOL_SIZE', mode='after')
     @classmethod
     def validate_pool_size_range(cls, v: int) -> int:
         """Valide pool size entre 1 et 10."""
-        if not 1 <= v <= 10:
-            raise ValueError("DECODO_PROXY_POOL_SIZE must be between 1 and 10")
-        return v
 
     @model_validator(mode='after')
     def generate_proxy_pool(self) -> 'Settings':
         """Génère pool de proxies depuis DECODO_USERNAME si proxies activés."""
-        if not self.DECODO_PROXY_ENABLED:
-            self.proxy_pool = []
-            return self
-
-        # Extraire host et port depuis DECODO_PROXY_HOST
-        host, port_str = self.DECODO_PROXY_HOST.split(':')
-        port = int(port_str)
-
-        # Extraire country depuis username (format customer-XXX-country-FR)
-        country_match = re.search(r'country-([a-z]{2})$', self.DECODO_USERNAME.lower())
-        country = country_match.group(1).upper() if country_match else "FR"
-
-        # Générer pool avec pool_size proxies identiques (MVP)
-        self.proxy_pool = [
-            ProxyConfig(
-                host=host,
-                port=port,
-                username=self.DECODO_USERNAME,
-                password=self.DECODO_PASSWORD.get_secret_value(),
-                country=country
-            )
-            for _ in range(self.DECODO_PROXY_POOL_SIZE)
-        ]
-
-        return self
-
-    class Config:
-        env_file = '.env'
-        env_file_encoding = 'utf-8'
 ```
 
-**Champs Configuration** :
+**Champs Proxies** :
 
-| Champ | Type | Description | Contraintes |
-|-------|------|-------------|-------------|
-| `DECODO_USERNAME` | `str` | Username auth Decodo format customer-XXX-country-FR | Validation regex `^customer-[a-z0-9]+-country-[a-z]{2}$` |
-| `DECODO_PASSWORD` | `SecretStr` | Mot de passe Decodo (SecretStr masque valeur logs) | Non vide, min_length=8 |
-| `DECODO_PROXY_HOST` | `str` | Hostname:port proxy Decodo | Default "pr.decodo.com:8080", format "host:port" |
-| `DECODO_PROXY_ENABLED` | `bool` | Active/désactive utilisation proxies | Default True, False pour dev local sans proxies |
-| `DECODO_PROXY_POOL_SIZE` | `int` | Nombre de proxies dans pool rotation | Default 3, range 1-10 (MVP) |
-| `proxy_pool` | `list[ProxyConfig] \| None` | Pool généré automatiquement par model_validator | Calculé, pas défini dans .env |
+| Champ | Type | Default | Description | Validation |
+|-------|------|---------|-------------|------------|
+| `DECODO_USERNAME` | `str` | - | Username Decodo format customer-XXX-country-FR | Regex strict `^customer-[a-z0-9]+-country-[a-z]{2}$`, conversion lowercase |
+| `DECODO_PASSWORD` | `SecretStr` | - | Password Decodo (masqué logs) | min_length 8, masqué automatiquement par SecretStr |
+| `DECODO_PROXY_HOST` | `str` | `"pr.decodo.com:8080"` | Hostname:port proxy Decodo | Format "host:port" avec validation contient "decodo.com" |
+| `DECODO_PROXY_ENABLED` | `bool` | `True` | Active/désactive proxies globalement | False désactive génération proxy_pool |
+| `DECODO_PROXY_POOL_SIZE` | `int` | `3` | Nombre proxies dans pool rotation | Range 1-10 (validation field_validator) |
+| `proxy_pool` | `list[ProxyConfig]` | `[]` | Pool proxies généré automatiquement | Généré par model_validator si DECODO_PROXY_ENABLED=True |
 
-**Validations** :
+**Comportement** :
 
-- `field_validator('DECODO_USERNAME')` : Vérifier regex format `customer-{api_key}-country-{country}` avec minuscules obligatoires
-- `field_validator('DECODO_PROXY_POOL_SIZE')` : Vérifier range 1 ≤ pool_size ≤ 10 (limite MVP)
-- `model_validator(mode='after')` : Générer automatiquement liste `proxy_pool` depuis `DECODO_USERNAME` + `DECODO_PASSWORD` + `DECODO_PROXY_HOST` + `DECODO_PROXY_POOL_SIZE`
+- **Chargement variables** → Settings charge automatiquement variables depuis .env (Config.env_file=".env")
+- **Validation username** → field_validator DECODO_USERNAME vérifie regex `^customer-[a-z0-9]+-country-[a-z]{2}$` et convertit en lowercase
+- **Validation pool size** → field_validator DECODO_PROXY_POOL_SIZE vérifie range 1-10, lève ValidationError si hors limites
+- **Génération pool automatique** → model_validator génère liste proxy_pool avec DECODO_PROXY_POOL_SIZE instances ProxyConfig si DECODO_PROXY_ENABLED=True
+- **Extraction country** → model_validator extrait country code depuis username via regex `country-([a-z]{2})` et convertit en uppercase (ex: "customer-abc-country-fr" → country="FR")
+- **Sécurité password** → SecretStr masque automatiquement DECODO_PASSWORD dans logs (affiche "**********"), get_secret_value() utilisé uniquement pour génération ProxyConfig
+- **Mode désactivé** → Si DECODO_PROXY_ENABLED=False, proxy_pool reste liste vide, ProxyService non initialisé
 
-**Exemple .env** :
+**Variables .env** :
 
 ```bash
 # Proxies Decodo Configuration
@@ -412,16 +336,6 @@ DECODO_PROXY_ENABLED=true
 DECODO_PROXY_POOL_SIZE=3
 ```
 
-**Comportement Génération Pool** :
-
-- **Si DECODO_PROXY_ENABLED=True** : `model_validator` génère liste `proxy_pool` avec `DECODO_PROXY_POOL_SIZE` instances ProxyConfig (tous avec mêmes credentials, acceptable MVP car rotation IP gérée par Decodo backend)
-- **Si DECODO_PROXY_ENABLED=False** : `proxy_pool = []` (liste vide), ProxyService non initialisé, CrawlerService utilise mode sans proxy (`use_proxy=False`)
-- **Extraction country depuis username** : Regex `country-([a-z]{2})` extrait code pays (ex: "customer-XXX-country-fr" → country="FR")
-
-**Sécurité Secrets** :
-
-- `SecretStr` Pydantic masque automatiquement `DECODO_PASSWORD` dans logs (affiche `"**********"` au lieu valeur réelle)
-- `get_secret_value()` utilisé uniquement pour générer ProxyConfig, jamais loggé directement
 
 ---
 
