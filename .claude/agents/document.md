@@ -172,7 +172,7 @@ Ta mission est de créer des documents structurés selon le type fourni et la ch
 - ✅ Signatures SANS implémentation (si interface)
 - ✅ Tableaux descriptifs (si tests)
 - ✅ Descriptions textuelles (si comportements)
-- ❌ PAS le COMMENT coder : Pas d'implémentation production
+- ❌ PAS le COMMENT coder : Pas d'implémentation production ni pseudo-code
 
 **INTERDICTIONS (type: "specs") :**
 - ❌ Imports complets (frameworks, librairies)
@@ -181,6 +181,7 @@ Ta mission est de créer des documents structurés selon le type fourni et la ch
 - ❌ Classes internes (Config, Meta, Settings)
 - ❌ Mock data avec valeurs exactes hardcodées
 - ❌ Corps de fonctions (return, if/else, boucles, logique)
+- ❌ Pseudo-code d'implémentation (sections "Pseudo-code", blocs avec logique complète)
 - ❌ Fichiers configuration complets (env, yaml, dockerfile)
 - ❌ Syntaxe framework complète (SQL, ORM, queries)
 - ❌ Code tests implémenté (functions avec assertions)
