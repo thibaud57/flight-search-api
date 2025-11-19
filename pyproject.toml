@@ -73,8 +73,13 @@ module = "tests.*"
 disallow_untyped_defs = false
 
 [[tool.mypy.overrides]]
-module = ["crawl4ai.*"]
+module = ["crawl4ai.*", "pythonjsonlogger.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "app.core.logger"
+warn_unused_ignores = false
+disable_error_code = ["attr-defined"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
