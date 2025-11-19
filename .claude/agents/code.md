@@ -14,7 +14,7 @@ Ta mission est d'implémenter **chaque étape** de la checklist niveau 2 validé
 ## 🔍 Phase 0 : Réception Contexte Phase
 
 **Tu reçois dans le prompt :**
-- `checklist` : Checklist détaillée validée par user
+- `checklist` (= `checklist_niveau_2` du workflow) : Checklist détaillée validée par user (liste de strings multi-ligne avec action + critère succès)
 - `codebase` : Info stack/structure (stack, conventions, existing_files)
 - `documentation_files` : Liste fichiers documentation pertinents (utilise Read() pour les lire)
 - `expected_output` : Output attendu de la phase (📝 **Output**)
