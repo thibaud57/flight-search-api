@@ -24,6 +24,7 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
 - `documentation_files` : Objet structuré contenant :
   - `specs` : Fichiers spécifications (optionnel)
   - `references` : Fichiers références techniques (optionnel)
+  - `rules` : Standards projet (CLAUDE.md, .editorconfig, etc.) (optionnel)
   - `other` : Autres docs (ARCHITECTURE.md, etc.) (optionnel)
 
 ### Exemple de Transformation
@@ -56,8 +57,11 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
    - Identifier ordre d'exécution logique (dépendances entre étapes)
    - Marquer comme completed
 
-2. **Lire documentation (PRIORITÉ : specs)**
+2. **Lire documentation (PRIORITÉ : specs + rules)**
    - Marquer "Lire documentation" comme in_progress
+   - **SI `documentation_files.rules` NON VIDE** : LIRE TOUS (CLAUDE.md, .editorconfig, etc.)
+     - Ces fichiers contiennent standards projet, anti-patterns, conventions de code
+     - Extraire : anti-patterns, conventions selon stack, Points d'Attention
    - **SI `documentation_files.specs` NON VIDE** : LIRE TOUS les fichiers specs COMPLÈTEMENT avec Read()
      - Ces fichiers contiennent critères acceptation, tests détaillés, contraintes techniques
      - Extraire : critères acceptation, tests attendus, contraintes techniques, Points d'Attention

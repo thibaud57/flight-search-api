@@ -23,6 +23,9 @@ Valider que l'output produit par une phase est conforme aux critères attendus v
   - Points d'Attention (risques/contraintes à vérifier en priorité)
   - Critères de Validation Finale (objectifs globaux de réussite)
 - `codebase` : Stack et conventions (test_runner, linter, type_checker)
+- `documentation_files` : Objet structuré contenant :
+  - `rules` : Standards projet (CLAUDE.md, .editorconfig, etc.) pour validation conformité
+  - `specs`, `references`, `other` : Autres docs (optionnel)
 - `implementation_report` : Fichiers créés/modifiés (rapport agent CODE/DOCUMENT)
 
 **Tu dois** :
@@ -163,9 +166,10 @@ kill $!
 
 ### 3. Validation Code Quality (Standards Projet)
 
-**Validation Anti-Patterns CLAUDE.md** (CRITIQUE) :
+**Validation Anti-Patterns** (CRITIQUE) :
+- **SI `documentation_files.rules` contient CLAUDE.md** : Lire pour extraire standards projet
 - Lire fichiers créés/modifiés depuis `implementation_report`
-- Chercher violations section "Anti-Patterns" (ex: commentaires inline)
+- Chercher violations standards projet (ex: commentaires inline, structure packages)
 - **SI trouvés** → ❌ FAIL
 
 **Validation Quality Tools** (adapté au stack) :

@@ -47,6 +47,7 @@ Analyser une tâche pour identifier :
 **Catégoriser par path** :
 - **`specs`** : path contient `/specs/` → **CRITIQUE** (source de vérité implémentation)
 - **`references`** : path contient `/references/` → Support technique
+- **`rules`** : CLAUDE.md, .editorconfig, .eslintrc, etc. → Standards/conventions projet
 - **`other`** : Autres docs (ARCHITECTURE.md, README.md, etc.)
 
 **Matcher intelligent** :
@@ -109,6 +110,15 @@ Analyser une tâche pour identifier :
         "score": 75,
         "matched_keywords": ["tech"],
         "reason": "Technical reference for implementation"
+      }
+    ],
+    "rules": [
+      {
+        "path": ".claude/CLAUDE.md",
+        "priority": "critical",
+        "score": 100,
+        "matched_keywords": [],
+        "reason": "Project standards, anti-patterns, and conventions"
       }
     ],
     "other": [

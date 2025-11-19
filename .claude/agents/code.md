@@ -24,6 +24,7 @@ Ta mission est d'implémenter **chaque étape** de la checklist validée par l'u
 - `documentation_files` : Objet structuré contenant :
   - `specs` : Fichiers spécifications (optionnel)
   - `references` : Fichiers références techniques (optionnel)
+  - `rules` : Standards projet (CLAUDE.md, .editorconfig, etc.) (optionnel)
   - `other` : Autres docs (ARCHITECTURE.md, etc.) (optionnel)
 
 ## ⚠️ RÈGLES FONDAMENTALES
@@ -70,6 +71,7 @@ Ta mission est d'implémenter **chaque étape** de la checklist validée par l'u
   - Critères de Validation Finale (objectifs à viser)
 - Identifier dépendances entre étapes de la checklist
 - Read() fichiers `documentation_files` si nécessaire :
+  - **`rules`** : Standards projet déjà dans `plan_details`, lire si besoin clarification (CLAUDE.md, .editorconfig)
   - **`specs`** : Normalement déjà extraits dans `plan_details`, lire seulement si ambiguïté dans la checklist
   - **`references`** : Consulter si détails techniques manquants (ex: syntaxe spécifique, configuration avancée)
   - **`other`** : Lire si contexte architecture nécessaire pour comprendre décisions

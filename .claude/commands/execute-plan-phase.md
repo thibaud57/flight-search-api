@@ -223,7 +223,7 @@ Marquer "Stocker liste fichiers" → in_progress
 
 **Stocker dans variables** :
 - `codebase` : Tout le bloc `codebase`
-- `documentation_files` : Tout le bloc `documentation` (objet avec specs, references, other)
+- `documentation_files` : Tout le bloc `documentation` (objet avec specs, references, rules, other)
 
 Marquer → completed
 
@@ -478,6 +478,9 @@ Task(
 
   **Contexte codebase** :
   {codebase}
+
+  **Fichiers documentation** :
+  {documentation_files}
 
   **Rapports d'implémentation** :
   {implementation_report}
