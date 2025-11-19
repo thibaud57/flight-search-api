@@ -2,7 +2,7 @@
 title: "Story 5: Multi-destinations (CombinationGenerator)"
 epic: "Epic 2: Google Flights Scraping"
 story_points: 5
-dependencies: ["story-4"]
+dependencies: ["epic-2/story-4"]
 date: "2025-19-11"
 keywords: ["multi-destinations", "combination-generator", "multi-city", "permutations", "itertools", "asyncio-gather", "parallel-crawls", "orchestration", "ranking", "top-10"]
 scope: ["specs"]

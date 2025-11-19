@@ -2,7 +2,7 @@
 title: "Story 2: Configuration & Logging"
 epic: "Epic 1: API Foundation"
 story_points: 3
-dependencies: ["story-1-health-check.md"]
+dependencies: ["epic-1/story-1"]
 date: "2025-19-11"
 keywords: ["config", "logging", "settings", "pydantic", "env-vars", "structured-logging", "json", "monitoring", "observability", "production"]
 scope: ["specs"]

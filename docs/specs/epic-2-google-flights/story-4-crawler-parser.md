@@ -2,7 +2,7 @@
 title: "Story 4: Crawler & Parser (Proof of Concept Google Flights 1 destination)"
 epic: "Epic 2: Google Flights Integration"
 story_points: 8
-dependencies: ["story-1-health-check.md", "story-2-config-logging.md", "story-3-search-endpoint.md"]
+dependencies: ["epic-1/story-1", "epic-1/story-2", "epic-1/story-3"]
 date: "2025-11-19"
 keywords: ["crawler", "parser", "crawl4ai", "google-flights", "scraping", "stealth-mode", "decodo-proxies", "jsoncssstrategy", "captcha-detection", "pydantic", "proof-of-concept"]
 scope: ["specs"]
