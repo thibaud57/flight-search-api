@@ -195,47 +195,24 @@ def parse_price(html: str) -> float:
 
 ---
 
-### 7. Fichiers __init__.py (Structure Packages)
+### 7. Fichiers __init__.py
 
-**Code applicatif (`app/`)** - Exports explicites :
+**Code applicatif (`app/`)** :
 ```python
-# app/__init__.py
+# Exports explicites avec __all__
 from app.main import app
-
 __all__ = ["app"]
 ```
+- ✅ Définir `__all__` (API publique du package)
+- ✅ Facilite imports : `from app import app`
 
+**Tests (`tests/`)** :
 ```python
-# app/models/__init__.py
-from app.models.response import HealthResponse
-
-__all__ = ["HealthResponse"]
-```
-
-**Règles** :
-- ✅ Définir `__all__` pour contrôler API publique du package
-- ✅ Facilite imports : `from app import app` au lieu de `from app.main import app`
-- ✅ Convention FastAPI/Python standard
-- ✅ Meilleure découvrabilité IDE (autocomplétion)
-
-**Tests (`tests/`)** - Vides (structure package) :
-```python
-# tests/__init__.py
+# Vides (juste docstring)
 """Tests package."""
 ```
-
-```python
-# tests/unit/__init__.py
-"""Unit tests package."""
-```
-
-**Règles** :
-- ✅ Fichiers présents (marque dossier comme package Python)
-- ❌ Vides : juste docstring, **PAS d'exports ni `__all__`**
-- ✅ pytest découvre automatiquement les tests
-- ✅ Convention pytest 2024-2025
-
-**Référence** : pytest documentation officielle, PEP 420 (Namespace packages)
+- ✅ Fichiers présents (marque package Python)
+- ❌ Pas d'exports ni `__all__` (convention pytest)
 
 ---
 
