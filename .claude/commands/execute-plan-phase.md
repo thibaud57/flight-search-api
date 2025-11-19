@@ -199,8 +199,9 @@ Marquer "Stocker liste fichiers" → in_progress
 ```
 
 **Stocker dans variables** :
-- `codebase` : Tout le bloc `codebase`
-- `documentation_files` : Liste de `documentation.files_to_read`
+- `codebase` : Tout le bloc `codebase` (objet complet)
+- `documentation_files` : Extraire `documentation.files_to_read` du JSON EXPLORE
+  - Contient : Liste d'objets `{path, priority, score, reason, sections}`
 
 Marquer → completed
 
