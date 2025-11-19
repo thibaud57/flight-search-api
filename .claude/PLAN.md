@@ -368,8 +368,8 @@
 ---
 
 ### 4.9 Mise à jour CHANGELOG
-- [ ] Ajouter entrée v0.4.0-specs dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for specs phase`
+- [x] Ajouter entrée v0.4.0-specs dans `docs/CHANGELOG.md`
+- [x] Commit : `docs: update changelog for specs phase`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
