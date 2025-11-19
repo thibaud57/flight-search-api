@@ -433,9 +433,10 @@
 
 📝 **Output** : Story 3 complétée (8 story points)
 
-### 5.4 Mise à jour CHANGELOG
+### 5.4 Mise à jour CHANGELOG et version
 - [ ] Ajouter entrée v0.5.0 dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for v0.5.0`
+- [ ] Mettre à jour version dans `app/main.py` : `version="0.5.0"`
+- [ ] Commit : `chore: bump version to 0.5.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -481,9 +482,10 @@
 
 📝 **Output** : Story 6 complétée (5 story points)
 
-### 5.8 Mise à jour CHANGELOG
+### 5.8 Mise à jour CHANGELOG et version
 - [ ] Ajouter entrée v0.6.0 dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for v0.6.0`
+- [ ] Mettre à jour version dans `app/main.py` : `version="0.6.0"`
+- [ ] Commit : `chore: bump version to 0.6.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -505,9 +507,10 @@
 
 📝 **Output** : Story 7 complétée (5 story points)
 
-### 5.10 Mise à jour CHANGELOG
+### 5.10 Mise à jour CHANGELOG et version
 - [ ] Ajouter entrée v0.7.0 dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for v0.7.0`
+- [ ] Mettre à jour version dans `app/main.py` : `version="0.7.0"`
+- [ ] Commit : `chore: bump version to 0.7.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -702,9 +705,10 @@
 
 ---
 
-### 7B.2 Mise à jour CHANGELOG
+### 7B.2 Mise à jour CHANGELOG et version
 - [ ] Ajouter entrée v1.1.0 dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for v1.1.0`
+- [ ] Mettre à jour version dans `app/main.py` : `version="1.1.0"`
+- [ ] Commit : `chore: bump version to 1.1.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
