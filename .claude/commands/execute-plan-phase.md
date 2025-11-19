@@ -159,8 +159,8 @@ Task(
   {expected_output}
 
   Explorer :
-  1. Codebase (Phase 0A) : stack, conventions, fichiers existants
-  2. Documentation (Phase 0B) : fichiers pertinents selon metadata YAML
+  1. Codebase : stack, conventions, fichiers existants
+  2. Documentation : fichiers pertinents selon metadata YAML
 
   Retourner JSON avec :
   - codebase (stack, conventions, existing_files)
@@ -240,7 +240,7 @@ Task(
 
   **Type tâche** : {task_type}
 
-  **Checklist niveau 1** (depuis PLAN.md) :
+  **Checklist niveau 1** :
   {checklist_niveau_1}
 
   **Output attendu** :
@@ -283,22 +283,11 @@ Afficher le plan généré :
 
 **Si user répond "non"** ou demande ajustements :
 1. Capturer feedback user
-2. Relancer Task(subagent_type="plan") avec le prompt suivant :
-   ```
-   Le plan précédent a été rejeté. Voici le feedback :
-
-   {user_feedback}
-
-   Plan précédent (AJUSTER selon feedback, NE PAS refaire from scratch) :
-   {plan_complet_précédent}
-
-   Ajuste le plan ci-dessus selon le feedback et re-génère.
-   Conserve la structure existante, modifie uniquement ce qui est mentionné dans le feedback.
-   ```
-
-   ⚠️ **CRITIQUE** : Inclure le plan précédent complet dans le prompt, sinon l'agent va tout refaire.
-
-3. Afficher nouveau plan
+2. **Ajuster le plan markdown directement** sans relancer l'agent :
+   - Appliquer les modifications demandées sur le plan
+   - Exemples : inverser étapes, changer mots, ajouter détails, retirer ligne, etc.
+   - Conserver la structure markdown du plan
+3. Afficher plan ajusté
 4. Redemander validation
 5. **Répéter jusqu'à validation "oui"**
 
@@ -308,9 +297,22 @@ Afficher le plan généré :
 
 1. **Extraire `checklist_niveau_2`** :
    - Rechercher section `## 📝 Checklist Niveau 2`
-   - Extraire toutes les lignes numérotées (format : `1. **[Action]** : [Détails]`)
-   - Stocker dans variable `checklist_niveau_2[]` (liste de strings)
-   - Exemple : `["1. **Créer fichier** : Nouveau fichier à docs/specs/...", "2. **Ajouter metadata** : ..."]`
+   - **Pour chaque étape numérotée, inclure la ligne critère succès indentée**
+   - Format attendu (multi-ligne) :
+     ```
+     N. **[Action]** : [Détails]
+        - Critère succès : [...]
+     ```
+   - Stocker dans `checklist_niveau_2[]` (liste de strings)
+   - Chaque string contient l'étape complète avec son critère
+   - Exemple :
+     ```python
+     checklist_niveau_2 = [
+       "1. **Créer fichier** : docs/specs/story-5.md avec metadata YAML\n   - Critère succès : Fichier créé avec frontmatter valide",
+       "2. **Rédiger section** : Contexte Business complet\n   - Critère succès : Section complète et structurée"
+     ]
+     ```
+   - ⚠️ **IMPORTANT** : Le critère succès est obligatoire pour que l'agent TEST puisse valider
 
 2. **Extraire `document_type`** (si agent=DOCUMENT) :
    - Rechercher section `## 🤖 Agent d'Exécution`
