@@ -145,7 +145,7 @@ Valider que fichiers recommandés existent :
 - 🟡 **Important** (30-49%) : Utile mais pas bloquant
 - 🟢 **Optional** (20-29%) : Contexte général
 
-**Limite** : Max 5 fichiers (éviter surcharge cognitive)
+**Limite** : Max 10 fichiers (éviter surcharge cognitive)
 
 ## 📤 Format de Sortie
 
@@ -201,7 +201,8 @@ Valider que fichiers recommandés existent :
 ```
 checklist_niveau_1: [
   "Configuration metadata projet + dependencies principales",
-  "Configuration linting + formatage + type checking"
+  "Configuration linting + formatage + type checking",
+  "Ajouter à `pyproject.toml`"
 ]
 expected_output: "Fichier configuration projet complet"
 ```
@@ -212,13 +213,14 @@ Phase 1: Explore Codebase
   - Glob("pyproject.toml") → Found → Stack: Python
   - Read pyproject.toml → Found: [tool.ruff], [tool.mypy]
   - Conventions: linter=ruff, type_checker=mypy
+  - File path detected in checklist: `pyproject.toml` → Added to existing_files
 
 Phase 2: Scan docs/
   - Found: docs/references/dependencies.md (keywords: ["dependencies", "setup"])
   - Found: docs/references/linting.md (keywords: ["lint", "format"])
 
 Phase 3: Extract keywords
-  - ["configure", "dependencies", "linting", "tools"]
+  - ["configure", "dependencies", "linting", "tools", "pyproject"]
 
 Phase 4: Matching
   - linting.md: score=75% (3/4 keywords)
