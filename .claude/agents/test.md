@@ -239,7 +239,19 @@ checklist_niveau_2: [
 ]
 
 expected_output: "Story 5 specs complètes"
-codebase.stack: "python"
+
+codebase: {
+  "stack": "python",
+  "package_manager": "uv",
+  "conventions": {
+    "linter": "ruff",
+    "formatter": "ruff",
+    "type_checker": "mypy",
+    "test_runner": "pytest"
+  }
+}
+
+implementation_report: "Fichier créé : docs/specs/epic-2-google-flights/story-5.md (250 lignes)\nSections : CombinationGenerator (80 lignes), SearchService (70 lignes)"
 ```
 
 **Type détecté** : Docs (specs)
