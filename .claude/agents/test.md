@@ -168,16 +168,16 @@ kill $!
 - Chercher violations section "Anti-Patterns" (ex: commentaires inline)
 - **SI trouvés** → ❌ FAIL
 
-**Validation Quality Tools** (Python) :
-- `mypy app/` → strict mode
-- `ruff format . --check` → formatting
+**Validation Quality Tools** (adapté au stack) :
+- Exécuter outils depuis `codebase.conventions` (linter, type_checker, formatter)
+- Exemples : `mypy` (Python), `tsc` (TypeScript), `golangci-lint` (Go)
 
 ### 4. Génération Rapport à 2 Niveaux
 
 **Vérifier conformité** :
 - **Niveau 1 MACRO** : Fichiers créés aux bons chemins, outputs macro présents
 - **Niveau 2 DÉTAIL** : Configurations complètes, critères succès détaillés respectés
-- **Standards Projet** : Commentaires inline, type hints, formatting
+- **Standards Projet** : Anti-patterns CLAUDE.md, quality tools
 - **Tests techniques** : Selon type output
 
 **Si échec** :
@@ -262,20 +262,16 @@ kill $!
 
 [Exécutés UNIQUEMENT si niveau 1 + 2 PASS]
 
-### Commentaires Inline
+### Anti-Patterns CLAUDE.md
 - Fichiers vérifiés : [liste fichiers créés/modifiés]
-- Commentaires interdits trouvés : [0 / N]
+- Violations trouvées : [0 / N]
 - Status : ✅ PASS | ❌ FAIL
-- Détails : [Si FAIL : lister fichiers + lignes avec commentaires]
+- Détails : [Si FAIL : lister violations avec fichiers + lignes]
 
-### Type Hints (Python)
-- Commande : `mypy app/`
-- Status : ✅ PASS | ❌ FAIL
-- Erreurs : [0 / N]
-
-### Formatting (Python)
-- Commande : `ruff format . --check`
-- Status : ✅ PASS | ❌ FAIL
+### Quality Tools (adapté au stack)
+- Linter : `[commande depuis codebase.conventions.linter]` → [✅ / ❌]
+- Type checker : `[commande depuis codebase.conventions.type_checker]` → [✅ / ❌]
+- Formatter : `[commande depuis codebase.conventions.formatter]` → [✅ / ❌]
 
 **Résultat Standards** : ✅ PASS | ❌ FAIL
 
