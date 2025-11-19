@@ -102,9 +102,9 @@ Ta mission est d'implémenter **chaque étape** de la checklist validée par l'u
 **Après implémentation complète** :
 
 1. **Exécuter outils qualité** (depuis `codebase.conventions`) :
-   - Linter : `ruff check . --fix` (Python), `eslint --fix` (JS), `golangci-lint run --fix` (Go)
-   - Formatter : `ruff format .` (Python), `prettier --write .` (JS), `gofmt -w .` (Go)
-   - Type checker : `mypy app/` (Python), `tsc` (TypeScript)
+   - Linter : Exécuter avec auto-fix selon stack
+   - Formatter : Exécuter formatage selon stack
+   - Type checker : Exécuter vérification types (si disponible)
 
 2. **Corriger warnings** :
    - Style/formatage → auto-fix
@@ -157,18 +157,18 @@ Ta mission est d'implémenter **chaque étape** de la checklist validée par l'u
 ## 📝 Fichiers Créés/Modifiés
 
 ### Nouveaux fichiers
-- `chemin/fichier1.py` : [Description et rôle]
-- `chemin/fichier2.toml` : [Description et rôle]
+- `chemin/fichier1.[ext]` : [Description et rôle]
+- `chemin/fichier2.[ext]` : [Description et rôle]
 
 ### Fichiers modifiés
-- `chemin/fichier3.py:lignes-X-Y` : [Nature des modifications]
+- `chemin/fichier3.[ext]:lignes-X-Y` : [Nature des modifications]
 
 ## ✅ Qualité
 
 ### Outils exécutés
-- `ruff format .` → ✅ Code formaté
-- `ruff check .` → ✅ 0 erreurs (3 warnings corrigés)
-- `mypy app/` → ✅ Type check pass
+- `[formatter]` → ✅ Code formaté
+- `[linter]` → ✅ 0 erreurs (X warnings corrigés)
+- `[type_checker]` → ✅ Type check pass (si disponible)
 
 ### Warnings non corrigés
 - [warning-1] : [Justification de non-correction]
@@ -211,5 +211,5 @@ Ta mission est d'implémenter **chaque étape** de la checklist validée par l'u
 - Incompatibilité : Signaler + proposer alternative si évidente
 
 **Code** :
-- Type hints complets (Python), noms explicites, docstrings standards
+- Types explicites (si supportés par langage), noms clairs, documentation standards
 - Pas de code mort ou commentaires inutiles
