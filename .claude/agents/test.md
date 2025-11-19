@@ -40,7 +40,7 @@ Pour chaque item de `checklist_niveau_1[]` (liste de strings bruts) :
    - Exemple : Si item contient `"Ajouter à \`docs/specs/epic-2-google-flights/story-4.md\`"`, extraire le chemin `docs/specs/epic-2-google-flights/story-4.md`
 
 2. **Si chemin fichier trouvé** :
-   - Vérifier fichier existe : `Read(chemin/fichier.ext)`
+   - Vérifier que le fichier existe en le lisant
    - Si fichier manquant → ❌ **FAIL CRITIQUE** : "Fichier `{chemin}` introuvable"
    - Si fichier vide (< 10 lignes) → ❌ **FAIL CRITIQUE** : "Fichier `{chemin}` existe mais vide/incomplet"
    - Si fichier OK → ✅ Validé
@@ -223,23 +223,26 @@ Cause probable : [analyse]
 ➡️ Action requise : [Recommandation prioritaire]
 ```
 
-## Exemple : Config Python - PASS
+## Exemple Complet : Story 5 Specs - PASS
 
 **Input** :
 ```
-expected_output: "Fichier configuration projet complet"
+checklist_niveau_1: [
+  "Specs : CombinationGenerator (itertools.product)",
+  "Specs : SearchService orchestration",
+  "Ajouter à `docs/specs/epic-2-google-flights/story-5.md`"
+]
+
+checklist_niveau_2: [
+  "1. **Créer fichier** : docs/specs/story-5.md avec metadata YAML\n   - Critère succès : Fichier créé avec frontmatter valide",
+  "2. **Rédiger section CombinationGenerator** : Algorithme complet\n   - Critère succès : Section présente et détaillée"
+]
+
+expected_output: "Story 5 specs complètes"
 codebase.stack: "python"
-codebase.conventions: {linter: "ruff", type_checker: "mypy"}
 ```
 
-**Type détecté** : Config
-
-**Commandes** :
-```bash
-uv sync → ✅ OK (15s)
-ruff check . → ✅ OK (2s)
-mypy app/ → ✅ OK (5s)
-```
+**Type détecté** : Docs (specs)
 
 **Rapport** :
 ```markdown
@@ -247,21 +250,52 @@ mypy app/ → ✅ OK (5s)
 
 ## 📊 Résumé
 **Status Global** : ✅ PASS
-- Type output : Config (Python)
-- Validations : 3
-- Durée totale : 22s
+- Type output : Docs (specs)
+- Validations niveau 1 : 3
+- Validations niveau 2 : 2
+- Durée totale : 5s
 
-## 🔍 Résultats
-Validation 1 : Install deps → ✅ PASS (15s)
-Validation 2 : Lint check → ✅ PASS (2s)
-Validation 3 : Type check → ✅ PASS (5s)
+---
 
-## ✅ Conformité Plan
-Toutes les étapes validées
+## ✅ Conformité Checklist Niveau 1 (PLAN.md - Macro)
+
+| # | Item | Attendu | Implémenté | Status |
+|---|------|---------|------------|--------|
+| 1 | Specs : CombinationGenerator | Présent dans rapport | ✅ "CombinationGenerator" trouvé | ✅ |
+| 2 | Specs : SearchService | Présent dans rapport | ✅ "SearchService" trouvé | ✅ |
+| 3 | Ajouter à `docs/specs/epic-2-google-flights/story-5.md` | Fichier au chemin exact | ✅ Fichier existe (250 lignes) | ✅ |
+
+**Résultat Niveau 1** : ✅ PASS (3/3 items validés)
+
+---
+
+## ✅ Conformité Checklist Niveau 2 (Détaillée)
+
+| # | Étape | Critère succès | Implémenté | Status |
+|---|-------|----------------|------------|--------|
+| 1 | Créer fichier docs/specs/story-5.md | Fichier créé avec frontmatter valide | ✅ Metadata YAML présent | ✅ |
+| 2 | Rédiger section CombinationGenerator | Section présente et détaillée | ✅ Section 80 lignes | ✅ |
+
+**Résultat Niveau 2** : ✅ PASS (2/2 étapes validées)
+
+---
+
+## 🔍 Tests Techniques
+
+### Validation 1 : Format markdown
+- Commande : `remark --no-stdout docs/specs/epic-2-google-flights/story-5.md`
+- Status : ✅ PASS
+- Durée : 2s
+
+---
 
 ## 🎯 Décision Finale
-✅ VALIDATION RÉUSSIE
-➡️ Marquer phase complétée
+✅ **VALIDATION RÉUSSIE**
+- Niveau 1 (Macro) : ✅ PASS
+- Niveau 2 (Détail) : ✅ PASS
+- Tests techniques : ✅ PASS
+
+➡️ Marquer phase complétée dans PLAN.md
 ```
 
 # Message Final
