@@ -282,37 +282,36 @@
 📝 **Output** : `docs/SPECS.md` (index) + `docs/specs/*.md` (? epics, ? stories)
 
 **Note** : Si specs additionnelles nécessaires pendant l'implémentation, créer nouveau fichier dans `docs/specs/*` suivant l'epics et la story et mettre à jour l'index SPECS.md.
-Pour chaque story → Remplir template TEMPLATE_SPECS.md 
 
 ---
 
 ## Epic 1: API Foundation
 
 ### 4.2 Story 1: Health check endpoint
-- [x] Specs : Route GET /health, healthcheck logic
-- [x] Contexte business : Monitoring production ready
-- [x] Tests : Tests unitaires + intégration (à spécifier)
-- [x] Ajouter à `docs/specs/epic-1-api-foundation/story-1-health-check.md`
-- [x] Commit : `docs(specs): add story 1 specifications`
+- [ ] Specs : Route GET /health, healthcheck logic
+- [ ] Contexte business : Monitoring production ready
+- [ ] Tests : Tests unitaires + intégration (à spécifier)
+- [ ] Ajouter à `docs/specs/epic-1-api-foundation/story-1-health-check.md`
+- [ ] Commit : `docs(specs): add story 1 specifications`
 
 📝 **Output** : Story 1 specs complètes (2 story points)
 
 ### 4.3 Story 2: Configuration & Logging
-- [x] Specs : Settings (Pydantic BaseSettings), Logger (JSON structuré)
-- [x] Contexte business : Config sécurisée (.env), monitoring logs
-- [x] Tests : Tests unitaires Settings + Logger (à spécifier)
-- [x] Ajouter à `docs/specs/epic-1-api-foundation/story-2-config-logging.md`
-- [x] Commit : `docs(specs): add story 2 specifications`
+- [ ] Specs : Settings (Pydantic BaseSettings), Logger (JSON structuré)
+- [ ] Contexte business : Config sécurisée (.env), monitoring logs
+- [ ] Tests : Tests unitaires Settings + Logger (à spécifier)
+- [ ] Ajouter à `docs/specs/epic-1-api-foundation/story-2-config-logging.md`
+- [ ] Commit : `docs(specs): add story 2 specifications`
 
 📝 **Output** : Story 2 specs complètes (3 story points)
 
 ### 4.4 Story 3: Search endpoint basique (mock)
-- [x] Specs : Models (SearchRequest, SearchResponse)
-- [x] Specs : SearchService (mock data), Route POST /search-flights
-- [x] Contexte business : API testable client, contrat validé
-- [x] Tests : Tests unitaires Models + Service + Route + intégration (à spécifier)
-- [x] Ajouter à `docs/specs/epic-1-api-foundation/story-3-search-endpoint.md`
-- [x] Commit : `docs(specs): complete story 3 specifications`
+- [ ] Specs : Models (SearchRequest, SearchResponse)
+- [ ] Specs : SearchService (mock data), Route POST /search-flights
+- [ ] Contexte business : API testable client, contrat validé
+- [ ] Tests : Tests unitaires Models + Service + Route + intégration (à spécifier)
+- [ ] Ajouter à `docs/specs/epic-1-api-foundation/story-3-search-endpoint.md`
+- [ ] Commit : `docs(specs): complete story 3 specifications`
 
 📝 **Output** : Story 3 specs complètes (8 story points)
 
@@ -321,23 +320,23 @@ Pour chaque story → Remplir template TEMPLATE_SPECS.md
 ## Epic 2: Google Flights Integration
 
 ### 4.5 Story 4: Crawler + Parser (1 destination)
-- [x] Specs : CrawlerService (Crawl4AI + AsyncWebCrawler)
-- [x] Specs : FlightParser (JsonCssExtractionStrategy, sélecteurs CSS)
-- [x] Contexte business : Vraies données Google Flights (proof of concept)
-- [x] Tests : Tests unitaires Crawler + Parser + intégration (à spécifier)
-- [x] Ajouter à `docs/specs/epic-2-google-flights/story-4-crawler-parser.md`
-- [x] Commit : `docs(specs): add story 4 specifications`
+- [ ] Specs : CrawlerService (Crawl4AI + AsyncWebCrawler)
+- [ ] Specs : FlightParser (JsonCssExtractionStrategy, sélecteurs CSS)
+- [ ] Contexte business : Vraies données Google Flights (proof of concept)
+- [ ] Tests : Tests unitaires Crawler + Parser + intégration (à spécifier)
+- [ ] Ajouter à `docs/specs/epic-2-google-flights/story-4-crawler-parser.md`
+- [ ] Commit : `docs(specs): add story 4 specifications`
 
 📝 **Output** : Story 4 specs complètes (8 story points)
 
 ### 4.6 Story 5: Multi-destinations (CombinationGenerator)
-- [x] Specs : CombinationGenerator (itertools.product, permutations multi-city)
-- [x] Specs : SearchService orchestration (multiple crawls)
-- [x] Specs : Top 10 ranking (tri prix + limite 10 résultats)
-- [x] Contexte business : Feature MVP complète (2-10 destinations)
-- [x] Tests : Tests unitaires Generator + Service + intégration (à spécifier)
-- [x] Ajouter à `docs/specs/epic-2-google-flights/story-5-multi-destinations.md`
-- [x] Commit : `docs(specs): add story 5 specifications`
+- [ ] Specs : CombinationGenerator (itertools.product, permutations multi-city)
+- [ ] Specs : SearchService orchestration (multiple crawls)
+- [ ] Specs : Top 10 ranking (tri prix + limite 10 résultats)
+- [ ] Contexte business : Feature MVP complète (2-10 destinations)
+- [ ] Tests : Tests unitaires Generator + Service + intégration (à spécifier)
+- [ ] Ajouter à `docs/specs/epic-2-google-flights/story-5-multi-destinations.md`
+- [ ] Commit : `docs(specs): add story 5 specifications`
 
 📝 **Output** : Story 5 specs complètes (5 story points)
 
@@ -826,7 +825,6 @@ flight-search-api/
 │   ├── ARCHITECTURE.md
 │   ├── CHANGELOG.md
 │   ├── SPECS.md        # Index specs (liens vers stories)
-│   ├── TEMPLATE_SPECS.md
 │   ├── REFERENCES.md   # Index léger avec liens
 │   └── VERSIONS.md
 ├── app/

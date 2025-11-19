@@ -7,13 +7,14 @@ scope: ["deploy"]
 technologies: ["dokploy", "docker"]
 ---
 
-# 1. Dockerfile Best Practices (Optimisation pour Dokploy)
+# Dockerfile Best Practices (Optimisation pour Dokploy)
 
 ## Description
 
 Dokploy supporte plusieurs types de build dont Dockerfile avec chemins configurables. Les meilleures pratiques recommandent d'utiliser des builds multi-stage avec Alpine Linux pour minimiser la taille des images et les ressources de production.
 
-## Configuration
+## Exemple
+
 ```dockerfile
 # Multi-stage build pour production
 FROM node:18-alpine AS builder
@@ -32,49 +33,48 @@ COPY --from=builder /app/package*.json ./
 CMD ["node", "dist/index.js"]
 ```
 
-## Champs à configurer dans Dokploy
-
+**Champs Dokploy** :
 - **Dockerfile Path** : `Dockerfile` (ou chemin personnalisé)
 - **Docker Context Path** : `.` (répertoire racine)
-- **Docker Build Stage** : Optionnel, pour les builds multi-stage
+- **Docker Build Stage** : Optionnel, pour builds multi-stage
 
-## Bonnes pratiques
-- Utiliser Alpine Linux pour réduire la taille des images
-- Implémenter des builds multi-stage pour les applications de production
-- Copier uniquement les fichiers nécessaires du stage de build au stage final
-- Définir `NODE_ENV=production` pour optimiser les dépendances
+## Points clés
 
-# 2. Gestion des Variables d'Environnement (Env Vars)
+- **Alpine Linux** : Réduit taille images (~60% économie vs images standard)
+- **Multi-stage builds** : Sépare build et runtime pour images optimisées production
+- **Copie sélective** : Copier uniquement fichiers nécessaires du builder au final stage
+- **NODE_ENV=production** : Optimise dépendances et performances runtime
+
+# Gestion des Variables d'Environnement (Env Vars)
 
 ## Description
 
 Dokploy propose un système à trois niveaux pour gérer les variables d'environnement.
 
-## Trois niveaux de variables
+## Exemple
 
-### Niveau Projet (Partagé)
+**Niveau Projet (Partagé)** :
 ```
 Variables accessibles à tous les services du projet
 Syntaxe de référence : ${{project.VARIABLE_NAME}}
 Exemple : DATABASE_URL=postgresql://postgres:postgres@database:5432/postgres
 ```
 
-### Niveau Environnement
-
+**Niveau Environnement** :
 ```
 Spécifiques à un environnement (staging, production)
 Syntaxe de référence : ${{environment.VARIABLE_NAME}}
 Permet des configurations différentes par environnement
 ```
 
-### Niveau Service
+**Niveau Service** :
 ```
 Spécifiques à un service individuel
 Affichage dans la section "Environment" de chaque service
 Variable automatique : DOKPLOY_DEPLOY_URL (en preview deployments)
 ```
 
-## Configuration des multiline variables
+**Configuration multiline variables** :
 ```
 Pour les clés SSH ou certificats, encadrer avec des guillemets doubles :
 "-----BEGIN PRIVATE KEY-----
@@ -82,20 +82,23 @@ MIIEvAIBADANBgkqhkiG9w0BAQE...
 -----END PRIVATE KEY-----"
 ```
 
-## Meilleures pratiques
-- Utiliser les variables partagées pour les configurations répétitives (credentials, URLs)
-- Nommer les variables de manière descriptive (ex: `DB_PRIMARY_HOST`)
-- Documenter le rôle de chaque variable pour la maintenance
-- Garder les secrets sensibles au niveau projet ou service
+## Points clés
 
-# 3. Deployment Workflow (Flux de Déploiement)
+- **Trois niveaux** : Projet (partagé), Environnement (staging/prod), Service (individuel)
+- **Syntaxe référence** : `${{project.VAR}}`, `${{environment.VAR}}` pour réutilisation
+- **Variables partagées** : Utiliser niveau projet pour credentials et URLs répétitives
+- **Nommage descriptif** : Préférer `DB_PRIMARY_HOST` à `HOST` pour clarté
+- **Secrets** : Garder au niveau projet ou service (pas environnement public)
+
+# Deployment Workflow (Flux de Déploiement)
 
 ## Description
 
 Dokploy recommande une approche de déploiement en production sans build sur le serveur. Utiliser une pipeline CI/CD (GitHub Actions, GitLab CI) pour construire et publier les images Docker, puis les déployer sur Dokploy avec contrôle de santé et rollback automatique.
 
-## Architecture recommandée
+## Exemple
 
+**Architecture recommandée** :
 ```
 1. Développement local → Push vers Git
 2. Pipeline CI/CD → Build Docker image
@@ -105,7 +108,7 @@ Dokploy recommande une approche de déploiement en production sans build sur le 
 6. Rollback automatique si défaillance
 ```
 
-## Configuration de la Pipeline (exemple GitHub Actions)
+**Configuration Pipeline (GitHub Actions)** :
 ```yaml
 # .github/workflows/deploy.yml
 name: Build and Deploy
@@ -126,13 +129,14 @@ jobs:
         run: curl -X POST https://dokploy-instance/api/deploy
 ```
 
-## Meilleures pratiques production
-- Construire les images en CI/CD
-- Déployer des images pré-construites (pas de build sur le serveur)
-- Configurer des health checks pour chaque service
-- Implémenter des rollbacks automatiques
-- Utiliser des volumes persistants pour les données
-- Monitorer les déploiements et les logs en temps réel
+## Points clés
+
+- **Build externe** : Construire images en CI/CD (pas sur serveur Dokploy)
+- **Pre-built images** : Déployer images pré-construites pour rapidité et fiabilité
+- **Health checks** : Configurer pour validation automatique déploiements
+- **Rollback automatique** : Implémenté nativement par Dokploy si health checks échouent
+- **Volumes persistants** : Utiliser pour données (éviter perte lors redéploiements)
+- **Monitoring requis** : Surveiller logs et métriques en temps réel
 
 # Ressources
 

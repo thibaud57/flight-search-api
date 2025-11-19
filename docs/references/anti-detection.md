@@ -7,13 +7,14 @@ scope: ["code"]
 technologies: ["crawl4ai", "playwright"]
 ---
 
-# 1. Stealth Mode Crawl4AI
+# Stealth Mode Crawl4AI
 
 ## Description
 
 Le Stealth Mode de Crawl4AI utilise `playwright-stealth` pour modifier les fingerprints du navigateur en supprimant les indicateurs détectables comme `navigator.webdriver` et en émulant un comportement de plugins réaliste.
 
-## Configuration
+## Exemple
+
 ```python
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 
@@ -26,19 +27,20 @@ async with AsyncWebCrawler(config=browser_config) as crawler:
     result = await crawler.arun("https://example.com")
 ```
 
-## Best Practices
+## Points clés
 
-- Désactiver le mode headless (plus facile à détecter)
-- Implémenter des délais raisonnables entre les requêtes
-- Combiner avec d'autres techniques d'anti-détection
+- **Mode headless déconseillé** : Plus facile à détecter, préférer headless=False
+- **Délais requis** : Implémenter délais raisonnables entre requêtes
+- **Combinaison techniques** : Combiner avec rotation proxies et user-agents pour efficacité maximale
 
-# 2. Undetected Browser Mode (Mode Avancé)
+# Undetected Browser Mode (Mode Avancé)
 
 ## Description
 
 Pour les sites avec détection sophistiquée (Cloudflare, DataDome, Akamai), le mode Undetected Browser applique des patches plus profonds offrant une protection maximale contre les systèmes de détection modernes.
 
-## Configuration
+## Exemple
+
 ```python
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 
@@ -55,19 +57,21 @@ async with AsyncWebCrawler(config=browser_config) as crawler:
     result = await crawler.arun("https://protected-site.com")
 ```
 
-## Stratégie Progressive
+## Points clés
 
-1. Commencer avec navigateur régulier + stealth mode
-2. Si bloqué, escalader vers undetected browser
-3. Pour protection maximale, combiner stealth mode + undetected browser
+- **Stratégie progressive** : Commencer avec stealth mode, escalader vers undetected si bloqué
+- **Protection maximale** : Combiner stealth mode + undetected browser pour sites très protégés
+- **Sites cibles** : Cloudflare, DataDome, Akamai nécessitent généralement undetected browser
+- **Patches profonds** : Modifications plus invasives que stealth mode seul
 
-# 3. User-Agent Rotation
+# User-Agent Rotation
 
 ## Description
 
 La rotation des User-Agents alterne les chaînes d'identification du navigateur pour simuler des requêtes provenant d'utilisateurs différents. La rotation pondérée (weighted rotation) est plus efficace que la sélection purement aléatoire.
 
-## Configuration avec Pool Pondéré
+## Exemple
+
 ```python
 import random
 
@@ -89,14 +93,14 @@ browser_config = BrowserConfig(
 )
 ```
 
-## Best Practices
+## Points clés
 
-- Utiliser des user-agents actuels et réalistes (Chrome/Firefox récents)
-- Maintenir une diverse pool (Windows, macOS, navigateurs populaires)
-- Assigner des poids plus élevés aux versions modernes
-- Combiner avec throttling et rotation de proxies
+- **User-agents réalistes** : Utiliser versions actuelles Chrome/Firefox (éviter user-agents obsolètes)
+- **Pool diversifiée** : Inclure Windows, macOS, Linux pour simulation multi-plateformes
+- **Rotation pondérée** : Assigner poids plus élevés aux versions modernes (Chrome 40%, Firefox 20%)
+- **Combinaison obligatoire** : Combiner avec throttling et rotation proxies pour efficacité maximale
 
-# 4. Proxy Rotation
+# Proxy Rotation
 
 ## Description
 
@@ -111,7 +115,9 @@ La rotation des proxies distribue les requêtes sur plusieurs adresses IP pour �
 | Static Residential | Très faible | Haut | Connexions persistantes |
 | Mobile | Très faible | Très haut | Contenu mobile-restricted |
 
-## Configuration avec Stealth Mode et Proxy
+## Exemple
+
+**Configuration avec Stealth Mode et Proxy** :
 ```python
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 
@@ -126,7 +132,7 @@ async with AsyncWebCrawler(config=browser_config) as crawler:
     result = await crawler.arun("https://example.com")
 ```
 
-## Pool Manager Pattern
+**Pool Manager Pattern** :
 ```python
 import random
 from itertools import cycle
@@ -147,19 +153,25 @@ def get_random_proxy():
     return random.choice(PROXY_POOL)
 ```
 
-## Best Practices de Rotation
+## Points clés
 
-- Utiliser ISP/Static Residential proxies pour l'evasion optimale
-- Implémenter un pool manager avec rotation intelligente
-- Associer chaque proxy à un nouveau fingerprint du navigateur
-- Monitorer les taux de succès et adapter la rotation
+- **Types recommandés** : ISP/Static Residential proxies pour évasion optimale (détectabilité très faible)
+- **Pool manager** : Implémenter rotation intelligente avec cycle() ou random.choice()
+- **Fingerprint association** : Associer chaque proxy à nouveau fingerprint navigateur pour cohérence
+- **Monitoring requis** : Monitorer taux de succès et adapter stratégie de rotation selon blocages
 
-# 5. Stratégie Complète Combinée
+# Stratégie Complète Combinée
 
-## Configuration Multi-Couches
+## Description
+
+Approche multi-couches combinant toutes les techniques anti-détection pour maximiser l'évasion. Cette stratégie progressive permet d'adapter le niveau de protection selon la sophistication de la détection rencontrée.
+
+## Exemple
+
 ```python
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 import random
+import asyncio
 
 # Configuration avec toutes les techniques
 browser_config = BrowserConfig(
@@ -176,20 +188,19 @@ browser_config = BrowserConfig(
 )
 
 # Avec délais aléatoires
-import asyncio
-
 async with AsyncWebCrawler(config=browser_config) as crawler:
     for url in urls:
         result = await crawler.arun(url)
         await asyncio.sleep(random.uniform(2, 5))  # Délai humain
 ```
 
-## Ordre d'Application Recommandé
+## Points clés
 
-1. **Couche 1** : Stealth Mode + User-Agent Rotation
-2. **Couche 2** : Ajouter Proxy Rotation
-3. **Couche 3** : Basculer à Undetected Browser si bloqué
-4. **Couche 4** : Ajouter délais aléatoires et comportements humains
+- **Couche 1** : Stealth Mode + User-Agent Rotation (protection basique)
+- **Couche 2** : Ajouter Proxy Rotation (distribution IP)
+- **Couche 3** : Basculer Undetected Browser si blocages (protection maximale)
+- **Couche 4** : Délais aléatoires 2-5s entre requêtes (comportement humain)
+- **Approche progressive** : Commencer simple, escalader selon besoins
 
 # Ressources
 

@@ -7,7 +7,7 @@ scope: ["deploy", "code"]
 technologies: ["decodo"]
 ---
 
-# 1. Residential Rotation
+# Residential Rotation
 
 ## Description
 
@@ -38,7 +38,14 @@ curl -U user-username-country-us-session-abc123:password -x gate.decodo.com:7000
 curl -U user-username-country-us-sessionduration-30-session-abc123:password -x gate.decodo.com:7000 https://ip.decodo.com/json
 ```
 
-# 2. France Targeting (Ciblage géographique)
+## Points clés
+
+- **Rotating proxies** : IP change à chaque requête (anonymat maximal)
+- **Sticky sessions** : IP conservée 1-1440 min (sessions persistantes)
+- **Session ID** : Identifiant unique pour sticky sessions (ex: abc123)
+- **Duration personnalisée** : Parameter sessionduration-N pour durée spécifique (minutes)
+
+# France Targeting (Ciblage géographique)
 
 ## Description
 
@@ -65,13 +72,15 @@ curl -U user-username-country-fr:password -x gate.decodo.com:7000 https://ip.dec
 curl -U user-username-country-fr-city-paris:password -x gate.decodo.com:7000 https://ip.decodo.com/json
 ```
 
-## Notes importantes
+## Points clés
 
-- Le code pays est toujours en minuscules (fr, pas FR)
-- Le ciblage par ville et ASN sont mutuellement exclusifs
-- Whitelisted IP n'accepte que IPv4 (pas IPv6)
+- **Code pays** : Toujours en minuscules (fr, pas FR)
+- **Endpoints France** : fr.decodo.com:30000 (rotating) ou :30001-39999 (sticky)
+- **Ciblage ville** : country-fr-city-paris pour ciblage géographique précis
+- **Exclusivité** : Ciblage ville et ASN mutuellement exclusifs
+- **IPv4 uniquement** : Whitelisted IP n'accepte que IPv4 (pas IPv6)
 
-# 3. Authentication (Authentification)
+# Authentication (Authentification)
 
 ## Description
 
@@ -109,13 +118,21 @@ customer-{api_key}-country-{country_code}:password
 customer-abc123def456-country-fr:password
 ```
 
-# 4. Bandwidth Optimization (Optimisation de bande passante)
+## Points clés
+
+- **Deux méthodes** : Username/Password (standard) ou IP Whitelisting
+- **Format standard** : user-{username}-country-{country}-session-{session_id}:password
+- **Format API Key** : customer-{api_key}-country-{country}:password
+- **Paramètres combinables** : country, city, session, sessionduration dans username
+- **Ordre paramètres** : Respecter ordre exact pour fonctionnement correct
+
+# Bandwidth Optimization (Optimisation de bande passante)
 
 ## Description
 
 Decodo propose une tarification basée sur la bande passante avec réductions selon le volume. Les coûts diminuent proportionnellement avec l'augmentation de la consommation mensuelle.
 
-## Pricing Plans
+## Exemple
 
 | Volume | Prix/GB | Coût mensuel |
 |--------|---------|--------------|
@@ -129,17 +146,13 @@ Decodo propose une tarification basée sur la bande passante avec réductions se
 | 1000 GB | $1.50 | $1500 |
 | Pay As You Go | $3.50 | - |
 
-## Optimisation de coûts
+## Points clés
 
-### Stratégie de volume
-
-- Pour les grands besoins : privilégier les plans à volume élevé
-- Économies : jusqu'à 57% de réduction (1000GB vs 2GB)
-
-### Budget des dépassements
-
-- Prévoir 30-40% de marge supplémentaire pour les pics
-- Dépassements facturés au tarif Pay As You Go ($3.50/GB)
+- **Tarification volume** : Réductions jusqu'à 57% (1000GB vs 2GB)
+- **Plan populaire** : 25GB à $2.60/GB ($65/mois)
+- **Stratégie grands besoins** : Privilégier plans volume élevé pour économies maximales
+- **Marge dépassements** : Prévoir 30-40% buffer pour pics de consommation
+- **Dépassements** : Facturés au tarif Pay As You Go ($3.50/GB)
 
 # Ressources
 

@@ -1,10 +1,23 @@
 ---
-title: "TEMPLATE - Format Metadata Documentation"
-description: "Template standardisé pour metadata YAML des documentations projet. Guide de rédaction pour structurer correctement les docs avec metadata découvrables."
-date: "2025-17-11"
+title: "TEMPLATE - Format Metadata Documentation Générique"
+description: "Template standardisé pour metadata YAML des documentations projet (ARCHITECTURE, CHANGELOG, VERSIONS, etc.). Pour docs techniques references/, voir TEMPLATE_REFERENCES.md."
+date: "2025-18-11"
 keywords: ["template", "metadata", "yaml", "documentation", "format", "standard"]
 scope: ["docs"]
 technologies: []
+---
+
+# 📌 Scope de ce Template
+
+**Ce template couvre** :
+- Documentation architecture (ARCHITECTURE.md)
+- Documentation versions (VERSIONS.md, CHANGELOG.md)
+- Index et guides (REFERENCES.md, SPECS.md)
+
+**Templates spécialisés** :
+- **Docs techniques** (`docs/references/`) → [TEMPLATE_REFERENCES.md](TEMPLATE_REFERENCES.md)
+- **User stories** (`docs/specs/`) → [TEMPLATE_SPECS.md](TEMPLATE_SPECS.md)
+
 ---
 
 # 🔍 Description des Champs YAML
