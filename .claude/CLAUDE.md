@@ -1116,6 +1116,10 @@ git branch -d feature/initial-setup
    ```
 3. Tag version sur `master` : `git tag {version} && git push origin master --tags`
 4. Release automatique via `.github/workflows/release.yml`
+5. **⚠️ SYNC develop avec master** (éviter décalages futurs) :
+   ```bash
+   git checkout develop && git pull origin master && git push origin develop
+   ```
 
 **Distinction versions** :
 - **Dev releases** : `v0.x.x-xxx` (ex: `v0.3.0-build`) → Marquées "Pre-release" sur GitHub
