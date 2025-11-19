@@ -4,28 +4,9 @@ epic: "Epic 1: API Foundation"
 story_points: 2
 dependencies: []
 date: "2025-19-11"
-keywords: ["api", "health", "monitoring", "fastapi", "production", "devops", "docker", "kubernetes"]
+keywords: ["api", "health", "monitoring", "fastapi", "production", "devops", "docker", "dokploy"]
 scope: ["specs"]
 technologies: ["FastAPI", "Pydantic", "pytest", "TestClient", "Docker"]
----
-
-# ⚠️ RÈGLES IMPORTANTES - Spécifications
-
-**Ce template doit contenir UNIQUEMENT** :
-- ✅ Interfaces/signatures (SANS implémentation)
-- ✅ Descriptions comportements (texte structuré)
-- ✅ Tableaux scénarios tests (descriptif, PAS code Python)
-- ✅ Exemples JSON (inputs/outputs)
-
-**CODE PRODUCTION INTERDIT** :
-- ❌ Implémentation complète fonctions/classes
-- ❌ Logique métier (algorithmes, boucles, conditions)
-- ❌ Tests Python écrits
-
-**Principe fondamental** :
-- **(Specs)** = QUOI faire → Décrire comportements attendus
-- **(TDD)** = COMMENT faire → Implémenter code production
-
 ---
 
 # 🎯 Contexte Business
@@ -34,7 +15,7 @@ technologies: ["FastAPI", "Pydantic", "pytest", "TestClient", "Docker"]
 
 - **DevOps & SRE** : Vérifier disponibilité de l'API avant routage traffic production (load balancers, reverse proxies)
 - **Outils Monitoring** : Intégration avec systèmes d'observabilité (Prometheus, Grafana, Datadog) pour alerting automatique
-- **Orchestrateurs** : Compatible Docker HEALTHCHECK et Kubernetes liveness/readiness probes pour redémarrage automatique pods défaillants
+- **Orchestrateurs** : Compatible Docker HEALTHCHECK et Dokploy health checks pour redémarrage automatique containers défaillants
 - **CI/CD Pipelines** : Validation déploiement réussi post-release (smoke tests automatiques)
 
 ## Contraintes métier
@@ -42,7 +23,7 @@ technologies: ["FastAPI", "Pydantic", "pytest", "TestClient", "Docker"]
 - **Performance critique** : Response time < 100ms (p99) pour éviter faux positifs timeouts dans monitoring
 - **Disponibilité 24/7** : Endpoint doit rester accessible même si dépendances externes (Decodo, Google Flights) sont down
 - **Zéro dépendances externes** : Ne doit PAS tester connectivité DB/API externes (risque cascade failures)
-- **Compatibilité Docker/Kubernetes** : Format response compatible HEALTHCHECK Dockerfile et Kubernetes probes HTTP
+- **Compatibilité Docker/Dokploy** : Format response compatible HEALTHCHECK Dockerfile et Dokploy health checks HTTP
 
 ## Valeur business
 
@@ -191,22 +172,20 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:8000/health || exit 1
 ```
 
-**Exemple 4 : Format attendu Kubernetes Liveness Probe**
+**Exemple 4 : Intégration Dokploy Health Checks**
 
-```yaml
-livenessProbe:
-  httpGet:
-    path: /health
-    port: 8000
-  initialDelaySeconds: 10
-  periodSeconds: 30
-  timeoutSeconds: 5
-  failureThreshold: 3
-```
+Le endpoint `/health` s'intègre nativement avec le système de health checks Dokploy :
+
+**Configuration Dokploy (via UI)** :
+- **Health Check Path** : `/health`
+- **Health Check Port** : `8000`
+- **Health Check Interval** : `30s` (période vérification)
+- **Health Check Timeout** : `5s` (délai max réponse)
+- **Health Check Retries** : `3` (nombre tentatives avant unhealthy)
 
 **Comportement attendu** :
-- ✅ Response `{"status": "ok"}` + code 200 → Pod healthy
-- ❌ Timeout (> 5s) ou code 5xx → Pod restarted après 3 échecs consécutifs
+- ✅ Response `{"status": "ok"}` + code 200 → Container healthy (Dokploy maintient service actif)
+- ❌ Timeout (> 5s) ou code 5xx → Container unhealthy → Rollback automatique après 3 échecs consécutifs
 
 ---
 
@@ -237,7 +216,7 @@ livenessProbe:
 ## Critères production
 
 14. **HEALTHCHECK Dockerfile configuré** : Directive HEALTHCHECK intégrée dans Dockerfile avec curl vers `/health`
-15. **Compatible Kubernetes probes** : Format response compatible liveness/readiness probes Kubernetes HTTP
+15. **Compatible Dokploy health checks** : Format response compatible health checks Dokploy (HTTP GET avec validation status code 200)
 16. **Monitoring ready** : Endpoint intégrable directement dans Prometheus, Grafana, Datadog sans configuration spéciale
 
 ---
