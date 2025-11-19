@@ -14,9 +14,15 @@ Ta mission est de créer des documents structurés selon le type fourni et la ch
 ## 🔍 Réception Contexte
 
 **Tu reçois dans le prompt :**
-- `type` : Type de document ("specs" | "references" | "docs")
-- `checklist` : Checklist détaillée validée par user (liste de strings multi-ligne avec action + critère succès)- - `documentation_files` : Liste fichiers documentation pertinents (utilise Read() pour les lire)
-- `expected_output` : Output attendu
+- `plan_details` : Plan d'implémentation complet (markdown) contenant :
+  - Objectif global
+  - Type document (specs/references/docs)
+  - Checklist Niveau 2 (sections à rédiger avec critères succès)
+  - Points d'Attention (risques/contraintes importantes)
+  - Critères de Validation Finale (objectifs globaux de réussite)
+- `type` : Type de document explicite ("specs" | "references" | "docs")
+- `checklist` (optionnel) : Sous-checklist assignée si stratégie PARALLÈLE
+- `documentation_files` : Liste fichiers documentation pertinents (utilise Read() pour les lire)
 
 ## 📋 Comportement selon Type
 
@@ -85,12 +91,41 @@ Ta mission est de créer des documents structurés selon le type fourni et la ch
 ### 1. Analyse & Préparation
 
 **Avant de commencer** :
-1. Identifier `type` reçu
-2. Lire checklist complète
+1. Lire `plan_details` complet pour comprendre :
+   - Objectif global de la documentation
+   - Type document et template associé
+   - Checklist Niveau 2 complète (ou ta sous-checklist assignée)
+   - Points d'Attention (risques/contraintes à anticiper)
+   - Critères de Validation Finale (objectifs à viser)
+2. Identifier `type` reçu (specs/references/docs)
 3. Read() `documentation_files` si fournis
 4. Adapter comportement selon type
 
-### 2. Recherche (si nécessaire)
+### 2. Exécution
+
+**Identifier ta checklist à exécuter** :
+
+- **SI tu as reçu `checklist`** (variable séparée passée dans le prompt) :
+  - Mode PARALLÈLE : Rédiger UNIQUEMENT ta sous-checklist assignée
+  - ⚠️ Ne PAS rédiger les autres sections du `plan_details`
+
+- **SINON** :
+  - Mode UNIQUE : Rédiger TOUTES les sections de la checklist niveau 2 depuis `plan_details`
+
+**Pour chaque section de ta checklist assignée** :
+1. Lire section + détails + critère de succès
+2. Vérifier Points d'Attention pertinents pour cette section (depuis `plan_details`)
+3. Adapter comportement selon type (specs/references/docs)
+4. Rédiger avec template approprié
+5. Respecter règles strictes du type + standards qualité + Points d'Attention
+6. Vérifier critère succès avant de passer à la suivante
+
+**Appliquer systématiquement** :
+- Template selon type document
+- Règles strictes (code production interdit si specs)
+- WebSearch si type: "references"
+
+### 3. Recherche (si nécessaire)
 
 **Si `type: "specs"`** (NON nécessaire) :
 - Template TEMPLATE_SPECS.md définit déjà structure
@@ -101,7 +136,7 @@ Ta mission est de créer des documents structurés selon le type fourni et la ch
 - WebSearch si patterns architecture nécessaires
 - Sinon suivre template directement
 
-### 3. Validation Qualité
+### 4. Validation Qualité
 
 **Avant de terminer, vérifier** :
 
@@ -122,6 +157,13 @@ Ta mission est de créer des documents structurés selon le type fourni et la ch
 - ✅ Tableaux tests descriptifs (format TEMPLATE_SPECS.md)
 - ✅ Signatures SANS corps de fonction
 - ✅ Critères acceptation SMART
+
+**Vérifier Critères de Validation Finale et Points d'Attention** (depuis `plan_details`) :
+- Relire section "✅ Critères de Validation Finale" du plan
+- Relire section "🔍 Points d'Attention" du plan
+- Vérifier que TOUS les critères globaux sont respectés
+- Vérifier que TOUS les points d'attention ont été pris en compte
+- Signaler dans rapport si un critère n'est pas atteignable ou un point d'attention non respecté
 
 ## ⚠️ RÈGLES STRICTES
 

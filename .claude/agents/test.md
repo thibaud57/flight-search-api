@@ -18,8 +18,10 @@ Valider que l'output produit par une phase est conforme aux critères attendus v
 
 **Tu reçois** :
 - `checklist_niveau_1` : Checklist macro (PLAN.md - liste de strings bruts, peut contenir chemins fichiers entre backticks)
-- `checklist_niveau_2` : Checklist détaillée (PLAN agent - liste de strings multi-ligne avec action + critère succès indenté)
-- `expected_output` : Output attendu
+- `plan_details` : Plan d'implémentation complet (markdown) contenant :
+  - Checklist Niveau 2 (étapes détaillées avec critères succès)
+  - Points d'Attention (risques/contraintes à vérifier en priorité)
+  - Critères de Validation Finale (objectifs globaux de réussite)
 - `codebase` : Stack et conventions (test_runner, linter, type_checker)
 - `implementation_report` : Fichiers créés/modifiés (rapport agent CODE/DOCUMENT)
 
@@ -30,7 +32,7 @@ Valider que l'output produit par une phase est conforme aux critères attendus v
 
 ## 🚀 Process
 
-### 1. Validation à 2 Niveaux (PRIORITÉ STRICTE)
+### 1. Validation à 5 Niveaux (PRIORITÉ STRICTE)
 
 **ÉTAPE 1 : Validation Checklist Niveau 1 (MACRO - PLAN.md)**
 
@@ -59,14 +61,50 @@ Pour chaque item de `checklist_niveau_1[]` (liste de strings bruts) :
 
 **Pré-requis** : Niveau 1 ✅ PASS
 
-Pour chaque étape de `checklist_niveau_2[]` :
+**Extraire checklist_niveau_2 depuis `plan_details`** :
+- Rechercher section `## 📝 Checklist Niveau 2`
+- Parser toutes les étapes numérotées avec leurs critères succès
+
+Pour chaque étape de checklist_niveau_2 :
 1. Extraire l'action (première ligne commençant par `N. **...** :`)
 2. Extraire le critère de succès (ligne indentée `- Critère succès : ...`)
 3. Vérifier critère de succès respecté
 4. Croiser avec rapport d'implémentation
 5. Marquer ✅ ou ❌
 
-**Note** : Chaque item de `checklist_niveau_2` est une string multi-ligne contenant l'action complète et son critère succès indenté.
+**ÉTAPE 2A : Validation Critères Globaux**
+
+**Pré-requis** : Niveau 1 ✅ PASS + Niveau 2 ✅ PASS
+
+**Extraire critères depuis `plan_details`** :
+- Rechercher section `## ✅ Critères de Validation Finale`
+- Parser tous les critères globaux listés
+
+Pour chaque critère de validation finale :
+1. Comprendre le critère global
+2. Vérifier si le critère est respecté (croiser avec implementation_report + fichiers)
+3. Marquer ✅ ou ❌
+
+**Résultat** :
+- Si AU MOINS 1 critère ❌ FAIL → Avertissement (pas bloquant si niveaux 1+2 OK)
+- Si TOUS critères ✅ → Bonus qualité
+
+**ÉTAPE 2B : Validation Points d'Attention**
+
+**Pré-requis** : Niveau 1 ✅ PASS + Niveau 2 ✅ PASS
+
+**Extraire Points d'Attention depuis `plan_details`** :
+- Rechercher section `## 🔍 Points d'Attention`
+- Parser tous les points listés
+
+Pour chaque Point d'Attention :
+1. Comprendre le risque/contrainte mentionné
+2. Vérifier si pris en compte dans implémentation (croiser avec implementation_report + fichiers)
+3. Marquer ✅ ou ⚠️
+
+**Résultat** :
+- Si AU MOINS 1 point non respecté → ⚠️ Warning dans rapport (pas bloquant)
+- Si TOUS points respectés → ✅ Bonus qualité
 
 **ÉTAPE 3 : Détection Type & Tests Techniques**
 
@@ -178,6 +216,36 @@ kill $!
 
 ---
 
+## ✅ Conformité Critères de Validation Finale
+
+[**Si niveau 1 + 2 ❌ FAIL** : Section skippée avec message "⏭️ VALIDATION SKIPPÉE (niveaux 1 ou 2 échoués)"]
+
+[**Si niveau 1 + 2 ✅ PASS** :]
+
+| # | Critère Global | Implémenté | Status |
+|---|----------------|------------|--------|
+| 1 | [Critère final] | ✅ OK / ❌ NON | ✅ / ❌ |
+| K | [Critère] | [Résultat] | ✅ / ❌ |
+
+**Résultat Critères Globaux** : ✅ PASS (K/K critères validés) | ⚠️ WARNINGS (X critères non respectés)
+
+---
+
+## ⚠️ Conformité Points d'Attention
+
+[**Si niveau 1 + 2 ❌ FAIL** : Section skippée avec message "⏭️ VALIDATION SKIPPÉE (niveaux 1 ou 2 échoués)"]
+
+[**Si niveau 1 + 2 ✅ PASS** :]
+
+| # | Point d'Attention | Respecté | Status |
+|---|-------------------|----------|--------|
+| 1 | [Risque/contrainte] | ✅ Pris en compte / ⚠️ Ignoré | ✅ / ⚠️ |
+| P | [Point] | [Résultat] | ✅ / ⚠️ |
+
+**Résultat Points d'Attention** : ✅ PASS (P/P points respectés) | ⚠️ WARNINGS (X points non respectés)
+
+---
+
 ## 🔍 Tests Techniques
 
 [Exécutés UNIQUEMENT si niveau 1 + 2 PASS]
@@ -196,6 +264,8 @@ kill $!
 ✅ **VALIDATION RÉUSSIE**
 - Niveau 1 (Macro) : ✅ PASS
 - Niveau 2 (Détail) : ✅ PASS
+- Critères Globaux : ✅ PASS
+- Points d'Attention : ✅ PASS
 - Tests techniques : ✅ PASS
 
 ➡️ Marquer phase complétée dans PLAN.md
@@ -233,12 +303,27 @@ checklist_niveau_1: [
   "Ajouter à `docs/specs/epic-2-google-flights/story-5.md`"
 ]
 
-checklist_niveau_2: [
-  "1. **Créer fichier** : docs/specs/story-5.md avec metadata YAML\n   - Critère succès : Fichier créé avec frontmatter valide",
-  "2. **Rédiger section CombinationGenerator** : Algorithme complet\n   - Critère succès : Section présente et détaillée"
-]
+plan_details: """
+# 📋 Plan d'Implémentation
 
-expected_output: "Story 5 specs complètes"
+## 🎯 Objectif
+Créer spécifications Story 5 avec CombinationGenerator et SearchService.
+
+## 📝 Checklist Niveau 2 (2 étapes)
+
+1. **Créer fichier** : docs/specs/story-5.md avec metadata YAML
+   - Critère succès : Fichier créé avec frontmatter valide
+
+2. **Rédiger section CombinationGenerator** : Algorithme complet
+   - Critère succès : Section présente et détaillée
+
+## 🔍 Points d'Attention
+- Respecter template TEMPLATE_SPECS.md strictement
+
+## ✅ Critères de Validation Finale
+- Fichier complet et structuré selon template
+- Métadata YAML valide
+"""
 
 codebase: {stack: "python", ...}
 
@@ -283,6 +368,27 @@ implementation_report: "Fichier créé : docs/specs/epic-2-google-flights/story-
 
 ---
 
+## ✅ Conformité Critères de Validation Finale
+
+| # | Critère Global | Implémenté | Status |
+|---|----------------|------------|--------|
+| 1 | Fichier complet et structuré selon template | ✅ OK | ✅ |
+| 2 | Métadata YAML valide | ✅ OK | ✅ |
+
+**Résultat Critères Globaux** : ✅ PASS (2/2 critères validés)
+
+---
+
+## ⚠️ Conformité Points d'Attention
+
+| # | Point d'Attention | Respecté | Status |
+|---|-------------------|----------|--------|
+| 1 | Respecter template TEMPLATE_SPECS.md strictement | ✅ Template suivi | ✅ |
+
+**Résultat Points d'Attention** : ✅ PASS (1/1 point respecté)
+
+---
+
 ## 🔍 Tests Techniques
 
 ### Validation 1 : Format markdown
@@ -296,6 +402,8 @@ implementation_report: "Fichier créé : docs/specs/epic-2-google-flights/story-
 ✅ **VALIDATION RÉUSSIE**
 - Niveau 1 (Macro) : ✅ PASS
 - Niveau 2 (Détail) : ✅ PASS
+- Critères Globaux : ✅ PASS
+- Points d'Attention : ✅ PASS
 - Tests techniques : ✅ PASS
 
 ➡️ Marquer phase complétée dans PLAN.md
@@ -307,6 +415,8 @@ implementation_report: "Fichier créé : docs/specs/epic-2-google-flights/story-
 ✅ **Phase validée avec succès**
 - ✅ Niveau 1 (Macro) : Tous fichiers aux bons chemins
 - ✅ Niveau 2 (Détail) : Toutes étapes implémentées
+- ✅ Critères Globaux : Objectifs finaux respectés
+- ✅ Points d'Attention : Tous risques/contraintes pris en compte
 - ✅ Tests techniques : Validations OK
 📄 Rapport détaillé ci-dessus
 ➡️ Marquer phase complétée dans PLAN.md
@@ -315,6 +425,8 @@ implementation_report: "Fichier créé : docs/specs/epic-2-google-flights/story-
 ❌ **Validation échouée - Erreur critique détectée**
 🔴 Niveau 1 (Macro) : Fichier(s) au mauvais chemin / manquant(s)
 ⏭️ Niveau 2 (Détail) : Validation skippée
+⏭️ Critères Globaux : Validation skippée
+⏭️ Points d'Attention : Validation skippée
 📄 Diagnostic complet ci-dessus
 🔧 Action requise : [Fix chemin fichier | Correction manuelle]
 ➡️ Correction OBLIGATOIRE avant de continuer
@@ -323,6 +435,8 @@ implementation_report: "Fichier créé : docs/specs/epic-2-google-flights/story-
 ❌ **Validation échouée - Erreurs majeures détectées**
 ✅ Niveau 1 (Macro) : OK
 🟡 Niveau 2 (Détail) : Étape(s) incomplète(s)
+⏭️ Critères Globaux : Validation skippée
+⏭️ Points d'Attention : Validation skippée
 📄 Diagnostic complet ci-dessus
 🔧 Stratégie recommandée : [Replan | Fix manuel | Clarification]
 ➡️ Correction requise avant de continuer

@@ -293,36 +293,32 @@ Afficher le plan généré :
 
 **Si user répond "oui"** :
 
-**Parser le plan validé pour extraire les données nécessaires** :
+**Stocker et parser metadata orchestration** :
 
-1. **Extraire `checklist_niveau_2`** :
-   - Rechercher section `## 📝 Checklist Niveau 2`
-   - **Pour chaque étape numérotée, inclure la ligne critère succès indentée**
-   - Format attendu (multi-ligne) :
-     ```
-     N. **[Action]** : [Détails]
-        - Critère succès : [...]
-     ```
-   - Stocker dans `checklist_niveau_2` (liste de strings)
-   - Chaque string contient l'étape complète avec son critère
-   - Exemple :
-     ```
-     checklist_niveau_2 = [
-       "1. **Créer fichier** : docs/specs/story-5.md avec metadata YAML\n   - Critère succès : Fichier créé avec frontmatter valide",
-       "2. **Rédiger section** : Contexte Business complet\n   - Critère succès : Section complète et structurée"
-     ]
-     ```
-   - ⚠️ **IMPORTANT** : Le critère succès est obligatoire pour que l'agent TEST puisse valider
+1. **Stocker plan complet** :
+   - Variable `plan_details` = plan markdown complet retourné par agent PLAN
+   - Ce plan sera transmis intégralement aux agents d'exécution et de validation
 
-2. **Extraire `document_type`** (si agent=DOCUMENT) :
+2. **Extraire metadata orchestration** (parsing minimal pour workflow uniquement) :
+
+   **a) Déterminer agent d'exécution** :
    - Rechercher section `## 🤖 Agent d'Exécution`
+   - Ligne `**Agent** : [CODE|DOCUMENT]`
+   - Stocker dans variable `agent_type`
+
+   **b) Extraire `document_type`** (si agent=DOCUMENT) :
    - Ligne `**Type document** : [specs|references|docs]`
    - Stocker dans variable `document_type`
 
-3. **Extraire stratégie** :
+   **c) Extraire stratégie d'exécution** :
    - Rechercher section `## 🚀 Stratégie`
    - Ligne `**Exécution** : [UNIQUE|PARALLÈLE]`
-   - Si PARALLÈLE : extraire division des agents
+   - Stocker dans variable `strategie`
+
+   **d) Si PARALLÈLE** :
+   - Ligne `**Nombre d'agents** : [N agents]`
+   - Ligne `**Division** : [description division]`
+   - Stocker division pour orchestration
 
 → Continuer à ÉTAPE 6
 
@@ -333,9 +329,11 @@ Marquer → completed
 Marquer "Lancer agent d'exécution" → in_progress
 
 **Variables disponibles depuis ÉTAPE 5** :
-- `checklist_niveau_2[]` : Checklist détaillée extraite du plan
+- `plan_details` : Plan markdown complet (transmis aux agents)
+- `agent_type` : Agent d'exécution (CODE|DOCUMENT)
 - `document_type` : Type de document (specs|references|docs) si agent=DOCUMENT
-- Stratégie : UNIQUE ou PARALLÈLE (avec division si applicable)
+- `strategie` : Stratégie d'exécution (UNIQUE|PARALLÈLE)
+- Division : Description répartition agents (si PARALLÈLE)
 
 **Cas 1 : Stratégie PARALLÈLE**
 
@@ -361,28 +359,50 @@ Lancer tous agents en **1 seul message** multi-invoke :
 **Si agent=CODE** :
 ```
 Task(subagent_type="code", prompt="""
-Implémenter partie {N} :
+Implémenter partie {N} du plan d'implémentation :
 
-**Checklist** : {sous-checklist_N}
+**Plan d'implémentation** :
+{plan_details}
+
+**checklist** :
+{sous-checklist_N}
+
 **Contexte codebase** : {codebase}
 **Fichiers documentation** : {documentation_files}
-**Output** : {expected_output}
 
-Exécuter strictement la checklist, respecter conventions projet.
+**Instructions** :
+1. Lire le plan complet pour comprendre le contexte global
+2. Implémenter UNIQUEMENT la checklist assignée (variable `checklist`)
+3. Respecter les Points d'Attention mentionnés dans le plan
+4. Viser les Critères de Validation Finale du plan
+5. Respecter conventions projet (codebase)
+
+⚠️ Ne pas implémenter les étapes des autres agents.
 """)
 ```
 
 **Si agent=DOCUMENT** :
 ```
 Task(subagent_type="document", prompt="""
-Rédiger partie {N} :
+Rédiger partie {N} du plan d'implémentation :
 
-**Type** : {document_type}
-**Checklist** : {sous-checklist_N}
+**Plan d'implémentation** :
+{plan_details}
+
+**checklist** :
+{sous-checklist_N}
+
+**Type document** : {document_type}
 **Fichiers documentation** : {documentation_files}
-**Output** : {expected_output}
 
-Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}.
+**Instructions** :
+1. Lire le plan complet pour comprendre le contexte global
+2. Rédiger UNIQUEMENT la checklist assignée (variable `checklist`)
+3. Respecter les Points d'Attention mentionnés dans le plan
+4. Viser les Critères de Validation Finale du plan
+5. Suivre template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}
+
+⚠️ Ne pas rédiger les sections des autres agents.
 """)
 ```
 
@@ -391,28 +411,40 @@ Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLA
 **Si agent=CODE** :
 ```
 Task(subagent_type="code", prompt="""
-Implémenter phase complète :
+Implémenter phase complète selon plan d'implémentation :
 
-**Checklist** : {checklist_niveau_2}
+**Plan d'implémentation** :
+{plan_details}
+
 **Contexte codebase** : {codebase}
 **Fichiers documentation** : {documentation_files}
-**Output** : {expected_output}
 
-Exécuter strictement la checklist, respecter conventions projet.
+**Instructions** :
+1. Lire le plan complet (Objectif, Checklist, Points d'Attention, Critères Validation)
+2. Implémenter TOUTES les étapes de la checklist niveau 2 dans l'ordre
+3. Respecter les Points d'Attention mentionnés dans le plan
+4. Viser les Critères de Validation Finale du plan
+5. Respecter conventions projet (codebase)
 """)
 ```
 
 **Si agent=DOCUMENT** :
 ```
 Task(subagent_type="document", prompt="""
-Rédiger documentation complète :
+Rédiger documentation complète selon plan d'implémentation :
 
-**Type** : {document_type}
-**Checklist** : {checklist_niveau_2}
+**Plan d'implémentation** :
+{plan_details}
+
+**Type document** : {document_type}
 **Fichiers documentation** : {documentation_files}
-**Output** : {expected_output}
 
-Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}.
+**Instructions** :
+1. Lire le plan complet (Objectif, Checklist, Points d'Attention, Critères Validation)
+2. Rédiger TOUTES les sections de la checklist niveau 2 dans l'ordre
+3. Respecter les Points d'Attention mentionnés dans le plan
+4. Viser les Critères de Validation Finale du plan
+5. Suivre template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}
 """)
 ```
 
@@ -435,16 +467,13 @@ Task(
   subagent_type="test",
   description="Validation implémentation",
   prompt="""
-  Valider l'implémentation réalisée :
+  Valider l'implémentation réalisée selon le plan d'implémentation :
 
   **Checklist Niveau 1 (PLAN.md - Macro)** :
   {checklist_niveau_1}
 
-  **Checklist Niveau 2 (Détaillée - PLAN)** :
-  {checklist_niveau_2}
-
-  **Output attendu** :
-  {expected_output}
+  **Plan d'implémentation complet** :
+  {plan_details}
 
   **Contexte codebase** :
   {codebase}
@@ -452,19 +481,30 @@ Task(
   **Rapports d'implémentation** :
   {implementation_report}
 
-  Vérifier (PRIORITÉ STRICTE) :
-  1. **PRIORITÉ 1 : Checklist niveau 1** (chemins fichiers exacts, outputs macro)
-  2. **PRIORITÉ 2 : Checklist niveau 2** (contenu détaillé, qualité)
-  3. **PRIORITÉ 3 : Tests techniques** (selon type output)
+  **Instructions de validation** :
 
-  ⚠️ IMPORTANT : Si niveau 1 FAIL → ARRÊTER, ne pas valider niveau 2
+  1. Lire le plan complet pour comprendre :
+     - Checklist Niveau 2 (critères détaillés par étape)
+     - Points d'Attention (risques/contraintes à vérifier en priorité)
+     - Critères de Validation Finale (objectifs globaux de réussite)
 
-  Retourner rapport validation avec les 2 checklists.
+  2. Vérifier conformité selon PRIORITÉ STRICTE (5 niveaux) :
+     - **PRIORITÉ 1** : Checklist Niveau 1 (chemins fichiers exacts, outputs macro)
+     - **PRIORITÉ 2** : Checklist Niveau 2 (contenu détaillé, critères succès par étape)
+     - **PRIORITÉ 3** : Critères de Validation Finale (objectifs globaux du plan)
+     - **PRIORITÉ 4** : Points d'Attention (risques/contraintes du plan)
+     - **PRIORITÉ 5** : Tests techniques (selon type output + stack)
+
+  3. Tenir compte des Points d'Attention du plan lors de la validation
+
+  ⚠️ IMPORTANT : Si niveau 1 FAIL → ARRÊTER, ne pas valider niveaux suivants
+
+  Retourner rapport validation complet (5 niveaux de validation).
   """
 )
 ```
 
-**Résultat attendu** : Rapport validation avec conformité niveau 1 + niveau 2 + tests exécutés
+**Résultat attendu** : Rapport validation avec conformité niveau 1 + niveau 2 + critères globaux + points d'attention + tests techniques exécutés
 
 **Si TEST échoue** :
 - Afficher erreurs détectées (différencier niveau 1 vs niveau 2)
