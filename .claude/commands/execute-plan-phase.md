@@ -1,6 +1,6 @@
 ---
 description: Orchestrateur intelligent d'exécution de phases de projet selon PLAN.md
-argument-hint: '[--force] [<phase_number>]' (ex: /execute-plan-phase, /execute-plan-phase 4.2, /execute-plan-phase --force 4.1)
+argument-hint: '[--force] [<phase_number>] (ex: /execute-plan-phase, /execute-plan-phase 4.2, /execute-plan-phase --force 4.1)'
 allowed-tools: TodoWrite, Read, Bash, Task, Edit
 ---
 
@@ -122,7 +122,7 @@ Lire **uniquement** `.claude/PLAN.md` et parser :
 - Type de tâche (`🏷️ **Type**` : config|code|docs|docker|test)
   - Stocker dans variable : `task_type`
 - **Checklist niveau 1** : Toutes lignes `- [ ]` ou `- [x]`
-  - Stocker dans variable : `checklist_niveau_1[]` (liste de strings bruts)
+  - Stocker dans variable : `checklist_niveau_1` (liste de strings bruts)
 - Output attendu (`📝 **Output**`)
   - Stocker dans variable : `expected_output`
 - Notes
@@ -148,9 +148,9 @@ Marquer "Lancer agent EXPLORE" → in_progress
 ```
 Task(
   subagent_type="explore",
-  description="Explorer codebase et docs pour phase X.Y",
+  description="Explorer codebase et docs",
   prompt="""
-  Explorer le projet pour la Phase {phase_number} : {phase_title}
+  Explorer le projet pour cette tâche :
 
   **Checklist niveau 1** :
   {checklist_niveau_1}
@@ -234,11 +234,9 @@ Marquer "Lancer agent PLAN" → in_progress
 ```
 Task(
   subagent_type="plan",
-  description="Planification détaillée phase X.Y",
+  description="Planification détaillée",
   prompt="""
   Créer plan d'implémentation détaillé (checklist niveau 2) pour :
-
-  **Phase** : {phase_number} - {phase_title}
 
   **Type tâche** : {task_type}
 
@@ -433,9 +431,9 @@ Marquer "Lancer agent TEST" → in_progress
 ```
 Task(
   subagent_type="test",
-  description="Validation phase X.Y",
+  description="Validation implémentation",
   prompt="""
-  Valider la phase {phase_number} :
+  Valider l'implémentation réalisée :
 
   **Checklist Niveau 1 (PLAN.md - Macro)** :
   {checklist_niveau_1}

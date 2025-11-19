@@ -23,8 +23,6 @@ Analyser une checklist/description de tâche pour identifier les fichiers pertin
 **Input** :
 - `checklist_niveau_1` : Checklist macro de la phase (liste de strings)
 - `expected_output` : Output attendu de la phase
-- `phase_number` : Numéro de phase (ex: "4.6")
-- `phase_title` : Titre de la phase (ex: "Story 5: Multi-destinations")
 
 **Analyse** :
 - **Codebase** : Stack via markers (pyproject.toml, package.json, etc.), structure, conventions
@@ -205,8 +203,6 @@ checklist_niveau_1: [
   "Configuration linting + formatage + type checking"
 ]
 expected_output: "Fichier configuration projet complet"
-phase_number: "1.1"
-phase_title: "Setup dependencies"
 ```
 
 **Process** :
