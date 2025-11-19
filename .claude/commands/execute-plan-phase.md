@@ -24,9 +24,9 @@ Tu orchestres l'exécution autonome d'une sous-phase du PLAN.md avec stratégie 
 ## 🎯 Mission
 
 1. Parser PLAN.md (phase ciblée uniquement)
-2. Lancer agent EXPLORE (retourne liste fichiers codebase + docs)
-3. Stocker liste fichiers (sans lire le contenu)
-4. Setup Git (checkout/create branche)
+2. Setup Git (checkout/create branche)
+3. Lancer agent EXPLORE (retourne liste fichiers codebase + docs)
+4. Stocker liste fichiers (sans lire le contenu)
 5. Lancer agent PLAN (génère checklist niveau 2 + stratégie, avec retry si validation fail)
 6. Lancer agent(s) CODE ou DOCUMENT (selon stratégie PLAN : parallèle/unique)
 7. Lancer agent TEST (validation conformité)
@@ -95,9 +95,9 @@ Créer todo list Niveau 1 (orchestration, fixe) :
 ```
 TodoWrite([
   {content: "Parser PLAN.md (phase ciblée)", status: "pending", activeForm: "Parsing PLAN.md"},
+  {content: "Setup Git", status: "pending", activeForm: "Configuration Git"},
   {content: "Lancer agent EXPLORE", status: "pending", activeForm: "Lancement EXPLORE"},
   {content: "Stocker liste fichiers", status: "pending", activeForm: "Stockage liste"},
-  {content: "Setup Git", status: "pending", activeForm: "Configuration Git"},
   {content: "Lancer agent PLAN", status: "pending", activeForm: "Lancement PLAN"},
   {content: "Lancer agent d'exécution", status: "pending", activeForm: "Lancement agent"},
   {content: "Lancer agent TEST", status: "pending", activeForm: "Lancement TEST"},
@@ -139,7 +139,25 @@ checklist_niveau_1 = [
 
 Marquer → completed
 
-### ÉTAPE 2 : Lancer agent EXPLORE
+### ÉTAPE 2 : Setup Git
+
+Marquer "Setup Git" → in_progress
+
+```bash
+# Vérifier branche
+git branch --list <nom_branche>
+
+# Si existe
+git checkout <nom_branche>
+
+# Sinon
+git checkout develop
+git checkout -b <nom_branche>
+```
+
+Marquer → completed
+
+### ÉTAPE 3 : Lancer agent EXPLORE
 
 Marquer "Lancer agent EXPLORE" → in_progress
 
@@ -164,7 +182,7 @@ Task(
 
   Retourner JSON avec :
   - codebase (stack, conventions, existing_files)
-  - documentation (files_to_read)
+  - documentation (specs, references, other)
   """
 )
 ```
@@ -173,7 +191,7 @@ Task(
 
 Marquer → completed
 
-### ÉTAPE 3 : Stocker liste fichiers
+### ÉTAPE 4 : Stocker et catégoriser fichiers
 
 Marquer "Stocker liste fichiers" → in_progress
 
@@ -196,32 +214,16 @@ Marquer "Stocker liste fichiers" → in_progress
     }
   },
   "documentation": {
-    "files_to_read": [...]
+    "specs": [...],
+    "references": [...],
+    "other": [...]
   }
 }
 ```
 
 **Stocker dans variables** :
 - `codebase` : Tout le bloc `codebase`
-- `documentation_files` : Liste de `documentation.files_to_read`
-
-Marquer → completed
-
-### ÉTAPE 4 : Setup Git
-
-Marquer "Setup Git" → in_progress
-
-```bash
-# Vérifier branche
-git branch --list <nom_branche>
-
-# Si existe
-git checkout <nom_branche>
-
-# Sinon
-git checkout develop
-git checkout -b <nom_branche>
-```
+- `documentation_files` : Tout le bloc `documentation` (objet avec specs, references, other)
 
 Marquer → completed
 
@@ -249,11 +251,12 @@ Task(
   **Contexte codebase** :
   {codebase}
 
-  **Fichiers pertinents** :
+  **Fichiers documentation** :
   {documentation_files}
 
   Génère :
-  1. Checklist niveau 2 (détaillée, exécutable)
+  {SI documentation_files.specs NON VIDE : "0. LIRE tous fichiers specs avec Read()"}
+  1. Checklist niveau 2 (détaillée, exécutable basée sur specs si présentes)
   2. Stratégie d'exécution (parallèle/unique)
   3. Points d'attention
   4. Critères validation finale
@@ -319,8 +322,6 @@ Afficher le plan généré :
    - Ligne `**Nombre d'agents** : [N agents]`
    - Ligne `**Division** : [description division]`
    - Stocker division pour orchestration
-
-→ Continuer à ÉTAPE 6
 
 Marquer → completed
 
@@ -513,8 +514,6 @@ Task(
 - Si non : Arrêter (phase incomplète)
 
 **Si TEST passe** :
-→ Continuer à ÉTAPE 8
-
 Marquer → completed
 
 ### ÉTAPE 8 : Cocher PLAN.md
@@ -573,6 +572,7 @@ Marquer → completed
 ```
 🚀 Lancement orchestration Phase {X.Y}
 📖 Parsing PLAN.md...
+🌿 Setup Git...
 🔍 Lancement agent EXPLORE...
 ```
 

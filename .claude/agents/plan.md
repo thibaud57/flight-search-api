@@ -21,7 +21,10 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
 - `checklist_niveau_1` : Checklist macro de la phase
 - `expected_output` : Output attendu
 - `codebase` : Stack, conventions, fichiers existants
-- `documentation_files` : Fichiers documentation pertinents (utiliser Read() pour les lire)
+- `documentation_files` : Objet structuré contenant :
+  - `specs` : Fichiers spécifications (optionnel)
+  - `references` : Fichiers références techniques (optionnel)
+  - `other` : Autres docs (ARCHITECTURE.md, etc.) (optionnel)
 
 ### Exemple de Transformation
 
@@ -53,11 +56,14 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
    - Identifier ordre d'exécution logique (dépendances entre étapes)
    - Marquer comme completed
 
-2. **Extraire contexte et rechercher si nécessaire**
-   - Marquer "Extraire contexte" comme in_progress
-   - Lire `documentation_files` avec Read() pour versions exactes, configurations, standards
-   - Si documentation incomplète : WebSearch adapté au stack (ex: "pydantic v2 settings best practices", "docker multi-stage build optimization")
-   - Privilégier documentation fournie avant WebSearch
+2. **Lire documentation (PRIORITÉ : specs)**
+   - Marquer "Lire documentation" comme in_progress
+   - **SI `documentation_files.specs` NON VIDE** : LIRE TOUS les fichiers specs COMPLÈTEMENT avec Read()
+     - Ces fichiers contiennent critères acceptation, tests détaillés, contraintes techniques
+     - Extraire : critères acceptation, tests attendus, contraintes techniques, Points d'Attention
+   - **SI `documentation_files.references` présent** : Lire si besoin technique spécifique
+   - **SI `documentation_files.other` présent** : Lire si contexte architecture nécessaire
+   - Si documentation incomplète : WebSearch adapté au stack
    - Marquer comme completed
 
 3. **Générer plan détaillé**
@@ -132,75 +138,12 @@ N. **Commit** : [message conventional commits]
 
 **Adaptation dynamique** : Le nombre d'étapes varie selon checklist niveau 1 (config : ~8-12, code simple : ~6-10, code complexe : ~15-20, docs : ~4-6).
 
-## 📋 Exemple Complet
+## 📌 Notes
 
-**Input** :
-```
-checklist_niveau_1:
-- Configuration metadata projet + dependencies principales
-- Configuration linting + type checking
-expected_output: Fichier configuration projet complet
-task_type: "config"
-codebase:
-  stack: "python"
-  conventions: {linter: "ruff", type_checker: "mypy"}
-documentation_files: [VERSIONS.md, CLAUDE.md]
-```
-
-**Output** :
-```markdown
-# 📋 Plan d'Implémentation
-
-## 🎯 Objectif
-Créer fichier configuration projet (pyproject.toml) avec metadata, dependencies, et outils qualité.
-
-## 🤖 Agent d'Exécution
-
-**Agent** : CODE
-
-## 🚀 Stratégie
-
-**Exécution** : UNIQUE
-
-## 📝 Checklist Niveau 2 (8 étapes)
-
-1. **Créer section metadata** : Ajouter name, version, description
-   - Critère succès : Metadata projet présente avec 3 champs minimum
-
-2. **Ajouter dependencies principales** : Versions exactes depuis VERSIONS.md
-   - Critère succès : Dependencies = [...] avec versions exactes
-
-3. **Créer section dependencies développement** : Outils qualité (linter, type checker, test runner)
-   - Critère succès : Section dev avec 3 tools minimum
-
-4. **Créer section linter** : Paramètres line-length, target-version depuis standards
-   - Critère succès : Config linter de base présente
-
-5. **Ajouter règles linter** : select/ignore selon CLAUDE.md § Standards
-   - Critère succès : Règles lint configurées
-
-6. **Créer section type checker** : Mode strict + version langage
-   - Critère succès : Config type checking strict active
-
-7. **Vérifier syntaxe fichier config** : Parser pour valider format
-   - Critère succès : Aucune erreur parsing
-
-8. **Commit** : Message conventional commits approprié
-   - Format : chore(config): add complete project configuration
-
-## 🔍 Points d'Attention
-- Utiliser versions EXACTES depuis VERSIONS.md (pas de ~, ^, >=)
-- Config linter cohérente avec standards projet
-
-## ✅ Critères de Validation Finale
-- Fichier config existe et parsable
-- Toutes sections présentes (metadata, dependencies, tools)
-- Commit effectué avec message conventional
-```
-
-**Note** : Pour `task_type: "docs"`, la structure output reste identique mais avec :
-- `Agent: DOCUMENT` + `Type document: [specs|references|docs]`
-- Checklist adaptée à la rédaction (sections markdown au lieu de code technique)
+- **Agent CODE** : Pour task_type `config|code|docker|test`
+- **Agent DOCUMENT** : Pour task_type `docs` avec type détecté automatiquement (specs|references|docs)
+- **Stratégie UNIQUE** : Défaut (étapes séquentielles avec dépendances)
+- **Stratégie PARALLÈLE** : Seulement si étapes naturellement indépendantes
 
 # Message Final
 

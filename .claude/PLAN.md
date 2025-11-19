@@ -400,12 +400,12 @@
 
 **Branche** : `feature/story-1-health-check`
 
-- [ ] **RAPPEL : Réactiver step "Tests with coverage" dans `.github/workflows/ci.yml`** (décommenter lignes 46-47)
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-1-health-check.md
-- [ ] **Validation manuelle** : `curl http://localhost:8000/health` → `{"status": "ok"}`
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(api): add health check endpoint`
-- [ ] **PR** : feature/story-1 → develop
+- [x] **RAPPEL : Réactiver step "Tests with coverage" dans `.github/workflows/ci.yml`** (décommenter lignes 46-47)
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-1-health-check.md
+- [x] **Validation manuelle** : `curl http://localhost:8000/health` → `{"status": "ok"}`
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(api): add health check endpoint`
+- [x] **PR** : feature/story-1 → develop
 
 📝 **Output** : Story 1 complétée (2 story points)
 
