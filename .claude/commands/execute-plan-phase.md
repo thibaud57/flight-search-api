@@ -134,8 +134,6 @@ checklist_niveau_1 = [
 ]
 ```
 
-⚠️ **Important** : Ne PAS parser les backticks ici, l'agent TEST le fera
-
 Marquer → completed
 
 ### ÉTAPE 2 : Lancer agent EXPLORE
@@ -152,7 +150,7 @@ Task(
   Explorer le projet pour la Phase {phase_number} : {phase_title}
 
   **Checklist niveau 1** :
-  {checklist_from_plan_md}
+  {checklist_niveau_1}
 
   **Output attendu** :
   {expected_output}
@@ -380,7 +378,7 @@ Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLA
 Task(subagent_type="code", prompt="""
 Implémenter phase complète :
 
-**Checklist** : {checklist_niveau_2_complete}
+**Checklist** : {checklist_niveau_2}
 **Contexte** : {codebase}
 **Fichiers** : {documentation_files}
 **Output** : {expected_output}
@@ -395,7 +393,7 @@ Task(subagent_type="document", prompt="""
 Rédiger documentation complète :
 
 **Type** : {type_from_plan}
-**Checklist** : {checklist_niveau_2_complete}
+**Checklist** : {checklist_niveau_2}
 **Fichiers** : {documentation_files}
 **Output** : {expected_output}
 
@@ -424,7 +422,7 @@ Task(
   {checklist_niveau_1}
 
   **Checklist Niveau 2 (Détaillée - PLAN)** :
-  {checklist_niveau_2_details}
+  {checklist_niveau_2}
 
   **Output attendu** :
   {expected_output}
@@ -498,7 +496,7 @@ PR_URL=$(gh pr create \
   --body "Implements Phase {X.Y}
 
 ## Story Changes
-{checklist_niveau_1_resumé}
+{checklist_niveau_1}
 
 ## Output
 {expected_output}" \

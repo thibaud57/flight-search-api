@@ -59,7 +59,7 @@ Pour chaque item de `checklist_niveau_1[]` (liste de strings bruts) :
 
 **Pré-requis** : Niveau 1 ✅ PASS
 
-Pour chaque étape de `checklist_niveau_2_details[]` :
+Pour chaque étape de `checklist_niveau_2[]` :
 1. Vérifier critère de succès respecté
 2. Croiser avec rapport d'implémentation
 3. Marquer ✅ ou ❌
