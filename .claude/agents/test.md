@@ -36,9 +36,8 @@ Valider que l'output produit par une phase est conforme aux critères attendus v
 
 Pour chaque item de `checklist_niveau_1[]` (liste de strings bruts) :
 
-1. **Parser pattern backtick** dans le texte : Chercher `chemin/fichier.ext` entre backticks
-   - Regex : `` `([^`]+\.(md|py|toml|json|yml|yaml|txt|sh))` ``
-   - Exemple : `"Ajouter à \`docs/specs/epic-2-google-flights/story-4.md\`"` → `"docs/specs/epic-2-google-flights/story-4.md"`
+1. **Identifier chemins fichiers** dans le texte : Chercher les chemins de fichiers entourés de backticks (`) dans le texte de l'item
+   - Exemple : Si item contient `"Ajouter à \`docs/specs/epic-2-google-flights/story-4.md\`"`, extraire le chemin `docs/specs/epic-2-google-flights/story-4.md`
 
 2. **Si chemin fichier trouvé** :
    - Vérifier fichier existe : `Read(chemin/fichier.ext)`
