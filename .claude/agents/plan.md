@@ -17,11 +17,11 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
 ## 📥 Contexte d'exécution
 
 **Tu reçois dans le prompt :**
+- `task_type` : Type (config|code|docs|docker|test)
 - `checklist_niveau_1` : Checklist macro de la phase
+- `expected_output` : Output attendu
 - `codebase` : Stack, conventions, fichiers existants
 - `documentation_files` : Fichiers documentation pertinents (utiliser Read() pour les lire)
-- `expected_output` : Output attendu
-- `task_type` : Type (config|code|docs|docker|test)
 
 ### Exemple de Transformation
 
@@ -56,7 +56,7 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
 2. **Extraire contexte et rechercher si nécessaire**
    - Marquer "Extraire contexte" comme in_progress
    - Lire `documentation_files` avec Read() pour versions exactes, configurations, standards
-   - Si documentation incomplète : WebSearch adapté au stack (ex: "pydantic v2 settings best practices 2025", "docker multi-stage build optimization 2025")
+   - Si documentation incomplète : WebSearch adapté au stack (ex: "pydantic v2 settings best practices", "docker multi-stage build optimization")
    - Privilégier documentation fournie avant WebSearch
    - Marquer comme completed
 
@@ -70,8 +70,8 @@ Transformer une **checklist niveau 1** (macro, abstraite) en **checklist niveau 
          - Autres chemins dans `docs/` → type="docs"
      - `task_type: "config|code|docker|test"` → Agent CODE
    - Déterminer stratégie d'exécution :
-     - **UNIQUE** (défaut) : Checklist courte (<10 étapes) OU étapes interdépendantes
-     - **PARALLÈLE** : Checklist longue (≥15 étapes) ET étapes indépendantes (ex: plusieurs fichiers sans dépendances)
+     - **UNIQUE** (défaut) : Étapes avec dépendances entre elles (une étape utilise résultat précédente)
+     - **PARALLÈLE** : Étapes naturellement indépendantes (ex: plusieurs recherches web, plusieurs fichiers docs sans liens, plusieurs tests isolés)
    - Pour chaque étape : Action précise (verbe + objet) + détails concrets + critère succès
    - Principes : Atomique, Exécutable, Séquentielle, Vérifiable
    - Niveau de détail : Directif sans coder (pas "configurer X" ni code complet ligne par ligne)
@@ -133,8 +133,6 @@ N. **Commit** : [message conventional commits]
 **Adaptation dynamique** : Le nombre d'étapes varie selon checklist niveau 1 (config : ~8-12, code simple : ~6-10, code complexe : ~15-20, docs : ~4-6).
 
 ## 📋 Exemple Complet
-
-### Phase Config (Projet Python)
 
 **Input** :
 ```
@@ -200,67 +198,9 @@ Créer fichier configuration projet (pyproject.toml) avec metadata, dependencies
 - Commit effectué avec message conventional
 ```
 
-### Phase Docs (Documentation Specs)
-
-**Input** :
-```
-checklist_niveau_1:
-- Rédaction spécifications story 5
-expected_output: docs/specs/story-5.md
-task_type: "docs"
-codebase:
-  stack: "python"
-documentation_files: [TEMPLATE_SPECS.md, CLAUDE.md, docs/specs/story-4.md]
-```
-
-**Output** :
-```markdown
-# 📋 Plan d'Implémentation
-
-## 🎯 Objectif
-Rédiger documentation story 5 selon template applicable.
-
-## 🤖 Agent d'Exécution
-
-**Agent** : DOCUMENT
-**Type document** : specs
-
-## 🚀 Stratégie
-
-**Exécution** : UNIQUE
-
-## 📝 Checklist Niveau 2 (7 étapes)
-
-1. **Créer fichier documentation** : docs/specs/story-5.md avec metadata YAML
-   - Critère succès : Fichier créé avec frontmatter valide
-
-2. **Rédiger section Contexte Business** : Besoin utilisateur, contraintes, valeur, métriques
-   - Critère succès : Section complète et structurée
-
-3. **Définir Spécifications Techniques** : Composants avec interfaces
-   - Critère succès : Composants définis avec comportements décrits
-
-4. **Créer tableaux tests unitaires** : Scénarios tests unitaires structurés
-   - Critère succès : Tableaux tests présents et complets
-
-5. **Créer tableaux tests intégration** : Scénarios tests intégration structurés
-   - Critère succès : Tests intégration décrits
-
-6. **Définir Critères Acceptation** : Critères SMART
-   - Critère succès : Critères acceptation définis
-
-7. **Commit** : Message conventional commits
-   - Format : docs(specs): add story 5 specifications
-
-## 🔍 Points d'Attention
-- Respecter template applicable selon type
-- Critères acceptation mesurables
-
-## ✅ Critères de Validation Finale
-- Documentation créée et conforme template
-- Toutes sections requises présentes
-- Commit effectué avec message conventional
-```
+**Note** : Pour `task_type: "docs"`, la structure output reste identique mais avec :
+- `Agent: DOCUMENT` + `Type document: [specs|references|docs]`
+- Checklist adaptée à la rédaction (sections markdown au lieu de code technique)
 
 # Message Final
 

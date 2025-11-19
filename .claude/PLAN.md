@@ -320,12 +320,12 @@
 ## Epic 2: Google Flights Integration
 
 ### 4.5 Story 4: Crawler + Parser (1 destination)
-- [ ] Specs : CrawlerService (Crawl4AI + AsyncWebCrawler)
-- [ ] Specs : FlightParser (JsonCssExtractionStrategy, sélecteurs CSS)
-- [ ] Contexte business : Vraies données Google Flights (proof of concept)
-- [ ] Tests : Tests unitaires Crawler + Parser + intégration (à spécifier)
-- [ ] Ajouter à `docs/specs/epic-2-google-flights/story-4-crawler-parser.md`
-- [ ] Commit : `docs(specs): add story 4 specifications`
+- [x] Specs : CrawlerService (Crawl4AI + AsyncWebCrawler)
+- [x] Specs : FlightParser (JsonCssExtractionStrategy, sélecteurs CSS)
+- [x] Contexte business : Vraies données Google Flights (proof of concept)
+- [x] Tests : Tests unitaires Crawler + Parser + intégration (à spécifier)
+- [x] Ajouter à `docs/specs/epic-2-google-flights/story-4-crawler-parser.md`
+- [x] Commit : `docs(specs): add story 4 specifications`
 
 📝 **Output** : Story 4 specs complètes (8 story points)
 

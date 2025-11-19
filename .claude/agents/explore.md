@@ -21,9 +21,8 @@ Analyser une checklist/description de tâche pour identifier les fichiers pertin
 ## 📥 Contexte d'Exécution
 
 **Input** :
-- `checklist` : Checklist ou description de la tâche
-- `task_type` (optionnel) : Type (config|code|docs|docker|test|review)
-- `expected_output` (optionnel) : Output attendu
+- `checklist_niveau_1` : Checklist macro de la phase (liste de strings, peut contenir des chemins de fichiers entre backticks)
+- `expected_output` : Output attendu
 
 **Analyse** :
 - **Codebase** : Stack via markers (pyproject.toml, package.json, etc.), structure, conventions
@@ -47,7 +46,8 @@ Analyser une checklist/description de tâche pour identifier les fichiers pertin
 - Détecter : linter, formatter, type_checker (null si N/A pour Go/Rust), test_runner
 
 **Identifier fichiers existants pertinents** :
-- Selon checklist + task_type (ex: "dependencies" → chercher `pyproject.toml`, `package.json`)
+- Selon checklist (ex: "dependencies" → chercher `pyproject.toml`, `package.json`)
+- Si la checklist mentionne des chemins de fichiers (entre backticks), les identifier et vérifier leur existence
 
 **Output Phase 1** :
 ```json
@@ -108,14 +108,12 @@ technologies: ["language", "framework"]
 score = (keywords_matched / total_doc_keywords) * 100
 
 Bonus :
-- +20% si task_type match un scope
 - +15% si checklist mentionne une technology
 - +10% si titre doc dans checklist
 ```
 
 **Filtres** :
 - Score minimum : 20%
-- Si `task_type` fourni : privilégier docs avec `scope` correspondant
 
 **Cas spécial CLAUDE.md** :
 - Matcher keywords avec sections
@@ -147,7 +145,7 @@ Valider que fichiers recommandés existent :
 - 🟡 **Important** (30-49%) : Utile mais pas bloquant
 - 🟢 **Optional** (20-29%) : Contexte général
 
-**Limite** : Max 5 fichiers (éviter surcharge cognitive)
+**Limite** : Max 10 fichiers (éviter surcharge cognitive)
 
 ## 📤 Format de Sortie
 
@@ -201,8 +199,12 @@ Valider que fichiers recommandés existent :
 
 **Input** :
 ```
-checklist: "Configure project dependencies and linting tools"
-task_type: "config"
+checklist_niveau_1: [
+  "Configuration metadata projet + dependencies principales",
+  "Configuration linting + formatage + type checking",
+  "Ajouter à `pyproject.toml`"
+]
+expected_output: "Fichier configuration projet complet"
 ```
 
 **Process** :
@@ -211,13 +213,14 @@ Phase 1: Explore Codebase
   - Glob("pyproject.toml") → Found → Stack: Python
   - Read pyproject.toml → Found: [tool.ruff], [tool.mypy]
   - Conventions: linter=ruff, type_checker=mypy
+  - File path detected in checklist: `pyproject.toml` → Added to existing_files
 
 Phase 2: Scan docs/
   - Found: docs/references/dependencies.md (keywords: ["dependencies", "setup"])
   - Found: docs/references/linting.md (keywords: ["lint", "format"])
 
 Phase 3: Extract keywords
-  - ["configure", "dependencies", "linting", "tools"]
+  - ["configure", "dependencies", "linting", "tools", "pyproject"]
 
 Phase 4: Matching
   - linting.md: score=75% (3/4 keywords)
