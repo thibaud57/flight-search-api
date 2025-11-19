@@ -9,6 +9,25 @@ scope: ["specs"]
 technologies: []
 ---
 
+# ⚠️ RÈGLES IMPORTANTES - Spécifications
+
+**Ce template doit contenir UNIQUEMENT** :
+- ✅ Interfaces/signatures (SANS implémentation)
+- ✅ Descriptions comportements (texte structuré)
+- ✅ Tableaux scénarios tests (descriptif, PAS code Python)
+- ✅ Exemples JSON (inputs/outputs)
+
+**CODE PRODUCTION INTERDIT** :
+- ❌ Implémentation complète fonctions/classes
+- ❌ Logique métier (algorithmes, boucles, conditions)
+- ❌ Tests Python écrits
+
+**Principe fondamental** :
+- **(Specs)** = QUOI faire → Décrire comportements attendus
+- **(TDD)** = COMMENT faire → Implémenter code production
+
+---
+
 # 🎯 Contexte Business
 
 ## Besoin utilisateur
@@ -20,17 +39,20 @@ technologies: []
 - [Contrainte 1: limites techniques, budgets, SLA]
 - [Contrainte 2]
 - [Contrainte 3]
+- ...
 
 ## Valeur business
 - ✅ [Valeur 1: qu'apporte cette story au client final ?]
 - ✅ [Valeur 2: feedback rapide, validation early, dérisquage]
 - ✅ [Valeur 3: foundation pour stories futures]
 - ✅ [Valeur 4: métriques observables]
+- ...
 
 ## Métriques succès
 - [Métrique 1: temps de réponse, taux d'erreur, etc.]
 - [Métrique 2: adoption client, feedback qualitatif]
 - [Métrique 3: coverage tests, qualité code]
+- ...
 
 ---
 
@@ -65,13 +87,6 @@ class ComposantExemple:
 - `field_validator`: [Validation custom]
 - `model_validator`: [Validation cross-field]
 
-**Exemple**:
-```python
-# Exemple utilisation
-exemple = ComposantExemple(param="value")
-resultat = exemple.methode_principale(input_data)
-```
-
 ## 2. [Composant 2]
 
 [Répéter structure similaire pour chaque composant de la story]
@@ -86,25 +101,21 @@ resultat = exemple.methode_principale(input_data)
 
 ### [Composant 1] (X tests)
 
-| # | Nom test | Input | Output attendu | Vérification |
-|---|----------|-------|----------------|--------------|
-| 1 | `test_composant_valid_input` | `{"key": "value"}` | `result.success == True` | Vérifie comportement nominal |
-| 2 | `test_composant_edge_case` | `{"key": ""}` | `ValidationError` | Vérifie validation edge case |
-| 3 | `test_composant_async` | `await call()` | `result` not None | Vérifie fonction async |
+**Format tableau descriptif** (6 colonnes) :
 
-**Exemple code test AAA**:
-```python
-def test_composant_valid_input():
-    # Arrange: Setup initial state
-    input_data = {"key": "value"}
+| # | Nom test | Scénario | Input | Output attendu | Vérification |
+|---|----------|----------|-------|----------------|--------------|
+| 1 | `test_composant_valid_input` | Composant avec input valide | `{"key": "value"}` | `result.success == True` | Vérifie comportement nominal |
+| 2 | `test_composant_edge_case` | Input avec string vide | `{"key": ""}` | Lève `ValidationError` | Vérifie validation edge case |
+| 3 | `test_composant_async` | Appel fonction async | `await composant.call()` | `result` not None | Vérifie fonction async retourne valeur |
 
-    # Act: Execute function under test
-    result = composant_fonction(input_data)
-
-    # Assert: Verify expected outcome
-    assert result.success is True
-    assert result.data == expected_data
-```
+**Colonnes** :
+- **#** : Numéro test (ordre logique)
+- **Nom test** : Nom fonction test à écrire en Phase 5 (format `test_[composant]_[scenario]`)
+- **Scénario** : Description comportement testé (1 phrase courte)
+- **Input** : Données entrée (format compact, ex: `{"key": "value"}`)
+- **Output attendu** : Résultat attendu (assertion principale)
+- **Vérification** : Explication vérification (POURQUOI ce test est important)
 
 ### [Composant 2] (Y tests)
 
@@ -118,32 +129,20 @@ def test_composant_valid_input():
 
 **Format recommandé: Given/When/Then (BDD)**
 
-**End-to-end** (N tests):
+**Format tableau descriptif** (5 colonnes pour tests intégration) :
 
-| # | Scénario | Prérequis | Action | Résultat attendu |
-|---|----------|-----------|--------|-------------------|
-| 1 | `test_integration_happy_path` | App running | POST /endpoint | 200 + JSON valide |
-| 2 | `test_integration_validation_error` | App running | POST data invalide | 400 + error message |
-| 3 | `test_integration_edge_case` | State X | Action Y | Result Z |
+| # | Nom test | Prérequis (Given) | Action (When) | Résultat attendu (Then) |
+|---|----------|-------------------|---------------|-------------------------|
+| 1 | `test_integration_happy_path` | App running, client TestClient | POST /endpoint avec data valide | Status 200 + JSON conforme schéma |
+| 2 | `test_integration_validation_error` | App running | POST /endpoint avec data invalide | Status 400 + error message clair |
+| 3 | `test_integration_edge_case` | State X configuré | Action Y exécutée | Result Z vérifié |
 
-**Exemple code test Given/When/Then**:
-```python
-def test_integration_happy_path():
-    # Given: Initial state and preconditions
-    client = TestClient(app)
-    request_data = {
-        "field": "value"
-    }
-
-    # When: Execute action
-    response = client.post("/endpoint", json=request_data)
-
-    # Then: Verify expected outcome
-    assert response.status_code == 200
-    data = response.json()
-    assert "expected_field" in data
-    assert data["expected_field"] == expected_value
-```
+**Colonnes** :
+- **#** : Numéro test
+- **Nom test** : Nom fonction test à écrire en Phase 5
+- **Prérequis (Given)** : État initial et préconditions
+- **Action (When)** : Action exécutée (ex: requête HTTP, appel fonction)
+- **Résultat attendu (Then)** : Résultat vérifié (status code, données retournées, side-effects)
 
 **Total tests intégration**: N tests
 

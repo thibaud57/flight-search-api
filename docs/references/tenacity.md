@@ -7,13 +7,13 @@ scope: ["code"]
 technologies: ["tenacity"]
 ---
 
-# 1. Décorateur @retry - Utilisation Basique
+# Décorateur @retry - Utilisation Basique
 
-## Explication
+## Description
 
-Le décorateur `@retry` est le point d'entrée principal de Tenacity. Il enveloppe une fonction avec une logique de retry automatique.
+Le décorateur `@retry` est le point d'entrée principal de Tenacity. Il enveloppe une fonction avec une logique de retry automatique, permettant de gérer les échecs temporaires sans code boilerplate.
 
-## Exemple de Code
+## Exemple
 
 ```python
 from tenacity import retry, stop_after_attempt
@@ -33,13 +33,21 @@ def robust_api_call():
     return requests.get('https://api.example.com/data')
 ```
 
-# 2. Wait Strategies - Exponential Backoff et Jitter
+## Points clés
 
-## Explication
+- **Décorateur simple** : Ajouter `@retry` suffit pour retry indéfini
+- **Stop conditions** : `stop_after_attempt(N)` limite tentatives
+- **Wait strategies** : `wait_exponential()` pour backoff progressif
+- **Combinable** : Stop + wait + retry conditions combinables
+- **Automatique** : Capture toutes exceptions par défaut
+
+# Wait Strategies - Exponential Backoff et Jitter
+
+## Description
 
 Les stratégies d'attente contrôlent les délais entre les tentatives de retry. L'exponential backoff augmente progressivement les délais pour éviter de surcharger un service défaillant. Le jitter (aléatoire) prévient le problème du "thundering herd".
 
-## Exemples de Code
+## Exemple
 
 ```python
 from tenacity import (
@@ -80,13 +88,22 @@ def chained_wait():
     pass
 ```
 
-# 3. Async Support - Retry avec Async/Await
+## Points clés
 
-## Explication
+- **wait_fixed** : Délai constant entre tentatives
+- **wait_exponential** : Backoff exponentiel (2^x * multiplier secondes)
+- **wait_random_exponential** : Exponentiel + jitter pour éviter thundering herd
+- **Combinaison `+`** : Additionner stratégies (`wait_fixed(3) + wait_random(0, 2)`)
+- **wait_chain** : Stratégies différentes selon numéro tentative
+- **min/max** : Bornes pour éviter délais trop courts ou trop longs
 
-Tenacity supporte nativement les coroutines asyncio avec sleeps asynchrones. Le décorateur `@retry` fonctionne directement sur les fonctions `async def`.
+# Async Support - Retry avec Async/Await
 
-## Exemples de Code
+## Description
+
+Tenacity supporte nativement les coroutines asyncio avec sleeps asynchrones. Le décorateur `@retry` fonctionne directement sur les fonctions `async def`, rendant le retry transparent pour le code asynchrone.
+
+## Exemple
 
 ```python
 import asyncio
@@ -123,14 +140,13 @@ async def process_with_retry():
 asyncio.run(process_with_retry())
 ```
 
-# 4. Points Clés à Retenir
+## Points clés
 
-| Concept | Usage Pattern |
-|---------|---------------|
-| **Stop Conditions** | `stop_after_attempt(N)`, `stop_after_delay(seconds)` |
-| **Retry Conditions** | `retry_if_exception_type(Exception)`, `retry_if_result(predicate)` |
-| **Wait Strategies** | Combinables avec `+` ou `\|` : fixed, exponential, jitter, chain |
-| **Async** | Décorateur `@retry` ou classe `AsyncRetrying`, sleeps natifs |
+- **Support natif async** : Décorateur `@retry` fonctionne directement sur `async def`
+- **Sleeps asynchrones** : Utilise `asyncio.sleep()` automatiquement (pas de blocage)
+- **AsyncRetrying** : Classe pour boucles manuelles sans décorateur
+- **Transparence** : Aucune différence syntaxe entre sync et async retry
+- **Combinaison** : Toutes stratégies (stop, wait, retry_if) fonctionnent en async
 
 # Ressources
 

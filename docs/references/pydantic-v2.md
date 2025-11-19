@@ -7,7 +7,7 @@ scope: ["code", "config"]
 technologies: ["pydantic"]
 ---
 
-# 1. BaseSettings & Configuration d'Environnement
+# BaseSettings & Configuration d'Environnement
 
 ## Description
 
@@ -29,13 +29,13 @@ class Settings(BaseSettings):
 settings = Settings()
 ```
 
-# 2. Field Validator & Model Validator
+# Field Validator & Model Validator
 
 ## field_validator
 
 ### Description
 
-Valide des champs individuels après (ou avant) le parsing Pydantic. Supporte 4 modes : `after` (défaut), `before`, `plain`, `wrap`.
+Valide des champs individuels après (ou avant) le parsing Pydantic. Supporte 4 modes : `after` (défaut), `before`, `plain`, `wrap`. Remplace le décorateur `@validator` de v1.
 
 ### Exemple minimal
 ```python
@@ -52,11 +52,18 @@ class User(BaseModel):
         return v
 ```
 
+### Points clés
+
+- **Modes** : `after` (post-parsing, défaut), `before` (pré-parsing), `plain` (raw input), `wrap` (contrôle total)
+- **Décorateur classmethod** : Obligatoire, reçoit `cls` comme premier argument
+- **Multiple fields** : `@field_validator('field1', 'field2')` pour valider plusieurs champs
+- **Migration v1→v2** : Remplace `@validator`, syntaxe légèrement différente
+
 ## model_validator
 
 ### Description
 
-Valide l'ensemble du modèle après instantiation. Permet des validations cross-champs ou des transformations globales.
+Valide l'ensemble du modèle après instantiation. Permet des validations cross-champs ou des transformations globales. Remplace `@root_validator` de v1.
 
 ### Exemple minimal
 ```python
@@ -73,7 +80,15 @@ class Person(BaseModel):
         return self
 ```
 
-# 3. Configuration avec model_config
+### Points clés
+
+- **Cross-champs** : Accède à tous les champs du modèle simultanément
+- **Mode after** : Reçoit l'instance complète du modèle (self)
+- **Mode before** : Reçoit un dictionnaire des valeurs brutes
+- **Return obligatoire** : Doit retourner l'instance (mode after) ou dict (mode before)
+- **Migration v1→v2** : Remplace `@root_validator`, signature différente
+
+# Configuration avec model_config
 
 ## Description
 
@@ -102,7 +117,7 @@ class StrictModel(BaseModel):
 - `validate_assignment` : Valide lors de modifications
 - `strict` : Mode stricte (pas de coercion de types)
 
-# 4. Migration v1 → v2 - Changements Importants
+# Migration v1 → v2 - Changements Importants
 
 ## Méthodes renommées
 | v1 | v2 |
