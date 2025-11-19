@@ -303,10 +303,10 @@ Afficher le plan généré :
      N. **[Action]** : [Détails]
         - Critère succès : [...]
      ```
-   - Stocker dans `checklist_niveau_2[]` (liste de strings)
+   - Stocker dans `checklist_niveau_2` (liste de strings)
    - Chaque string contient l'étape complète avec son critère
    - Exemple :
-     ```python
+     ```
      checklist_niveau_2 = [
        "1. **Créer fichier** : docs/specs/story-5.md avec metadata YAML\n   - Critère succès : Fichier créé avec frontmatter valide",
        "2. **Rédiger section** : Contexte Business complet\n   - Critère succès : Section complète et structurée"
