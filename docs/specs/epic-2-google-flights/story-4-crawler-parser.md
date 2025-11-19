@@ -53,9 +53,6 @@ technologies: ["crawl4ai", "playwright", "pydantic", "decodo", "tenacity"]
 
 **Interface** :
 ```python
-from typing import Dict, Any
-from crawl4ai import CrawlResult
-
 class CrawlerService:
     """Service de crawling Google Flights avec stealth mode et proxy rotation."""
 
@@ -115,13 +112,10 @@ class CrawlerService:
 
 **Interface** :
 ```python
-from typing import List
-from app.models.response import Flight
-
 class FlightParser:
     """Parser de vols Google Flights via JsonCssExtractionStrategy."""
 
-    def parse(self, html: str) -> List[Flight]:
+    def parse(self, html: str) -> list[Flight]:
         """
         Extrait les vols depuis HTML Google Flights.
 
@@ -131,58 +125,24 @@ class FlightParser:
         """
 ```
 
-**Schema CSS Extraction** :
+**Configuration Extraction CSS** :
 
-```json
-{
-  "name": "Google Flights Extractor",
-  "baseSelector": ".pIav2d",
-  "fields": [
-    {
-      "name": "price",
-      "selector": ".FpEdX span:first-child",
-      "type": "text"
-    },
-    {
-      "name": "airline",
-      "selector": ".sSHqwe",
-      "type": "text"
-    },
-    {
-      "name": "departure_time",
-      "selector": ".vmXl time",
-      "type": "attribute",
-      "attribute": "datetime"
-    },
-    {
-      "name": "arrival_time",
-      "selector": ".XWcVob time",
-      "type": "attribute",
-      "attribute": "datetime"
-    },
-    {
-      "name": "duration",
-      "selector": ".gvkrdb",
-      "type": "text"
-    },
-    {
-      "name": "stops",
-      "selector": ".BbR8Ec .ogfYpf",
-      "type": "text"
-    },
-    {
-      "name": "departure_airport",
-      "selector": ".G2WY5c .sSHqwe:first-child",
-      "type": "text"
-    },
-    {
-      "name": "arrival_airport",
-      "selector": ".G2WY5c .sSHqwe:last-child",
-      "type": "text"
-    }
-  ]
-}
-```
+La stratégie JsonCssExtractionStrategy doit extraire les champs suivants depuis le HTML Google Flights :
+
+| Champ | Description | Type extraction | Contrainte |
+|-------|-------------|-----------------|------------|
+| `price` | Prix du vol en euros | Texte | Élément avec classe prix, extraire valeur numérique |
+| `airline` | Nom de la compagnie aérienne | Texte | Élément compagnie, texte brut |
+| `departure_time` | Heure de départ | Attribut datetime | Balise `<time>` départ, attribut `datetime` ISO 8601 |
+| `arrival_time` | Heure d'arrivée | Attribut datetime | Balise `<time>` arrivée, attribut `datetime` ISO 8601 |
+| `duration` | Durée du vol | Texte | Élément durée, format "Xh Ymin" |
+| `stops` | Nombre d'escales | Texte | Élément escales, parser "Non-stop" ou "X stop(s)" |
+| `departure_airport` | Code aéroport départ | Texte | Premier élément aéroport dans route |
+| `arrival_airport` | Code aéroport arrivée | Texte | Dernier élément aéroport dans route |
+
+**Sélecteur de base** : Cibler les cartes de vols individuelles (conteneur principal répété pour chaque vol)
+
+**Note** : Les sélecteurs CSS exacts devront être déterminés lors de l'implémentation Phase 5 en inspectant le HTML réel de Google Flights (structure non documentée, peut varier).
 
 **Champs/Paramètres** :
 
@@ -226,31 +186,33 @@ class FlightParser:
 
 **Interface** :
 ```python
-from pydantic import BaseModel, Field, field_validator
-from datetime import datetime
-
 class Flight(BaseModel):
     """Modèle Pydantic d'un vol extrait depuis Google Flights."""
 
-    price: float = Field(..., gt=0, description="Prix en euros")
-    airline: str = Field(..., min_length=2, max_length=100)
+    price: float
+    airline: str
     departure_time: datetime
     arrival_time: datetime
-    duration: str = Field(..., pattern=r"^\d+h \d+min$")
-    stops: int | None = Field(None, ge=0)
-    departure_airport: str | None = Field(None, max_length=10)
-    arrival_airport: str | None = Field(None, max_length=10)
-
-    @field_validator('arrival_time', mode='after')
-    @classmethod
-    def arrival_after_departure(cls, v: datetime, info) -> datetime:
-        """Valide que arrival_time > departure_time."""
+    duration: str
+    stops: int | None
+    departure_airport: str | None
+    arrival_airport: str | None
 ```
 
-**Validations** :
-- `field_validator` : Vérifie cohérence temporelle (arrival_time après departure_time)
-- `pattern` : Format durée strict "Xh Ymin" via regex
-- `gt=0` : Prix strictement positif
+**Validations Pydantic** :
+
+| Champ | Contrainte | Description |
+|-------|-----------|-------------|
+| `price` | `> 0` | Prix strictement positif (euros) |
+| `airline` | `min_length=2, max_length=100` | Nom compagnie valide |
+| `departure_time` | Format ISO 8601 | Datetime valide |
+| `arrival_time` | Format ISO 8601 + après `departure_time` | Cohérence temporelle |
+| `duration` | Pattern `"Xh Ymin"` | Format durée strict (ex: "10h 30min") |
+| `stops` | `≥ 0` ou `None` | Nombre escales valide |
+| `departure_airport` | `max_length=10` | Code IATA/ICAO |
+| `arrival_airport` | `max_length=10` | Code IATA/ICAO |
+
+**Validation cross-champs** : La méthode de validation doit vérifier que `arrival_time` est postérieur à `departure_time` (cohérence temporelle du vol).
 
 ---
 
@@ -315,15 +277,7 @@ class Flight(BaseModel):
 
 ## Exemples JSON
 
-**Exemple 1 : HTML Google Flights valide (extrait)**
-```json
-{
-  "html_snippet": "<div class='pIav2d'><div class='FpEdX'><span>1250 €</span></div><div class='sSHqwe'>Air France</div><div class='vmXl'><time datetime='2025-06-01T10:30:00'>10:30</time></div><div class='XWcVob'><time datetime='2025-06-01T14:45:00'>14:45</time></div><div class='gvkrdb'>10h 15min</div><div class='BbR8Ec'><div class='ogfYpf'>1 stop</div></div></div>",
-  "description": "HTML d'un vol Air France Paris-Tokyo avec 1 escale"
-}
-```
-
-**Exemple 2 : Flight extrait et validé**
+**Exemple 1 : Flight extrait et validé**
 ```json
 {
   "price": 1250.0,
@@ -337,41 +291,20 @@ class Flight(BaseModel):
 }
 ```
 
-**Exemple 3 : Erreur CaptchaDetectedError**
+**Exemple 2 : Erreur CaptchaDetectedError**
 ```json
 {
   "error": "CaptchaDetectedError",
   "message": "reCAPTCHA v2 detected after 3 retries",
   "details": {
     "url": "https://www.google.com/travel/flights?departure_id=CDG&arrival_id=NRT&outbound_date=2025-06-01",
-    "proxy_used": "customer-abc123-country-fr:password @ gate.decodo.com:7000",
     "captcha_type": "recaptcha_v2",
-    "attempts": 3,
-    "proxies_tried": ["proxy1", "proxy2", "proxy3"]
+    "attempts": 3
   }
 }
 ```
 
-**Exemple 4 : Log structuré crawl success**
-```json
-{
-  "timestamp": "2025-11-19T10:30:45Z",
-  "level": "INFO",
-  "service": "CrawlerService",
-  "message": "Crawl successful",
-  "context": {
-    "url": "https://www.google.com/travel/flights?departure_id=CDG&arrival_id=NRT&outbound_date=2025-06-01",
-    "proxy_used": "customer-abc123-country-fr:password @ gate.decodo.com:7000",
-    "status_code": 200,
-    "html_size": 245678,
-    "response_time_ms": 2345,
-    "stealth_mode": true,
-    "retry_attempt": 0
-  }
-}
-```
-
-**Exemple 5 : ParsingError (aucun vol extrait)**
+**Exemple 3 : ParsingError (aucun vol extrait)**
 ```json
 {
   "error": "ParsingError",
@@ -379,10 +312,34 @@ class Flight(BaseModel):
   "details": {
     "html_size": 123456,
     "base_selector_matches": 0,
-    "reason": "No .pIav2d elements found in HTML"
+    "reason": "No flight containers found in HTML"
   }
 }
 ```
+
+---
+
+# 📊 Observabilité & Monitoring
+
+## Logging structuré
+
+Tous les logs doivent suivre le format JSON structuré avec les champs suivants :
+
+| Champ | Type | Description | Exemple |
+|-------|------|-------------|---------|
+| `timestamp` | ISO 8601 | Date et heure événement | `"2025-11-19T10:30:45Z"` |
+| `level` | String | Niveau log (DEBUG/INFO/WARNING/ERROR) | `"INFO"` |
+| `service` | String | Service concerné | `"CrawlerService"` |
+| `message` | String | Message descriptif | `"Crawl successful"` |
+| `url` | String | URL crawlée | URL Google Flights complète |
+| `proxy_used` | String (optionnel) | Proxy utilisé (masqué si sensible) | Format customer générique |
+| `status_code` | Integer | Code HTTP réponse | `200`, `403`, `429` |
+| `html_size` | Integer | Taille HTML en bytes | `245678` |
+| `response_time_ms` | Integer | Temps réponse en ms | `2345` |
+| `stealth_mode` | Boolean | Stealth mode activé | `true` |
+| `retry_attempt` | Integer | Numéro tentative (0 = première) | `0`, `1`, `2` |
+
+**Note** : Secrets (mots de passe proxy, API keys) doivent être masqués dans les logs pour sécurité.
 
 ---
 
@@ -412,17 +369,17 @@ class Flight(BaseModel):
 
 10. **Async/Await cohérent** : CrawlerService.crawl_google_flights async, utilise `async with AsyncWebCrawler`, `await crawler.arun()`, pas de blocking IO
 
-11. **Retry logic Tenacity** : Décorateur `@retry` configuré avec `stop_after_attempt(3)`, `wait_exponential(multiplier=2, min=4, max=60)`, `retry_if_exception_type(CaptchaDetectedError | NetworkError)`
+11. **Retry logic Tenacity** : Système de retry automatique avec maximum 3 tentatives, délai exponentiel entre tentatives (4s, 8s, 16s jusqu'à 60s max), déclenchement sur exceptions CaptchaDetectedError et NetworkError uniquement
 
-12. **Pydantic v2** : Flight utilise `BaseModel`, `Field(...)` avec contraintes, `field_validator` pour validation cross-champs, `model_config` avec `ConfigDict(frozen=False, extra='forbid')`
+12. **Pydantic v2** : Flight utilise BaseModel avec Field pour définir contraintes de validation, validation cross-champs pour cohérence temporelle, configuration strict (extra='forbid')
 
-13. **JsonCssExtractionStrategy** : Schema CSS défini avec `baseSelector`, `fields` (8 champs minimum), types `text`/`attribute`, pas de LLM
+13. **JsonCssExtractionStrategy** : Configuration extraction CSS avec sélecteur de base pour identifier conteneurs vols, 8 champs minimum à extraire (types text/attribute selon besoin), pas de LLM
 
-14. **Decodo Proxies configuration** : Format auth `customer-{api_key}-country-fr:password`, endpoint `gate.decodo.com:7000`, rotation cyclique avec `itertools.cycle(proxy_pool)`
+14. **Decodo Proxies configuration** : Authentification format customer avec clé API et ciblage pays (France), endpoint dédié, système de rotation cyclique entre pool de proxies disponibles
 
-15. **Logging structuré JSON** : Tous logs avec `extra={}` contenant contexte métier (`url`, `proxy_used`, `status_code`, `html_size`, `response_time_ms`, `stealth_mode`, `retry_attempt`)
+15. **Logging structuré JSON** : Tous logs incluent contexte métier dans champs dédiés : URL crawlée, proxy utilisé, code status HTTP, taille HTML reçu, temps de réponse en millisecondes, activation stealth mode, numéro tentative retry
 
-16. **Exceptions custom** : CaptchaDetectedError et ParsingError héritent de Exception, contiennent attributs contextuels (`url`, `proxy_used`, `captcha_type`, `html_size`, `flights_found`)
+16. **Exceptions custom** : CaptchaDetectedError et ParsingError héritent de Exception standard Python, incluent attributs contextuels pour debugging : URL concernée, proxy utilisé, type captcha détecté, taille HTML, nombre vols trouvés
 
 ## Critères qualité
 
