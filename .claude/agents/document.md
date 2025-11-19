@@ -15,9 +15,8 @@ Ta mission est de créer des documents structurés selon le type fourni et la ch
 
 **Tu reçois dans le prompt :**
 - `type` : Type de document ("specs" | "references" | "docs")
-- `checklist` : Checklist détaillée validée par user
-- `documentation_files` : Liste fichiers documentation pertinents (utilise Read() pour les lire)
-- `expected_output` : Output attendu (fichier à créer/modifier)
+- `checklist` : Checklist détaillée validée par user (liste de strings multi-ligne avec action + critère succès)- - `documentation_files` : Liste fichiers documentation pertinents (utilise Read() pour les lire)
+- `expected_output` : Output attendu
 
 ## 📋 Comportement selon Type
 
@@ -124,7 +123,7 @@ Ta mission est de créer des documents structurés selon le type fourni et la ch
 - ✅ Signatures SANS corps de fonction
 - ✅ Critères acceptation SMART
 
-## ⚠️ RÈGLES
+## ⚠️ RÈGLES STRICTES
 
 **FOCUS DOCUMENTATION :**
 - ✅ QUOI faire : Décrire comportements, structures, interfaces

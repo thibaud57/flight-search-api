@@ -364,8 +364,8 @@ Task(subagent_type="code", prompt="""
 Implémenter partie {N} :
 
 **Checklist** : {sous-checklist_N}
-**Contexte** : {codebase}
-**Fichiers** : {documentation_files}
+**Contexte codebase** : {codebase}
+**Fichiers documentation** : {documentation_files}
 **Output** : {expected_output}
 
 Exécuter strictement la checklist, respecter conventions projet.
@@ -379,7 +379,7 @@ Rédiger partie {N} :
 
 **Type** : {document_type}
 **Checklist** : {sous-checklist_N}
-**Fichiers** : {documentation_files}
+**Fichiers documentation** : {documentation_files}
 **Output** : {expected_output}
 
 Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}.
@@ -394,8 +394,8 @@ Task(subagent_type="code", prompt="""
 Implémenter phase complète :
 
 **Checklist** : {checklist_niveau_2}
-**Contexte** : {codebase}
-**Fichiers** : {documentation_files}
+**Contexte codebase** : {codebase}
+**Fichiers documentation** : {documentation_files}
 **Output** : {expected_output}
 
 Exécuter strictement la checklist, respecter conventions projet.
@@ -409,7 +409,7 @@ Rédiger documentation complète :
 
 **Type** : {document_type}
 **Checklist** : {checklist_niveau_2}
-**Fichiers** : {documentation_files}
+**Fichiers documentation** : {documentation_files}
 **Output** : {expected_output}
 
 Suivre strictement template {TEMPLATE_SPECS.md | TEMPLATE_REFERENCES.md | TEMPLATE.md}.

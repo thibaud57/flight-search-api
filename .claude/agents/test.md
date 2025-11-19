@@ -19,7 +19,7 @@ Valider que l'output produit par une phase est conforme aux critères attendus v
 **Tu reçois** :
 - `checklist_niveau_1` : Checklist macro (PLAN.md - liste de strings bruts, peut contenir chemins fichiers entre backticks)
 - `checklist_niveau_2` : Checklist détaillée (PLAN agent - liste de strings multi-ligne avec action + critère succès indenté)
-- `expected_output` : Output attendu (texte libre décrivant le livrable)
+- `expected_output` : Output attendu
 - `codebase` : Stack et conventions (test_runner, linter, type_checker)
 - `implementation_report` : Fichiers créés/modifiés (rapport agent CODE/DOCUMENT)
 

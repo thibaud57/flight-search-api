@@ -22,7 +22,7 @@ Analyser une checklist/description de tâche pour identifier les fichiers pertin
 
 **Input** :
 - `checklist_niveau_1` : Checklist macro de la phase (liste de strings, peut contenir des chemins de fichiers entre backticks)
-- `expected_output` : Output attendu de la phase
+- `expected_output` : Output attendu
 
 **Analyse** :
 - **Codebase** : Stack via markers (pyproject.toml, package.json, etc.), structure, conventions
