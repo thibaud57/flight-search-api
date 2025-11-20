@@ -401,4 +401,4 @@ Tous les logs doivent suivre le format JSON structuré avec les champs suivants 
 
 ---
 
-**💡 Note** : Cette story est un Proof of Concept (8 story points). Les 24 critères couvrent faisabilité technique (crawl + parsing 1 destination), robustesse (captcha detection, retry logic), qualité (coverage, types, tests), et foundation réutilisable pour stories 5-6 (multi-destinations, search orchestration).
+**💡 Note** : Cette story est un Proof of Concept (8 story points). Les 24 critères couvrent faisabilité technique (crawl + parsing 1 destination), robustesse (captcha detection, retry logic), qualité (coverage, types, tests), et foundation réutilisable pour stories 5-6 (proxies + multi-city search orchestration).

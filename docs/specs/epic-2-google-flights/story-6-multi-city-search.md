@@ -155,7 +155,7 @@ class SearchService:
 
 | Service | Rôle | Défini dans |
 |---------|------|-------------|
-| `CombinationGenerator` | Génère produit cartésien dates par segment | Story 5 (ce document) |
+| `CombinationGenerator` | Génère produit cartésien dates par segment | Story 6 (ce document) |
 | `CrawlerService` | Crawle Google Flights avec retry logic et proxy rotation | Story 4 |
 | `FlightParser` | Parse HTML Google Flights en liste Flight | Story 4 |
 
@@ -295,7 +295,7 @@ score = (prix_total * 0.7) + (durée_totale_minutes * 0.002) + (nombre_escales *
 
 ---
 
-### DateCombination (Nouveau Modèle Story 5)
+### DateCombination (Nouveau Modèle Story 6)
 
 **Rôle** : Modèle représentant une combinaison dates pour itinéraire multi-city (ordre segments fixe, dates spécifiques par segment).
 
@@ -324,7 +324,7 @@ class DateCombination(BaseModel):
 
 ---
 
-### CombinationResult (Nouveau Modèle Story 5)
+### CombinationResult (Nouveau Modèle Story 6)
 
 **Rôle** : Modèle intermédiaire pour stocker résultat crawl + parsing d'une combinaison avant ranking.
 
@@ -651,7 +651,7 @@ class CombinationResult(BaseModel):
 
 25. **Aucun code production dans specs** : Ce document contient uniquement signatures, tableaux tests, descriptions comportements, exemples JSON, formules ranking (pas d'implémentation complète de méthodes)
 
-26. **Commits conventional** : Story 5 committée avec message `feat(services): add multi-city search and top 10 ranking` conforme Conventional Commits
+26. **Commits conventional** : Story 6 committée avec message `feat(services): add multi-city search and top 10 ranking` conforme Conventional Commits
 
 ---
 

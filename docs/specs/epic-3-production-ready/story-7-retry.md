@@ -21,7 +21,7 @@ technologies: ["tenacity", "asyncio", "python"]
 ## Contraintes métier
 
 - **Coûts bandwidth Decodo limités** : Chaque retry = nouvelle requête HTTP facturée au GB ($2.60-3.50/GB), nécessite limiter nombre max tentatives (3-5 recommandé) pour éviter explosion coûts sur erreurs persistantes
-- **Timeout total acceptable** : Recherche multi-destinations doit compléter en <60 secondes au p95 même avec retry logic (évite frustration utilisateur), nécessite exponential backoff optimisé (wait time min 4s, max 60s total)
+- **Timeout total acceptable** : Recherche multi-city doit compléter en <60 secondes au p95 même avec retry logic (évite frustration utilisateur), nécessite exponential backoff optimisé (wait time min 4s, max 60s total)
 - **Pas de retry sur erreurs client** : Erreurs 4xx (ValidationError, ParsingError, 404) non-retryables car problème logique application pas transient error, retry uniquement sur 5xx/network/captcha
 - **Thundering herd prevention** : Retry simultané de multiples requêtes peut surcharger Google Flights, nécessite jitter randomness pour distribuer charges retry dans le temps
 - **Observabilité production** : Logs structurés retry obligatoires pour monitoring (attempt_number, exception type, wait time, proxy rotated) sans exposer secrets (masquer credentials proxies)

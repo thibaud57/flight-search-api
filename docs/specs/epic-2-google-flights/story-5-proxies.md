@@ -434,7 +434,7 @@ DECODO_PROXY_POOL_SIZE=3
 **Exemple 3 : Settings .env exemple (variables environnement)**
 
 ```bash
-# Decodo Proxies Configuration (Story 6)
+# Decodo Proxies Configuration (Story 5)
 DECODO_USERNAME=customer-abc123def456-country-fr
 DECODO_PASSWORD=my_secure_password_here
 DECODO_PROXY_HOST=pr.decodo.com:8080
@@ -533,10 +533,10 @@ DECODO_PROXY_POOL_SIZE=3
 
 25. **Aucun code production dans specs** : Ce document contient uniquement signatures Python, tableaux tests descriptifs, exemples JSON, pseudo-code intégration (pas d'implémentation complète méthodes avec logique if/else/loops)
 
-26. **Commits conventional** : Story 6 committée avec message exact `docs(specs): add story 6 specifications` conforme Conventional Commits type docs scope specs
+26. **Commits conventional** : Story 5 committée avec message exact `docs(specs): add story 5 specifications` conforme Conventional Commits type docs scope specs
 
 ---
 
 **Note importante** : Story moyenne complexité (5 story points) → 26 critères couvrent exhaustivement gestion proxies (8 fonctionnels), architecture Pydantic v2 validation (10 techniques), qualité tests TDD (8 qualité).
 
-**Principe SMART** : Chaque critère est **S**pécifique (rotation round-robin itertools.cycle, regex username strict), **M**esurable (24 tests passent, coverage ≥80%, distribution équitable ±1), **A**tteignable (réutilisation Story 4 CrawlerService, patterns Pydantic v2 existants), **R**elevant (foundation anti-détection scalable, économie bandwidth Decodo), **T**emporel (MVP Phase 5, avant orchestration multi-destinations Story 5).
+**Principe SMART** : Chaque critère est **S**pécifique (rotation round-robin itertools.cycle, regex username strict), **M**esurable (24 tests passent, coverage ≥80%, distribution équitable ±1), **A**tteignable (réutilisation Story 4 CrawlerService, patterns Pydantic v2 existants), **R**elevant (foundation anti-détection scalable, économie bandwidth Decodo), **T**emporel (MVP Phase 5, avant orchestration multi-city Story 6).
