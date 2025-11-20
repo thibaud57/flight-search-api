@@ -2,6 +2,7 @@
 
 import logging
 import sys
+from functools import lru_cache
 from typing import ClassVar
 
 from pythonjsonlogger import jsonlogger  # type: ignore
@@ -39,3 +40,12 @@ def setup_logger(log_level: str) -> logging.Logger:
     logger_instance.addHandler(handler)
 
     return logger_instance
+
+
+@lru_cache
+def get_logger() -> logging.Logger:
+    """Retourne instance Logger cached configurée avec Settings."""
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    return setup_logger(settings.LOG_LEVEL)

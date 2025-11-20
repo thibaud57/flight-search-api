@@ -1,6 +1,7 @@
 """Configuration application chargée depuis variables d'environnement."""
 
 import logging
+from functools import lru_cache
 from typing import Literal, Self
 
 from pydantic import field_validator, model_validator
@@ -52,3 +53,9 @@ class Settings(BaseSettings):
                 "Risky configuration: Both proxy rotation and captcha detection are disabled"
             )
         return self
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """Retourne instance Settings cached (singleton via lru_cache)."""
+    return Settings()  # type: ignore[call-arg]
