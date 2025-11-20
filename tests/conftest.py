@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import Settings, get_settings
+from app.core.logger import get_logger
 from app.main import app
 
 
@@ -19,12 +20,18 @@ def test_settings() -> Settings:
 
 @pytest.fixture
 def client(test_settings: Settings) -> TestClient:
-    """TestClient FastAPI avec Settings override.
+    """TestClient FastAPI avec Settings override + cache clear.
 
-    Utilise app.dependency_overrides pour injecter Settings mocké,
-    conformément aux best practices FastAPI 2025.
+    Clear caches before and after to avoid flaky tests with @lru_cache.
+    Conforms to FastAPI 2025 best practices.
     Cleanup automatique après chaque test.
     """
+    get_settings.cache_clear()
+    get_logger.cache_clear()
+
     app.dependency_overrides[get_settings] = lambda: test_settings
     yield TestClient(app)
+
     app.dependency_overrides.clear()
+    get_settings.cache_clear()
+    get_logger.cache_clear()
