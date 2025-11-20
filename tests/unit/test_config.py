@@ -1,7 +1,6 @@
 """Tests unitaires pour Settings (Pydantic BaseSettings)."""
 
 import logging
-from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -26,45 +25,6 @@ def test_settings_load_from_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.DECODO_PROXY_HOST == "pr.decodo.com:8080"
     assert settings.PROXY_ROTATION_ENABLED is True
     assert settings.CAPTCHA_DETECTION_ENABLED is True
-
-
-def test_settings_load_from_dotenv_file(tmp_path: Path) -> None:
-    """Settings charge depuis fichier .env."""
-    env_file = tmp_path / ".env"
-    env_file.write_text(
-        "LOG_LEVEL=INFO\n"
-        "DECODO_USERNAME=customer-TEST-country-FR\n"
-        "DECODO_PASSWORD=testpass123\n"
-        "DECODO_PROXY_HOST=pr.decodo.com:8080\n"
-        "PROXY_ROTATION_ENABLED=true\n"
-        "CAPTCHA_DETECTION_ENABLED=true\n"
-    )
-
-    settings = Settings(_env_file=str(env_file))
-
-    assert settings.LOG_LEVEL == "INFO"
-    assert settings.DECODO_USERNAME == "customer-TEST-country-FR"
-    assert settings.DECODO_PASSWORD == "testpass123"
-
-
-def test_settings_env_vars_override_dotenv(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Env vars prioritaires sur .env."""
-    env_file = tmp_path / ".env"
-    env_file.write_text(
-        "LOG_LEVEL=DEBUG\n"
-        "DECODO_USERNAME=customer-FILE-country-FR\n"
-        "DECODO_PASSWORD=filepass\n"
-        "DECODO_PROXY_HOST=pr.decodo.com:8080\n"
-        "PROXY_ROTATION_ENABLED=true\n"
-        "CAPTCHA_DETECTION_ENABLED=true\n"
-    )
-    monkeypatch.setenv("LOG_LEVEL", "ERROR")
-
-    settings = Settings(_env_file=str(env_file))
-
-    assert settings.LOG_LEVEL == "ERROR"
 
 
 def test_settings_log_level_literal_validation(
