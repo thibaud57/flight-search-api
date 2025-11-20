@@ -2,8 +2,8 @@ from datetime import date, timedelta
 
 import pytest
 
-from app.models.request import DateRange, SearchRequest
-from app.services.search_service import SearchService
+from app.models import DateRange, SearchRequest
+from app.services import SearchService
 
 
 @pytest.fixture

@@ -8,13 +8,8 @@ from fastapi.testclient import TestClient
 
 from app.api.routes import get_search_service, router
 from app.main import app
-from app.models.response import (
-    FlightResult,
-    HealthResponse,
-    SearchResponse,
-    SearchStats,
-)
-from app.services.search_service import SearchService
+from app.models import FlightResult, HealthResponse, SearchResponse, SearchStats
+from app.services import SearchService
 
 
 def test_health_check_returns_ok_status() -> None:

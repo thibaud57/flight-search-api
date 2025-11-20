@@ -3,8 +3,13 @@ from datetime import date, timedelta
 import pytest
 from pydantic import ValidationError
 
-from app.models.request import DateRange, SearchRequest
-from app.models.response import FlightResult, SearchResponse, SearchStats
+from app.models import (
+    DateRange,
+    FlightResult,
+    SearchRequest,
+    SearchResponse,
+    SearchStats,
+)
 
 
 @pytest.fixture

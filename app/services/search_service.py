@@ -1,8 +1,7 @@
 import random
 from datetime import date, timedelta
 
-from app.models.request import SearchRequest
-from app.models.response import FlightResult, SearchResponse, SearchStats
+from app.models import FlightResult, SearchRequest, SearchResponse, SearchStats
 
 
 class SearchService:

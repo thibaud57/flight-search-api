@@ -3,9 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.core.logger import get_logger
-from app.models.request import SearchRequest
-from app.models.response import HealthResponse, SearchResponse
-from app.services.search_service import SearchService
+from app.models import HealthResponse, SearchRequest, SearchResponse
+from app.services import SearchService
 
 router = APIRouter()
 logger = get_logger(__name__)
