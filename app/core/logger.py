@@ -39,3 +39,8 @@ def setup_logger(log_level: str) -> logging.Logger:
     logger.addHandler(handler)
 
     return logger
+
+
+def get_logger(name: str) -> logging.Logger:
+    """Retourne un logger enfant du logger principal."""
+    return logging.getLogger(f"flight-search-api.{name}")

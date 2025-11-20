@@ -430,11 +430,11 @@
 
 **Branche** : `feature/story-3-search-endpoint`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-3-search-endpoint.md
-- [ ] **Validation manuelle** : `curl -X POST http://localhost:8000/api/v1/search-flights`
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(api): add search endpoint with mock data`
-- [ ] **PR** : feature/story-3 → develop
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-3-search-endpoint.md
+- [x] **Validation manuelle** : `curl -X POST http://localhost:8000/api/v1/search-flights`
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(api): add search endpoint with mock data`
+- [x] **PR** : feature/story-3 → develop
 
 📝 **Output** : Story 3 complétée (8 story points)
 
