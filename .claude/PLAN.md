@@ -439,9 +439,9 @@
 📝 **Output** : Story 3 complétée (8 story points)
 
 ### 5.4 Mise à jour CHANGELOG et version
-- [ ] Ajouter entrée v0.5.0 dans `docs/CHANGELOG.md`
-- [ ] Mettre à jour version dans `app/main.py` : `version="0.5.0"`
-- [ ] Commit : `chore: bump version to 0.5.0 and update changelog`
+- [x] Ajouter entrée v0.5.0 dans `docs/CHANGELOG.md`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.5.0"`
+- [x] Commit : `chore: bump version to 0.5.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 

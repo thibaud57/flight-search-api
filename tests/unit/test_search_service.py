@@ -126,7 +126,7 @@ def test_search_service_handles_max_segments():
         segments.append(
             {
                 "from_city": f"City{i}",
-                "to_city": f"City{i+1}",
+                "to_city": f"City{i + 1}",
                 "date_range": {
                     "start": (tomorrow + timedelta(days=i * 10)).isoformat(),
                     "end": (tomorrow + timedelta(days=i * 10 + 2)).isoformat(),

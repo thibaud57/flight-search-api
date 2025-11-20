@@ -246,7 +246,7 @@ def test_search_request_valid_five_segments():
         segments.append(
             {
                 "from_city": f"City{i}",
-                "to_city": f"City{i+1}",
+                "to_city": f"City{i + 1}",
                 "date_range": {
                     "start": start.isoformat(),
                     "end": end.isoformat(),
@@ -284,7 +284,7 @@ def test_search_request_too_many_segments_fails():
         segments.append(
             {
                 "from_city": f"City{i}",
-                "to_city": f"City{i+1}",
+                "to_city": f"City{i + 1}",
                 "date_range": {
                     "start": start.isoformat(),
                     "end": end.isoformat(),
