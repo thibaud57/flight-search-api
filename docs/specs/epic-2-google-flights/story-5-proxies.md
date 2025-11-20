@@ -30,7 +30,7 @@ technologies: ["decodo", "pydantic"]
 
 - **Taux succès crawl ≥85%** : Proxies résidentiels + rotation automatique évitent 90-95% captchas selon anti-detection.md patterns, cible MVP ≥85% requêtes réussies sans blocage
 - **Économie vs blocages manuels** : Coût proxies ($2.60/GB × 200KB/requête = ~$0.0005/requête) largement compensé par évitement captchas manuels et maintenance sélecteurs CSS
-- **Foundation anti-détection scalable** : ProxyService devient building block réutilisable pour toutes stories scraping futures (5, 6, 7), patterns rotation applicables autres services
+- **Foundation anti-détection scalable** : ProxyService devient building block réutilisable pour toutes stories scraping futures (6, 7), patterns rotation applicables autres services
 - **Métriques observables** : Logging structuré fournit insights taux utilisation proxies, distribution charge, corrélation proxy→captcha pour optimisation continue rotation strategy
 
 ## Métriques succès

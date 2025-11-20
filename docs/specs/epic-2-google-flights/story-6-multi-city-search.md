@@ -156,7 +156,7 @@ class SearchService:
 | Service | Rôle | Défini dans |
 |---------|------|-------------|
 | `CombinationGenerator` | Génère produit cartésien dates par segment | Story 6 (ce document) |
-| `CrawlerService` | Crawle Google Flights avec retry logic et proxy rotation | Story 4 |
+| `CrawlerService` | Crawle Google Flights avec retry logic | Story 4 |
 | `FlightParser` | Parse HTML Google Flights en liste Flight | Story 4 |
 
 **Comportement Orchestration** :
@@ -657,4 +657,4 @@ class CombinationResult(BaseModel):
 
 **Note importante** : Story moyenne complexité (5 story points) → 26 critères couvrent exhaustivement orchestration multi-city (9 fonctionnels), architecture services modulaires (10 techniques), qualité tests TDD (7 qualité).
 
-**Principe SMART** : Chaque critère est **S**pécifique (top 10 triés prix, produit cartésien dates), **M**esurable (30 tests passent, coverage ≥80%), **A**tteignable (réutilisation Story 3-4), **R**elevant (foundation scalable multi-city), **T**emporel (MVP Phase 5, avant intégration API complète Phase 6).
+**Principe SMART** : Chaque critère est **S**pécifique (top 10 triés prix, produit cartésien dates), **M**esurable (30 tests passent, coverage ≥80%), **A**tteignable (réutilisation Story 3, 4, 5), **R**elevant (foundation scalable multi-city), **T**emporel (MVP Phase 5, avant intégration API complète Phase 6).
