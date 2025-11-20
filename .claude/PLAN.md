@@ -310,9 +310,9 @@
 📝 **Output** : Story 2 specs complètes (3 story points)
 
 ### 4.4 Story 3: Search endpoint basique (mock)
-- [x] Specs : Models (SearchRequest, SearchResponse)
-- [x] Specs : SearchService (mock data), Route POST /search-flights
-- [x] Contexte business : API testable client, contrat validé
+- [x] Specs : Models (FlightSegment, SearchRequest avec segments, SearchResponse)
+- [x] Specs : SearchService (mock data), Route POST /api/v1/search-flights
+- [x] Contexte business : API itinéraires multi-segments avec dates flexibles par segment
 - [x] Tests : Tests unitaires Models + Service + Route + intégration (à spécifier)
 - [x] Ajouter à `docs/specs/epic-1-api-foundation/story-3-search-endpoint.md`
 - [x] Commit : `docs(specs): complete story 3 specifications`
@@ -333,13 +333,13 @@
 
 📝 **Output** : Story 4 specs complètes (8 story points)
 
-### 4.6 Story 5: Multi-destinations (CombinationGenerator)
-- [x] Specs : CombinationGenerator (itertools.product, permutations multi-city)
-- [x] Specs : SearchService orchestration (multiple crawls)
+### 4.6 Story 5: Multi-city Search (CombinationGenerator)
+- [x] Specs : CombinationGenerator (itertools.product dates, ordre segments fixe)
+- [x] Specs : SearchService orchestration (multiple crawls parallèles)
 - [x] Specs : Top 10 ranking (tri prix + limite 10 résultats)
-- [x] Contexte business : Feature MVP complète (2-10 destinations)
+- [x] Contexte business : Itinéraires fixes multi-segments (2-5 segments max Google Flights)
 - [x] Tests : Tests unitaires Generator + Service + intégration (à spécifier)
-- [x] Ajouter à `docs/specs/epic-2-google-flights/story-5-multi-destinations.md`
+- [x] Ajouter à `docs/specs/epic-2-google-flights/story-5-multi-city-search.md`
 - [x] Commit : `docs(specs): add story 5 specifications`
 
 📝 **Output** : Story 5 specs complètes (5 story points)
@@ -463,14 +463,14 @@
 
 📝 **Output** : Story 4 complétée (8 story points)
 
-### 5.6 Story 5: Multi-destinations (CombinationGenerator)
+### 5.6 Story 5: Multi-city Search (CombinationGenerator)
 
-**Branche** : `feature/story-5-multi-destinations`
+**Branche** : `feature/story-5-multi-city-search`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-5-multi-destinations.md
-- [ ] **Validation manuelle** : 3 destinations, vérifier Top 10 triés par prix
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-5-multi-city-search.md
+- [ ] **Validation manuelle** : 3 segments avec dates flexibles, vérifier Top 10 triés par prix
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(services): add multi-city search and top 10 ranking`
+- [ ] **Commit** : `feat(services): add multi-segment search and top 10 ranking`
 - [ ] **PR** : feature/story-5 → develop
 
 📝 **Output** : Story 5 complétée (5 story points)
@@ -527,7 +527,7 @@
 
 **Tests end-to-end complets** :
 
-- [ ] Lancer 10+ recherches multi-destinations avec vraies clés Decodo
+- [ ] Lancer 10+ recherches multi-city avec vraies clés Decodo
 - [ ] Démo client : Validation UX, performance, format JSON
 - [ ] Validation business : Feedback client, acceptation MVP
 - [ ] Analyse logs : Taux de succès, taux d'erreurs, temps réponse, captcha detection
@@ -827,7 +827,7 @@ flight-search-api/
 │   │   │   └── story-3-search-endpoint.md
 │   │   ├── epic-2-google-flights/
 │   │   │   ├── story-4-crawler-parser.md
-│   │   │   ├── story-5-multi-destinations.md
+│   │   │   ├── story-5-multi-city-search.md
 │   │   │   └── story-6-proxies.md
 │   │   ├── epic-3-production-ready/
 │   │   │   └── story-7-retry.md
