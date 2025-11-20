@@ -100,8 +100,51 @@ def test_end_to_end_validation_error_invalid_dates(client):
     assert "detail" in data
 
 
+def test_end_to_end_search_request_exact_dates(client):
+    """Test intégration 4: Request avec dates exactes (start=end) retourne 200."""
+    tomorrow = date.today() + timedelta(days=1)
+
+    request_data = {
+        "segments": [
+            {
+                "from_city": "Paris",
+                "to_city": "Rio",
+                "date_range": {
+                    "start": tomorrow.isoformat(),
+                    "end": tomorrow.isoformat(),
+                },
+            },
+            {
+                "from_city": "Buenos Aires",
+                "to_city": "Santiago",
+                "date_range": {
+                    "start": (tomorrow + timedelta(days=6)).isoformat(),
+                    "end": (tomorrow + timedelta(days=6)).isoformat(),
+                },
+            },
+            {
+                "from_city": "Santiago",
+                "to_city": "Paris",
+                "date_range": {
+                    "start": (tomorrow + timedelta(days=8)).isoformat(),
+                    "end": (tomorrow + timedelta(days=8)).isoformat(),
+                },
+            },
+        ]
+    }
+
+    response = client.post("/api/v1/search-flights", json=request_data)
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert "results" in data
+    assert len(data["results"]) == 10
+    assert data["search_stats"]["segments_count"] == 3
+
+
 def test_end_to_end_openapi_schema_includes_endpoint(client):
-    """Test intégration 4: OpenAPI schema contient endpoint search-flights."""
+    """Test intégration 5: OpenAPI schema contient endpoint search-flights."""
     response = client.get("/openapi.json")
 
     assert response.status_code == 200

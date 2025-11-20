@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app.core.logger import logger
+from app.core import logger
 from app.models.request import SearchRequest
 from app.models.response import HealthResponse, SearchResponse
 from app.services.search_service import SearchService

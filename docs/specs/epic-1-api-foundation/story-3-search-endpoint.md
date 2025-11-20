@@ -79,21 +79,21 @@ class FlightSegment(BaseModel):
 | Champ | Type | Description | Contraintes | Default |
 |-------|------|-------------|-------------|---------|
 | `start` | `str` | Date début voyage au format ISO 8601 | Format YYYY-MM-DD, doit être ≥ date du jour | Requis |
-| `end` | `str` | Date fin voyage au format ISO 8601 | Format YYYY-MM-DD, doit être > start | Requis |
+| `end` | `str` | Date fin voyage au format ISO 8601 | Format YYYY-MM-DD, doit être ≥ start (range 1 jour = date exacte) | Requis |
 
 **Comportement** :
 
 - **Validation automatique** : Pydantic valide types et contraintes à instanciation
 - **Multi-aéroports** : Support format "Paris,Francfort" (virgule-separated) pour flexibilité départ/arrivée
 - **Limite date range** : Max 15 jours par segment (évite explosion combinatoire)
-- **Erreurs levées** : `ValidationError` si from_city/to_city trop courts, date_range > 15 jours, end ≤ start
+- **Erreurs levées** : `ValidationError` si from_city/to_city trop courts, date_range > 15 jours, end < start
 - **Normalisation** : Villes trim whitespace (field_validator avec .strip())
 
 **Validations Pydantic** :
 
 - `field_validator('from_city', 'to_city', mode='after')` : Vérifier min 2 caractères après strip
 - `field_validator('start', 'end', mode='before')` sur `DateRange` : Valider format ISO 8601 (YYYY-MM-DD), convertir en date objects pour comparaison
-- `model_validator(mode='after')` sur `DateRange` : Vérifier end > start (dates cohérentes)
+- `model_validator(mode='after')` sur `DateRange` : Vérifier end ≥ start (dates cohérentes)
 - `model_validator(mode='after')` sur `DateRange` : Vérifier start ≥ date du jour (pas de voyages passés)
 - `model_validator(mode='after')` sur `FlightSegment` : Vérifier date_range max 15 jours
 
@@ -364,8 +364,8 @@ curl -X POST http://localhost:8000/api/v1/search-flights \
 | 3 | `test_flight_segment_city_too_short_fails` | Ville 1 caractère rejetée | `{"from_city": "P", ...}` | Lève `ValidationError` | Vérifie validation min_length=2 |
 | 4 | `test_flight_segment_cities_whitespace_trimmed` | Villes avec espaces nettoyées | `{"from_city": "  Paris  ", "to_city": "Tokyo ", ...}` | from_city="Paris", to_city="Tokyo" (trimmed) | Vérifie field_validator .strip() |
 | 5 | `test_date_range_valid_dates` | DateRange dates valides | `{"start": "2025-06-01", "end": "2025-06-15"}` | DateRange instance créée | Vérifie parsing dates ISO 8601 |
-| 6 | `test_date_range_end_before_start_fails` | End avant start rejetée | `{"start": "2025-06-15", "end": "2025-06-01"}` | Lève `ValidationError` | Vérifie model_validator end > start |
-| 7 | `test_date_range_same_day_fails` | Start = end rejetée | `{"start": "2025-06-01", "end": "2025-06-01"}` | Lève `ValidationError` | Vérifie end strictement > start |
+| 6 | `test_date_range_end_before_start_fails` | End avant start rejetée | `{"start": "2025-06-15", "end": "2025-06-01"}` | Lève `ValidationError` | Vérifie model_validator end ≥ start |
+| 7 | `test_date_range_same_day_accepted` | Start = end acceptée (date exacte) | `{"start": "2025-06-01", "end": "2025-06-01"}` | DateRange instance créée | Vérifie range 1 jour valide |
 | 8 | `test_date_range_start_past_fails` | Start dans le passé rejetée | `{"start": "2020-01-01", "end": "2020-01-15"}` | Lève `ValidationError` | Vérifie model_validator start ≥ today |
 | 9 | `test_date_range_invalid_format_fails` | Format date invalide rejeté | `{"start": "01-06-2025", "end": "15-06-2025"}` | Lève `ValidationError` | Vérifie field_validator ISO 8601 strict |
 | 10 | `test_date_range_non_existent_date_fails` | Date inexistante rejetée | `{"start": "2025-02-30", "end": "2025-03-01"}` | Lève `ValidationError` | Vérifie validation date réelle |
@@ -671,7 +671,7 @@ Suggestion: Reduce segment 1 (currently 11 days).
 
 1. **Endpoint accessible** : POST `/api/v1/search-flights` accessible et retourne JSON valide pour requêtes conformes
 2. **Validation segments stricte** : Endpoint accepte 2-5 segments, rejette <2 ou >5 avec status 422 et message clair
-3. **Validation dates cohérentes** : Endpoint rejette date_range.end ≤ date_range.start avec ValidationError explicite
+3. **Validation dates cohérentes** : Endpoint rejette date_range.end < date_range.start (end >= start requis) avec ValidationError explicite
 4. **Validation dates futures** : Endpoint rejette date_range.start dans le passé (< date du jour) avec ValidationError
 5. **Validation explosion combinatoire** : Endpoint rejette >1000 combinaisons totales avec message UX-friendly suggérant segment à réduire
 6. **Validation max 15 jours/segment** : Endpoint rejette date_range > 15 jours par segment avec ValidationError claire
@@ -685,7 +685,7 @@ Suggestion: Reduce segment 1 (currently 11 days).
 
 12. **Modèles Pydantic v2** : SearchRequest, FlightSegment, SearchResponse héritent BaseModel avec validation automatique
 13. **field_validator configurés** : from_city/to_city (min length, trim whitespace), dates (ISO 8601 format), price (≥ 0), date_range (max 15 jours)
-14. **model_validator cross-champs** : DateRange vérifie end > start et start ≥ today, SearchRequest vérifie max 1000 combinaisons
+14. **model_validator cross-champs** : DateRange vérifie end ≥ start et start ≥ today, SearchRequest vérifie max 1000 combinaisons
 15. **Type hints PEP 695 complets** : list[FlightSegment] (pas List), Annotated, type hints sur validators
 16. **Nested models** : DateRange, FlightSegment, FlightResult, SearchStats correctement typés et validés
 17. **Dependency Injection** : SearchService injecté via Depends() FastAPI (testable, mockable)

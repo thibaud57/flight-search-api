@@ -111,15 +111,16 @@ def test_date_range_end_before_start_fails(invalid_date_range_end_before_start):
         DateRange(**invalid_date_range_end_before_start)
 
 
-def test_date_range_same_day_fails():
-    """Test 7: Start = end rejetée."""
+def test_date_range_same_day_valid():
+    """Test 7: Start = end acceptée (range 1 jour = date exacte)."""
     tomorrow = date.today() + timedelta(days=1)
     date_range_data = {
         "start": tomorrow.isoformat(),
         "end": tomorrow.isoformat(),
     }
-    with pytest.raises(ValidationError):
-        DateRange(**date_range_data)
+    date_range = DateRange(**date_range_data)
+    assert date_range.start == tomorrow.isoformat()
+    assert date_range.end == tomorrow.isoformat()
 
 
 def test_date_range_start_past_fails(invalid_date_range_past):

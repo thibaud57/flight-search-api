@@ -24,12 +24,12 @@ class DateRange(BaseModel):
 
     @model_validator(mode="after")
     def validate_dates_coherent(self) -> "DateRange":
-        """Valide que end > start et start >= aujourd'hui."""
+        """Valide que end >= start et start >= aujourd'hui."""
         start_date = date.fromisoformat(self.start)
         end_date = date.fromisoformat(self.end)
 
-        if end_date <= start_date:
-            raise ValueError("End date must be strictly greater than start date")
+        if end_date < start_date:
+            raise ValueError("End date must be greater than or equal to start date")
 
         if start_date < date.today():
             raise ValueError("Start date must be today or in the future")

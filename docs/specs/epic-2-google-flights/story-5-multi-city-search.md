@@ -106,7 +106,7 @@ class DateCombination(BaseModel):
 - **Edge cases** :
   - **2 segments minimum** : 2 date ranges minimum (validé SearchRequest)
   - **5 segments max MVP** : Produit cartésien max 1000 combinaisons (validé SearchRequest)
-  - **date_range 1 jour** : Si segment.date_range.start = end après validation (impossible DateRange validation), mais si 2 jours → 2 dates
+  - **date_range 1 jour** : Si segment.date_range.start = end → 1 date (range 1 jour = date exacte), si 2 jours → 2 dates
   - **Asymétrie ranges** : Supporte [15, 2, 2, 2, 2] jours = 15 × 2⁴ = 240 combinaisons (optimisation validée Story 3)
 
 - **Optimisations futures** :
