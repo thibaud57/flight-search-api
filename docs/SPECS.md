@@ -48,7 +48,7 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 
 **Stories** :
 - [Story 4: Crawler + Parser](specs/epic-2-google-flights/story-4-crawler-parser.md) - 8 pts
-- [Story 5: Multi-destinations](specs/epic-2-google-flights/story-5-multi-destinations.md) - 5 pts
+- [Story 5: Multi-city Search](specs/epic-2-google-flights/story-5-multi-city-search.md) - 5 pts
 - [Story 6: Proxies Decodo](specs/epic-2-google-flights/story-6-proxies.md) - 5 pts
 
 **Total** : 18 story points
