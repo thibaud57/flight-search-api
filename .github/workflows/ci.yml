@@ -42,8 +42,8 @@ jobs:
       - name: Type check
         run: uv run mypy app/
 
+      - name: Setup test environment
+        run: cp .env.example .env
+
       - name: Tests with coverage
-        env:
-          DECODO_USERNAME: customer-TEST-country-FR
-          DECODO_PASSWORD: test_password_ci
         run: uv run pytest tests/unit/ --cov=app --cov-report=xml
