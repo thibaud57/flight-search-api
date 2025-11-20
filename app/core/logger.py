@@ -22,9 +22,9 @@ class SensitiveDataFilter(logging.Filter):
 
 def setup_logger(log_level: str) -> logging.Logger:
     """Configure logger avec format JSON structuré."""
-    logger = logging.getLogger("flight-search-api")
-    logger.setLevel(log_level)
-    logger.handlers = []
+    logger_instance = logging.getLogger("flight-search-api")
+    logger_instance.setLevel(log_level)
+    logger_instance.handlers = []
 
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(log_level)
@@ -36,6 +36,9 @@ def setup_logger(log_level: str) -> logging.Logger:
 
     handler.setFormatter(formatter)
     handler.addFilter(SensitiveDataFilter())
-    logger.addHandler(handler)
+    logger_instance.addHandler(handler)
 
-    return logger
+    return logger_instance
+
+
+logger = setup_logger("INFO")
