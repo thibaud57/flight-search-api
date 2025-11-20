@@ -1,5 +1,5 @@
 ---
-title: "Story 6: Proxies (ProxyService + Rotation Decodo)"
+title: "Story 5: Proxies (ProxyService + Rotation Decodo)"
 epic: "Epic 2: Google Flights Integration"
 story_points: 5
 dependencies: ["epic-2/story-4"]

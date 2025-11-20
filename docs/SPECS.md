@@ -48,8 +48,8 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 
 **Stories** :
 - [Story 4: Crawler + Parser](specs/epic-2-google-flights/story-4-crawler-parser.md) - 8 pts
-- [Story 5: Multi-city Search](specs/epic-2-google-flights/story-5-multi-city-search.md) - 5 pts
-- [Story 6: Proxies Decodo](specs/epic-2-google-flights/story-6-proxies.md) - 5 pts
+- [Story 5: Proxies Decodo](specs/epic-2-google-flights/story-5-proxies.md) - 5 pts
+- [Story 6: Multi-city Search](specs/epic-2-google-flights/story-6-multi-city-search.md) - 5 pts
 
 **Total** : 18 story points
 
@@ -106,7 +106,7 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 - 7A : Specs Story 8 (si monitoring >5% blocages)
 - 7B : Implémentation Story 8 → v1.1.0
 
-**Ordre exécution** : Story 1 → 2 → 3 → 4 → 5 → 6 → 7 (→ 8 si Phase 7)
+**Ordre exécution** : Story 1 → 2 → 3 → 4 → 5 (Proxies) → 6 (Multi-city) → 7 (→ 8 si Phase 7)
 
 ---
 

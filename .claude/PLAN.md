@@ -333,23 +333,23 @@
 
 📝 **Output** : Story 4 specs complètes (8 story points)
 
-### 4.6 Story 5: Multi-city Search (CombinationGenerator)
+### 4.6 Story 5: Proxies Decodo (anti-détection)
+- [x] Specs : ProxyService (Decodo config, residential FR)
+- [x] Specs : Rotation proxies (round-robin ou random)
+- [x] Contexte business : Anti-détection Google, coûts optimisés
+- [x] Tests : Tests unitaires ProxyService + intégration (à spécifier)
+- [x] Ajouter à `docs/specs/epic-2-google-flights/story-5-proxies.md`
+- [x] Commit : `docs(specs): add story 5 specifications`
+
+📝 **Output** : Story 5 specs complètes (5 story points)
+
+### 4.7 Story 6: Multi-city Search (CombinationGenerator)
 - [x] Specs : CombinationGenerator (itertools.product dates, ordre segments fixe)
 - [x] Specs : SearchService orchestration (multiple crawls parallèles)
 - [x] Specs : Top 10 ranking (tri prix + limite 10 résultats)
 - [x] Contexte business : Itinéraires fixes multi-segments (2-5 segments max Google Flights)
 - [x] Tests : Tests unitaires Generator + Service + intégration (à spécifier)
-- [x] Ajouter à `docs/specs/epic-2-google-flights/story-5-multi-city-search.md`
-- [x] Commit : `docs(specs): add story 5 specifications`
-
-📝 **Output** : Story 5 specs complètes (5 story points)
-
-### 4.7 Story 6: Proxies Decodo (anti-détection)
-- [x] Specs : ProxyService (Decodo config, residential FR)
-- [x] Specs : Rotation proxies (round-robin ou random)
-- [x] Contexte business : Anti-détection Google, coûts optimisés
-- [x] Tests : Tests unitaires ProxyService + intégration (à spécifier)
-- [x] Ajouter à `docs/specs/epic-2-google-flights/story-6-proxies.md`
+- [x] Ajouter à `docs/specs/epic-2-google-flights/story-6-multi-city-search.md`
 - [x] Commit : `docs(specs): add story 6 specifications`
 
 📝 **Output** : Story 6 specs complètes (5 story points)
@@ -463,26 +463,26 @@
 
 📝 **Output** : Story 4 complétée (8 story points)
 
-### 5.6 Story 5: Multi-city Search (CombinationGenerator)
+### 5.6 Story 5: Proxies Decodo (anti-détection)
 
-**Branche** : `feature/story-5-multi-city-search`
+**Branche** : `feature/story-5-proxies`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-5-multi-city-search.md
-- [ ] **Validation manuelle** : 3 segments avec dates flexibles, vérifier Top 10 triés par prix
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-5-proxies.md
+- [ ] **Validation manuelle** : Logs montrent proxies actifs + rotation
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(services): add multi-segment search and top 10 ranking`
+- [ ] **Commit** : `feat(services): add Decodo proxies with rotation`
 - [ ] **PR** : feature/story-5 → develop
 
 📝 **Output** : Story 5 complétée (5 story points)
 
-### 5.7 Story 6: Proxies Decodo (anti-détection)
+### 5.7 Story 6: Multi-city Search (CombinationGenerator)
 
-**Branche** : `feature/story-6-proxies`
+**Branche** : `feature/story-6-multi-city-search`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-6-proxies.md
-- [ ] **Validation manuelle** : Logs montrent proxies actifs + rotation
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-6-multi-city-search.md
+- [ ] **Validation manuelle** : 3 segments avec dates flexibles, vérifier Top 10 triés par prix
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(services): add Decodo proxies with rotation`
+- [ ] **Commit** : `feat(services): add multi-segment search and top 10 ranking`
 - [ ] **PR** : feature/story-6 → develop
 
 📝 **Output** : Story 6 complétée (5 story points)
@@ -827,8 +827,8 @@ flight-search-api/
 │   │   │   └── story-3-search-endpoint.md
 │   │   ├── epic-2-google-flights/
 │   │   │   ├── story-4-crawler-parser.md
-│   │   │   ├── story-5-multi-city-search.md
-│   │   │   └── story-6-proxies.md
+│   │   │   ├── story-5-proxies.md
+│   │   │   └── story-6-multi-city-search.md
 │   │   ├── epic-3-production-ready/
 │   │   │   └── story-7-retry.md
 │   │   └── epic-4-captcha-solving/    # Phase 7A optionnelle
