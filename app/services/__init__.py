@@ -1,1 +1,3 @@
-"""TODO: À implémenter en Phase 5"""
+from app.services.search_service import SearchService
+
+__all__ = ["SearchService"]
