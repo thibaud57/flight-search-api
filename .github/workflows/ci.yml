@@ -43,4 +43,7 @@ jobs:
         run: uv run mypy app/
 
       - name: Tests with coverage
+        env:
+          DECODO_USERNAME: customer-TEST-country-FR
+          DECODO_PASSWORD: test_password_ci
         run: uv run pytest tests/unit/ --cov=app --cov-report=xml
