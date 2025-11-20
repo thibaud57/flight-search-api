@@ -14,7 +14,7 @@ technologies: ["crawl4ai", "playwright", "pydantic", "decodo", "tenacity"]
 ## Besoin utilisateur
 
 - **Proof of Concept technique** : Valider la faisabilité du scraping Google Flights pour une destination unique avant d'implémenter la logique multi-destinations complexe
-- **Dérisquage early** : Identifier les blocages Google (captchas, rate limiting, anti-bot) dès la Story 4 plutôt qu'à la Story 5-6 (économie temps développement)
+- **Dérisquage early** : Identifier les blocages Google (captchas, rate limiting, anti-bot) dès la Story 4 plutôt qu'aux stories 5 et 6 (économie temps développement)
 - **Foundation scraping** : Établir les patterns réutilisables (CrawlerService + FlightParser) pour toutes les stories suivantes (5, 6, 7)
 - **Validation stack technique** : Prouver que Crawl4AI + Decodo Proxies + JsonCssExtractionStrategy suffisent pour extraire des données structurées sans LLM
 
