@@ -1,1 +1,3 @@
-"""TODO: À implémenter en Phase 5"""
+from app.api.routes import router
+
+__all__ = ["router"]

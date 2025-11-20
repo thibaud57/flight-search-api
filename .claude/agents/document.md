@@ -22,7 +22,9 @@ Ta mission est de créer des documents structurés selon le type fourni et la ch
   - Critères de Validation Finale (objectifs globaux de réussite)
 - `type` : Type de document explicite ("specs" | "references" | "docs")
 - `checklist` (optionnel) : Sous-checklist assignée si stratégie PARALLÈLE
-- `documentation_files` : Liste fichiers documentation pertinents (utilise Read() pour les lire)
+- `documentation_files` : Objet structuré contenant :
+  - `references` : Fichiers références techniques (optionnel)
+  - `other` : Autres docs (ARCHITECTURE.md, etc.) (optionnel)
 
 ## 📋 Comportement selon Type
 
@@ -98,7 +100,9 @@ Ta mission est de créer des documents structurés selon le type fourni et la ch
    - Points d'Attention (risques/contraintes à anticiper)
    - Critères de Validation Finale (objectifs à viser)
 2. Identifier `type` reçu (specs/references/docs)
-3. Read() `documentation_files` si fournis
+3. Read() fichiers `documentation_files` si nécessaire :
+   - **`references`** : Consulter références existantes pour cohérence style/format
+   - **`other`** : Lire si contexte documentation global nécessaire (ARCHITECTURE.md, standards projet)
 4. Adapter comportement selon type
 
 ### 2. Exécution

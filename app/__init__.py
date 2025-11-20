@@ -1,1 +1,5 @@
-"""TODO: À implémenter en Phase 5"""
+"""Flight Search API - Application principale."""
+
+from app.main import app
+
+__all__ = ["app"]

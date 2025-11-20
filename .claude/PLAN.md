@@ -46,9 +46,10 @@
 
 📝 **Output** : `.claude/CLAUDE.md` (Git), `docs/references/github-actions.md`, `.github/workflows/release.yml`
 
-### 0.3 Mise à jour CHANGELOG
+### 0.3 Mise à jour CHANGELOG et version
 - [x] Ajouter entrée v0.0.0-setup dans `docs/CHANGELOG.md`
-- [x] Commit : `docs: update changelog for setup phase`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.0.0"`
+- [x] Commit : `chore: bump version to 0.0.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -131,9 +132,10 @@
 
 📝 **Output** : `docs/ARCHITECTURE.md`
 
-### 1.5 Mise à jour CHANGELOG
+### 1.5 Mise à jour CHANGELOG et version
 - [x] Ajouter entrée v0.1.0-research dans `docs/CHANGELOG.md`
-- [x] Commit : `docs: update changelog for research phase`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.1.0"`
+- [x] Commit : `chore: bump version to 0.1.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -183,9 +185,10 @@
 
 📝 **Output** : `.claude/CLAUDE.md` complet
 
-### 2.4 Mise à jour CHANGELOG
+### 2.4 Mise à jour CHANGELOG et version
 - [x] Ajouter entrée v0.2.0-structure dans `docs/CHANGELOG.md`
-- [x] Commit : `docs: update changelog for structure phase`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.2.0"`
+- [x] Commit : `chore: bump version to 0.2.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -258,9 +261,10 @@
 
 **Note** : Step "Tests with coverage" temporairement désactivé (commenté dans ci.yml) car aucun test n'existe encore. À réactiver en Phase 5.1+ lors de l'implémentation TDD.
 
-### 3.6 Mise à jour CHANGELOG
+### 3.6 Mise à jour CHANGELOG et version
 - [x] Ajouter entrée v0.3.0-build dans `docs/CHANGELOG.md`
-- [x] Commit : `docs: update changelog for build phase`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.3.0"`
+- [x] Commit : `chore: bump version to 0.3.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -306,9 +310,9 @@
 📝 **Output** : Story 2 specs complètes (3 story points)
 
 ### 4.4 Story 3: Search endpoint basique (mock)
-- [x] Specs : Models (SearchRequest, SearchResponse)
-- [x] Specs : SearchService (mock data), Route POST /search-flights
-- [x] Contexte business : API testable client, contrat validé
+- [x] Specs : Models (FlightSegment, SearchRequest avec segments, SearchResponse)
+- [x] Specs : SearchService (mock data), Route POST /api/v1/search-flights
+- [x] Contexte business : API itinéraires multi-segments avec dates flexibles par segment
 - [x] Tests : Tests unitaires Models + Service + Route + intégration (à spécifier)
 - [x] Ajouter à `docs/specs/epic-1-api-foundation/story-3-search-endpoint.md`
 - [x] Commit : `docs(specs): complete story 3 specifications`
@@ -329,13 +333,13 @@
 
 📝 **Output** : Story 4 specs complètes (8 story points)
 
-### 4.6 Story 5: Multi-destinations (CombinationGenerator)
-- [x] Specs : CombinationGenerator (itertools.product, permutations multi-city)
-- [x] Specs : SearchService orchestration (multiple crawls)
+### 4.6 Story 5: Multi-city Search (CombinationGenerator)
+- [x] Specs : CombinationGenerator (itertools.product dates, ordre segments fixe)
+- [x] Specs : SearchService orchestration (multiple crawls parallèles)
 - [x] Specs : Top 10 ranking (tri prix + limite 10 résultats)
-- [x] Contexte business : Feature MVP complète (2-10 destinations)
+- [x] Contexte business : Itinéraires fixes multi-segments (2-5 segments max Google Flights)
 - [x] Tests : Tests unitaires Generator + Service + intégration (à spécifier)
-- [x] Ajouter à `docs/specs/epic-2-google-flights/story-5-multi-destinations.md`
+- [x] Ajouter à `docs/specs/epic-2-google-flights/story-5-multi-city-search.md`
 - [x] Commit : `docs(specs): add story 5 specifications`
 
 📝 **Output** : Story 5 specs complètes (5 story points)
@@ -367,9 +371,10 @@
 
 ---
 
-### 4.9 Mise à jour CHANGELOG
+### 4.9 Mise à jour CHANGELOG et version
 - [x] Ajouter entrée v0.4.0-specs dans `docs/CHANGELOG.md`
-- [x] Commit : `docs: update changelog for specs phase`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.4.0"`
+- [x] Commit : `chore: bump version to 0.4.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -400,12 +405,12 @@
 
 **Branche** : `feature/story-1-health-check`
 
-- [ ] **RAPPEL : Réactiver step "Tests with coverage" dans `.github/workflows/ci.yml`** (décommenter lignes 46-47)
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-1-health-check.md
-- [ ] **Validation manuelle** : `curl http://localhost:8000/health` → `{"status": "ok"}`
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(api): add health check endpoint`
-- [ ] **PR** : feature/story-1 → develop
+- [x] **RAPPEL : Réactiver step "Tests with coverage" dans `.github/workflows/ci.yml`** (décommenter lignes 46-47)
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-1-health-check.md
+- [x] **Validation manuelle** : `curl http://localhost:8000/health` → `{"status": "ok"}`
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(api): add health check endpoint`
+- [x] **PR** : feature/story-1 → develop
 
 📝 **Output** : Story 1 complétée (2 story points)
 
@@ -413,11 +418,11 @@
 
 **Branche** : `feature/story-2-config-logging`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-2-config-logging.md
-- [ ] **Validation manuelle** : App lit .env, logs JSON structurés avec extra context
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(core): add config and structured logging`
-- [ ] **PR** : feature/story-2 → develop
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-2-config-logging.md
+- [x] **Validation manuelle** : App lit .env, logs JSON structurés avec extra context
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(core): add config and structured logging`
+- [x] **PR** : feature/story-2 → develop
 
 📝 **Output** : Story 2 complétée (3 story points)
 
@@ -425,17 +430,18 @@
 
 **Branche** : `feature/story-3-search-endpoint`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-3-search-endpoint.md
-- [ ] **Validation manuelle** : `curl -X POST http://localhost:8000/api/v1/search-flights`
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(api): add search endpoint with mock data`
-- [ ] **PR** : feature/story-3 → develop
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-3-search-endpoint.md
+- [x] **Validation manuelle** : `curl -X POST http://localhost:8000/api/v1/search-flights`
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(api): add search endpoint with mock data`
+- [x] **PR** : feature/story-3 → develop
 
 📝 **Output** : Story 3 complétée (8 story points)
 
-### 5.4 Mise à jour CHANGELOG
+### 5.4 Mise à jour CHANGELOG et version
 - [ ] Ajouter entrée v0.5.0 dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for v0.5.0`
+- [ ] Mettre à jour version dans `app/main.py` : `version="0.5.0"`
+- [ ] Commit : `chore: bump version to 0.5.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -457,14 +463,14 @@
 
 📝 **Output** : Story 4 complétée (8 story points)
 
-### 5.6 Story 5: Multi-destinations (CombinationGenerator)
+### 5.6 Story 5: Multi-city Search (CombinationGenerator)
 
-**Branche** : `feature/story-5-multi-destinations`
+**Branche** : `feature/story-5-multi-city-search`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-5-multi-destinations.md
-- [ ] **Validation manuelle** : 3 destinations, vérifier Top 10 triés par prix
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-5-multi-city-search.md
+- [ ] **Validation manuelle** : 3 segments avec dates flexibles, vérifier Top 10 triés par prix
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(services): add multi-city search and top 10 ranking`
+- [ ] **Commit** : `feat(services): add multi-segment search and top 10 ranking`
 - [ ] **PR** : feature/story-5 → develop
 
 📝 **Output** : Story 5 complétée (5 story points)
@@ -481,9 +487,10 @@
 
 📝 **Output** : Story 6 complétée (5 story points)
 
-### 5.8 Mise à jour CHANGELOG
+### 5.8 Mise à jour CHANGELOG et version
 - [ ] Ajouter entrée v0.6.0 dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for v0.6.0`
+- [ ] Mettre à jour version dans `app/main.py` : `version="0.6.0"`
+- [ ] Commit : `chore: bump version to 0.6.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -505,9 +512,10 @@
 
 📝 **Output** : Story 7 complétée (5 story points)
 
-### 5.10 Mise à jour CHANGELOG
+### 5.10 Mise à jour CHANGELOG et version
 - [ ] Ajouter entrée v0.7.0 dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for v0.7.0`
+- [ ] Mettre à jour version dans `app/main.py` : `version="0.7.0"`
+- [ ] Commit : `chore: bump version to 0.7.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -519,7 +527,7 @@
 
 **Tests end-to-end complets** :
 
-- [ ] Lancer 10+ recherches multi-destinations avec vraies clés Decodo
+- [ ] Lancer 10+ recherches multi-city avec vraies clés Decodo
 - [ ] Démo client : Validation UX, performance, format JSON
 - [ ] Validation business : Feedback client, acceptation MVP
 - [ ] Analyse logs : Taux de succès, taux d'erreurs, temps réponse, captcha detection
@@ -561,11 +569,12 @@
 
 ---
 
-### 6.2 CHANGELOG consolidé v1.0.0
+### 6.2 CHANGELOG consolidé v1.0.0 et version
 - [ ] Vérifier entrées v0.5.0, v0.6.0, v0.7.0 complètes dans CHANGELOG.md
 - [ ] Créer section v1.0.0 avec résumé features MVP complètes
 - [ ] Enrichir SPECS.md section Statistiques avec timeline releases
-- [ ] Commit : `docs: release v1.0.0 changelog and specs`
+- [ ] Mettre à jour version dans `app/main.py` : `version="1.0.0"`
+- [ ] Commit : `chore: bump version to 1.0.0 and update changelog`
 
 📝 **Output** : CHANGELOG.md v1.0.0 complet + SPECS.md enrichi avec releases
 
@@ -665,9 +674,10 @@
 
 ---
 
-### 7A.4 Mise à jour CHANGELOG
+### 7A.4 Mise à jour CHANGELOG et version
 - [ ] Ajouter entrée v0.8.0-specs dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for captcha specs phase`
+- [ ] Mettre à jour version dans `app/main.py` : `version="0.8.0"`
+- [ ] Commit : `chore: bump version to 0.8.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -702,9 +712,10 @@
 
 ---
 
-### 7B.2 Mise à jour CHANGELOG
+### 7B.2 Mise à jour CHANGELOG et version
 - [ ] Ajouter entrée v1.1.0 dans `docs/CHANGELOG.md`
-- [ ] Commit : `docs: update changelog for v1.1.0`
+- [ ] Mettre à jour version dans `app/main.py` : `version="1.1.0"`
+- [ ] Commit : `chore: bump version to 1.1.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
@@ -816,7 +827,7 @@ flight-search-api/
 │   │   │   └── story-3-search-endpoint.md
 │   │   ├── epic-2-google-flights/
 │   │   │   ├── story-4-crawler-parser.md
-│   │   │   ├── story-5-multi-destinations.md
+│   │   │   ├── story-5-multi-city-search.md
 │   │   │   └── story-6-proxies.md
 │   │   ├── epic-3-production-ready/
 │   │   │   └── story-7-retry.md

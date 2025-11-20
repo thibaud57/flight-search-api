@@ -195,6 +195,27 @@ def parse_price(html: str) -> float:
 
 ---
 
+### 7. Fichiers __init__.py
+
+**Code applicatif (`app/`)** :
+```python
+# Exports explicites avec __all__
+from app.main import app
+__all__ = ["app"]
+```
+- ✅ Définir `__all__` (API publique du package)
+- ✅ Facilite imports : `from app import app`
+
+**Tests (`tests/`)** :
+```python
+# Vides (juste docstring)
+"""Tests package."""
+```
+- ✅ Fichiers présents (marque package Python)
+- ❌ Pas d'exports ni `__all__` (convention pytest)
+
+---
+
 ## 🚫 Anti-Patterns
 
 ### Commentaires Inline Interdits
@@ -1116,6 +1137,10 @@ git branch -d feature/initial-setup
    ```
 3. Tag version sur `master` : `git tag {version} && git push origin master --tags`
 4. Release automatique via `.github/workflows/release.yml`
+5. **⚠️ SYNC develop avec master** (éviter décalages futurs) :
+   ```bash
+   git checkout develop && git pull origin master && git push origin develop
+   ```
 
 **Distinction versions** :
 - **Dev releases** : `v0.x.x-xxx` (ex: `v0.3.0-build`) → Marquées "Pre-release" sur GitHub

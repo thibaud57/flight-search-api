@@ -276,6 +276,50 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [v0.5.0] - 2025-11-20
+
+### Added
+
+**Epic 1 : API Foundation (MVP) - 13 story points**
+
+- **Story 1 : Health check endpoint** :
+  - Endpoint GET `/health` retournant JSON `{"status": "ok"}`
+  - Tests integration TestClient FastAPI (status 200, validation format réponse)
+  - Configuration baseline pour tests API
+
+- **Story 2 : Configuration & Logging** :
+  - Configuration Pydantic Settings v2 (`app/core/config.py`)
+  - Variables environnement validées (LOG_LEVEL, DECODO credentials, features flags)
+  - Structured logging JSON avec pythonjsonlogger (`app/core/logger.py`)
+  - Contexte métier dans logs (extra fields pour search_id, destinations, etc.)
+
+- **Story 3 : Search endpoint (mock)** :
+  - Endpoint POST `/api/v1/search-flights` (SearchRequest → SearchResponse)
+  - Models Pydantic complets :
+    - `SearchRequest` : destinations, date_range, passengers, cabin_class
+    - `SearchResponse` : results (Top 10), total_combinations, stats
+    - `FlightResult` : segments list, total_price, total_duration
+    - `FlightSegment` : origin, destination, departure/arrival (datetime), airline, flight_number, duration, price
+    - `DateRange` : start, end (validation end ≥ start, allow_single_day)
+    - `SearchStats` : search_id, timestamp, destinations_count, etc.
+  - SearchService mock avec données hardcodées (10 résultats réalistes)
+  - Tests unitaires models (21 tests) : validation, edge cases, single-day dates
+  - Tests unitaires SearchService (5 tests) : ranking, format, cohérence
+  - Tests unitaires routes (8 tests) : validation request, status codes, error handling
+  - Tests integration endpoint (4 tests) : end-to-end flow, contrat API
+
+### Notes
+
+**Phase** : Implémentation TDD Epic 1
+**Branche** : `feature/story-3-search-endpoint` (dernière story Epic 1)
+**Objectif** : Foundation API complète (health, config, logging, search mock) pour release v0.5.0
+
+**Coverage** : 38 tests (34 unitaires + 4 intégration), coverage ≥ 80%
+
+**Prochaine étape** : Phase 6 - Implémentation TDD Epic 2 (Stories 4-6) → Release v0.6.0 (Intégration Google Flights réelle)
+
+---
+
 # Ressources
 
 ## Documentation Officielle
