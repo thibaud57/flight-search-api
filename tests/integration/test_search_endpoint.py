@@ -1,16 +1,5 @@
 from datetime import date, timedelta
 
-import pytest
-from fastapi.testclient import TestClient
-
-from app.main import app
-
-
-@pytest.fixture
-def client():
-    """Fixture pour TestClient."""
-    return TestClient(app)
-
 
 def test_end_to_end_search_request_valid(client):
     """Test intégration 1: Request valide retourne 200 avec SearchResponse."""

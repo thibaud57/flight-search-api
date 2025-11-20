@@ -2,7 +2,6 @@ from datetime import date, timedelta
 from unittest.mock import Mock
 
 import pytest
-from fastapi.testclient import TestClient
 
 from app.main import app
 from app.models.response import FlightResult, SearchResponse, SearchStats
@@ -36,12 +35,6 @@ def mock_search_service():
     )
 
     return service
-
-
-@pytest.fixture
-def client():
-    """Fixture pour TestClient."""
-    return TestClient(app)
 
 
 def test_endpoint_accepts_valid_request(client):
@@ -200,5 +193,3 @@ def test_endpoint_injects_search_service_dependency(client, mock_search_service)
 
     assert response.status_code == 200
     mock_search_service.search_flights.assert_called_once()
-
-    app.dependency_overrides.clear()

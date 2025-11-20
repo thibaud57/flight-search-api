@@ -1,17 +1,30 @@
 """Configuration pytest globale pour tous les tests."""
 
-import os
+import pytest
+from fastapi.testclient import TestClient
+
+from app.core.config import Settings, get_settings
+from app.main import app
 
 
-def pytest_configure(config):
-    """Configure env vars requis avant import des modules de test.
+@pytest.fixture
+def test_settings() -> Settings:
+    """Settings mocké pour tests avec valeurs par défaut."""
+    return Settings(
+        DECODO_USERNAME="customer-test-country-FR",
+        DECODO_PASSWORD="test_password",
+        LOG_LEVEL="INFO",
+    )
 
-    Cette fonction s'exécute AVANT que pytest n'importe les modules de test,
-    ce qui permet de définir les variables d'environnement nécessaires pour
-    l'instantiation de Settings() lors de l'import de app.main.
 
-    Utilise setdefault pour ne pas override env vars existantes (ex: .env local).
+@pytest.fixture
+def client(test_settings: Settings) -> TestClient:
+    """TestClient FastAPI avec Settings override.
+
+    Utilise app.dependency_overrides pour injecter Settings mocké,
+    conformément aux best practices FastAPI 2025.
+    Cleanup automatique après chaque test.
     """
-    os.environ.setdefault("DECODO_USERNAME", "customer-test-country-FR")
-    os.environ.setdefault("DECODO_PASSWORD", "test_password")
-    os.environ.setdefault("LOG_LEVEL", "INFO")
+    app.dependency_overrides[get_settings] = lambda: test_settings
+    yield TestClient(app)
+    app.dependency_overrides.clear()
