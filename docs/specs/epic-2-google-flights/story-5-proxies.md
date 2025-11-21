@@ -227,17 +227,16 @@ class CrawlerService:
         self,
         url: str,
         *,
-        use_proxy: bool = True,
-        max_retries: int = 3
+        use_proxy: bool = True
     ) -> CrawlResult:
         """
-        Crawl Google Flights avec rotation automatique proxy si captcha détecté.
+        Crawl Google Flights avec proxy rotation (retry logic Story 7).
 
         Flow:
         1. Si use_proxy=True → appeler proxy_service.get_next_proxy()
         2. Construire BrowserConfig avec proxy="http://user:pass@host:port"
         3. Exécuter crawler.arun(url) avec BrowserConfig
-        4. Si CaptchaDetectedError → appeler get_next_proxy() nouveau → retry
+        4. Si CaptchaDetectedError détecté → logger WARNING et lever exception (retry géré Story 7)
         5. Logger proxy utilisé (masquer password) avec extra={proxy_host, proxy_country}
         """
 ```
@@ -247,16 +246,15 @@ class CrawlerService:
 - **Étape 1 : Obtenir proxy** → Si use_proxy=True et proxy_service disponible, appeler `proxy_service.get_next_proxy()` pour récupérer ProxyConfig suivant dans rotation
 - **Étape 2 : Construire BrowserConfig** → Créer instance BrowserConfig Crawl4AI avec enable_stealth=True, headless=False, proxy=proxy_config.get_proxy_url() (format http://user:pass@host:port) si proxy disponible, sinon None
 - **Étape 3 : Exécuter crawl** → Utiliser AsyncWebCrawler avec BrowserConfig, appeler crawler.arun(url) pour récupérer HTML
-- **Étape 4 : Détecter captcha** → Appeler méthode interne _is_captcha_detected(result.html) pour vérifier présence captcha dans HTML, si détecté → logger WARNING avec proxy_host et lever CaptchaDetectedError
-- **Étape 5 : Retry automatique** → CaptchaDetectedError déclenche retry logic Tenacity (Story 4) qui appelle automatiquement get_next_proxy() pour rotation IP → nouvelle tentative avec proxy différent
-- **Étape 6 : Logger succès** → Si crawl réussit, logger INFO avec extra fields url, proxy_host (hostname sans credentials), proxy_country, html_size (masquer password et username API key)
+- **Étape 4 : Détecter captcha** → Appeler méthode interne _is_captcha_detected(result.html) pour vérifier présence captcha dans HTML, si détecté → logger WARNING avec proxy_host et lever CaptchaDetectedError (retry géré Story 7 via @retry decorator)
+- **Étape 5 : Logger succès** → Si crawl réussit, logger INFO avec extra fields url, proxy_host (hostname sans credentials), proxy_country, html_size (masquer password et username API key)
 
 **Points d'Attention Intégration** :
 
 - **Ne JAMAIS logger password en clair** : Logs contiennent uniquement `proxy_host` et `proxy_country`, jamais `username` complet (contient API key) ni `password`
 - **Masquage username partiel** : Si logging username nécessaire → masquer API key : `customer-***MASKED***-country-fr`
 - **Référence interface Story 4** : CrawlerService défini dans `docs/specs/epic-2-google-flights/story-4-crawler-parser.md`, pas de redéfinition complète ici, seulement extension avec proxy_service injection
-- **Retry logic Story 4 réutilisée** : Tenacity retry automatique (Story 4) appelle get_next_proxy() à chaque retry après CaptchaDetectedError/NetworkError
+- **Référence Story 7** : Retry logic Tenacity (Story 7) décore crawl_google_flights() via @retry, appelle automatiquement get_next_proxy() à chaque retry pour rotation IP automatique
 
 **Logging Structuré Proxy** :
 
@@ -389,17 +387,16 @@ DECODO_PROXY_POOL_SIZE=3
 | # | Nom test | Prérequis (Given) | Action (When) | Résultat attendu (Then) |
 |---|----------|-------------------|---------------|-------------------------|
 | 1 | `test_integration_crawler_with_proxy_rotation` | Mock AsyncWebCrawler, ProxyService avec pool 3 proxies, CrawlerService initialisé avec proxy_service | Appeler `crawl_google_flights(url)` 3 fois consécutives | 3 crawls utilisent 3 proxies différents (proxy0, proxy1, proxy2 vérifiés via BrowserConfig.proxy), logs INFO contiennent proxy_host distinct pour chaque crawl |
-| 2 | `test_integration_crawler_captcha_retry_new_proxy` | Mock AsyncWebCrawler retourne HTML captcha 1ère tentative puis HTML valide 2ème tentative, ProxyService pool 2 proxies | Appeler `crawl_google_flights(url, max_retries=2)` | CaptchaDetectedError déclenche retry, 2ème tentative utilise proxy différent (proxy1), logs WARNING captcha puis INFO success, résultat final CrawlResult.success==True |
-| 3 | `test_integration_settings_load_from_env` | Fichier .env avec DECODO_USERNAME, PASSWORD, HOST, POOL_SIZE=5, ENABLED=true | Charger Settings() depuis env | `settings.proxy_pool` length==5, tous ProxyConfig valides, country extrait=="FR", aucune exception ValidationError |
-| 4 | `test_integration_proxy_service_injected_crawler` | Settings avec proxies enabled, ProxyService créé depuis settings.proxy_pool, CrawlerService reçoit proxy_service via DI | Appeler `crawler_service.crawl_google_flights(url, use_proxy=True)` | CrawlerService appelle `proxy_service.get_next_proxy()` 1 fois (vérifié mock spy), BrowserConfig.proxy contient URL proxy complète, crawl success |
-| 5 | `test_integration_proxy_rotation_logging_observability` | ProxyService pool 3 proxies, CrawlerService avec logging structuré activé | Crawler 10 URLs consécutives | Logs contiennent 10 entrées INFO avec extra fields proxy_host, proxy_index, proxy_country, distribution équitable proxies (3-3-4 ou 3-4-3 count), aucun password loggé |
-| 6 | `test_integration_proxy_service_disabled_no_injection` | Settings avec DECODO_PROXY_ENABLED=false, CrawlerService initialisé sans proxy_service (None) | Appeler `crawl_google_flights(url, use_proxy=True)` | CrawlerService détecte proxy_service==None, BrowserConfig.proxy==None (pas de proxy utilisé), logs contiennent proxy_host="no_proxy", crawl success en mode direct |
+| 2 | `test_integration_settings_load_from_env` | Fichier .env avec DECODO_USERNAME, PASSWORD, HOST, POOL_SIZE=5, ENABLED=true | Charger Settings() depuis env | `settings.proxy_pool` length==5, tous ProxyConfig valides, country extrait=="FR", aucune exception ValidationError |
+| 3 | `test_integration_proxy_service_injected_crawler` | Settings avec proxies enabled, ProxyService créé depuis settings.proxy_pool, CrawlerService reçoit proxy_service via DI | Appeler `crawler_service.crawl_google_flights(url, use_proxy=True)` | CrawlerService appelle `proxy_service.get_next_proxy()` 1 fois (vérifié mock spy), BrowserConfig.proxy contient URL proxy complète, crawl success |
+| 4 | `test_integration_proxy_rotation_logging_observability` | ProxyService pool 3 proxies, CrawlerService avec logging structuré activé | Crawler 10 URLs consécutives | Logs contiennent 10 entrées INFO avec extra fields proxy_host, proxy_index, proxy_country, distribution équitable proxies (3-3-4 ou 3-4-3 count), aucun password loggé |
+| 5 | `test_integration_proxy_service_disabled_no_injection` | Settings avec DECODO_PROXY_ENABLED=false, CrawlerService initialisé sans proxy_service (None) | Appeler `crawl_google_flights(url, use_proxy=True)` | CrawlerService détecte proxy_service==None, BrowserConfig.proxy==None (pas de proxy utilisé), logs contiennent proxy_host="no_proxy", crawl success en mode direct |
 
-**Total tests intégration** : 6 tests
+**Total tests intégration** : 5 tests
 
 ---
 
-**TOTAL TESTS** : 18 unitaires + 6 intégration = **24 tests**
+**TOTAL TESTS** : 18 unitaires + 5 intégration = **23 tests**
 
 ---
 

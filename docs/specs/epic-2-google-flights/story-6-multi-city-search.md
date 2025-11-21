@@ -180,7 +180,10 @@ Pour chaque DateCombination :
 **Étape 3 : Crawling Parallèle**
 1. Appeler `crawler_service.crawl_google_flights(url)` pour chaque combinaison
 2. Stratégie parallélisation : `asyncio.gather()` avec limite concurrence (ex: 5-10 requêtes simultanées max pour éviter rate limiting)
-3. Gérer erreurs crawl : Si captcha/timeout (CrawlerService lève exception) → Logger WARNING, continuer autres combinaisons
+3. Gérer erreurs crawl :
+   - CrawlerService tente automatiquement 3 fois (retry logic Story 7 via @retry decorator)
+   - Si échec persistant (exception finale après max retries) → Logger WARNING, skip combinaison
+   - Continuer autres combinaisons (gestion erreurs gracieuse, pas d'exception bloquante)
 4. Logger INFO : Nombre crawls réussis vs échecs
 
 **Étape 4 : Parsing Vols**
