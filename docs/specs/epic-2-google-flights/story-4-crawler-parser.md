@@ -16,13 +16,13 @@ technologies: ["crawl4ai", "playwright", "pydantic", "decodo", "tenacity"]
 - **Proof of Concept technique** : Valider la faisabilité du scraping Google Flights pour une destination unique avant d'implémenter la logique multi-destinations complexe
 - **Dérisquage early** : Identifier les blocages Google (captchas, rate limiting, anti-bot) dès la Story 4 plutôt qu'aux stories 5 et 6 (économie temps développement)
 - **Foundation scraping** : Établir les patterns réutilisables (CrawlerService + FlightParser) pour toutes les stories suivantes (5, 6, 7)
-- **Validation stack technique** : Prouver que Crawl4AI + Decodo Proxies + JsonCssExtractionStrategy suffisent pour extraire des données structurées sans LLM
+- **Validation stack technique** : Prouver que Crawl4AI + JsonCssExtractionStrategy suffisent pour extraire des données structurées sans LLM (POC dev local)
 
 ## Contraintes métier
 
-- **Anti-détection Google Flights** : Google utilise Cloudflare/DataDome pour détecter et bloquer les bots (nécessite stealth mode + proxies résidentiels Decodo)
-- **Captcha detection MVP** : Phase MVP = détection uniquement (logging + retry avec rotation IP), pas de résolution automatique (2Captcha réservé Phase 7 optionnelle si taux blocage >5%)
-- **Bandwidth Decodo limité** : Proxies résidentiels facturés au GB ($2.60-3.50/GB selon volume), minimiser le nombre de requêtes et taille HTML téléchargé
+- **Anti-détection Google Flights** : Google utilise Cloudflare/DataDome pour détecter et bloquer les bots (stealth mode Crawl4AI activé, proxies ajoutés Story 5)
+- **Captcha detection MVP** : Phase MVP = détection uniquement (logging + retry), pas de résolution automatique (rotation proxies Story 5, 2Captcha Phase 7 si taux blocage >5%)
+- **Bandwidth Google Flights** : Minimiser nombre de requêtes et taille HTML téléchargé pour éviter rate limiting (POC = tests dev local limités)
 - **Pas de Database** : Résultats en mémoire uniquement (pas de persistence), focus sur extraction et transformation données
 - **Structure HTML Google Flights non documentée** : Sélecteurs CSS peuvent changer sans préavis, nécessite monitoring et robustesse parsing
 
@@ -49,22 +49,21 @@ technologies: ["crawl4ai", "playwright", "pydantic", "decodo", "tenacity"]
 
 ## 1. CrawlerService
 
-**Rôle** : Orchestrer le crawling Google Flights avec Crawl4AI, gérer le stealth mode, la rotation de proxies Decodo, et la détection de captchas avec retry logic.
+**Rôle** : Orchestrer le crawling Google Flights avec Crawl4AI en mode POC (dev local), gérer stealth mode, détection captchas, et retry logic (proxies ajoutés Story 5).
 
 **Interface** :
 ```python
 class CrawlerService:
-    """Service de crawling Google Flights avec stealth mode et proxy rotation."""
+    """Service de crawling Google Flights avec stealth mode (POC dev local)."""
 
     async def crawl_google_flights(
         self,
         url: str,
         *,
-        use_proxy: bool = True,
         max_retries: int = 3
     ) -> CrawlResult:
         """
-        Crawl une URL Google Flights avec retry logic et captcha detection.
+        Crawl une URL Google Flights en mode POC (dev local) avec retry logic et captcha detection.
 
         Raises:
             CaptchaDetectedError: Si captcha détecté après max_retries
@@ -77,30 +76,29 @@ class CrawlerService:
 | Champ | Type | Description | Contraintes |
 |-------|------|-------------|-------------|
 | `url` | `str` | URL Google Flights complète avec paramètres query | Format `https://www.google.com/travel/flights?...` |
-| `use_proxy` | `bool` | Active rotation proxies Decodo | Default `True`, `False` pour dev local |
-| `max_retries` | `int` | Nombre maximum de tentatives avec rotation IP | Default `3`, range `1-5` |
+| `max_retries` | `int` | Nombre maximum de tentatives | Default `3`, range `1-5` |
 
 **Comportement** :
 
 - **Crawl nominal** :
-  1. Initialise AsyncWebCrawler avec BrowserConfig (stealth mode, proxy Decodo si `use_proxy=True`)
+  1. Initialise AsyncWebCrawler avec BrowserConfig (stealth mode activé, pas de proxy en POC)
   2. Exécute `crawler.arun(url)` avec timeout 10s
   3. Vérifie status code 200 et absence de captcha dans HTML
   4. Retourne CrawlResult avec `html`, `cleaned_html`, `success=True`
 
 - **Edge cases** :
-  - **Captcha détecté** : Si HTML contient patterns reCAPTCHA/hCaptcha → Lève `CaptchaDetectedError` avec URL et proxy utilisé
-  - **Status code 403/429** : Rate limiting Google → Retry avec rotation proxy et exponential backoff (4s, 8s, 16s)
-  - **Timeout réseau** : Si `arun()` timeout après 10s → Retry avec nouveau proxy
+  - **Captcha détecté** : Si HTML contient patterns reCAPTCHA/hCaptcha → Lève `CaptchaDetectedError` avec URL
+  - **Status code 403/429** : Rate limiting Google → Retry avec exponential backoff (4s, 8s, 16s)
+  - **Timeout réseau** : Si `arun()` timeout après 10s → Retry automatique
   - **Max retries dépassé** : Lève `NetworkError` avec détails des tentatives échouées
 
 - **Erreurs levées** :
-  - `CaptchaDetectedError` : Hérité de `Exception`, contient `url`, `proxy_used`, `captcha_type` (recaptcha_v2/v3/hcaptcha)
+  - `CaptchaDetectedError` : Hérité de `Exception`, contient `url`, `captcha_type` (recaptcha_v2/v3/hcaptcha)
   - `NetworkError` : Hérité de `Exception`, contient `url`, `status_code`, `attempts`
 
 - **Logging structuré** :
-  - INFO : Début crawl avec URL et proxy utilisé
-  - WARNING : Captcha détecté (tentative N/max_retries) + rotation proxy
+  - INFO : Début crawl avec URL (mode POC dev local)
+  - WARNING : Captcha détecté (tentative N/max_retries)
   - ERROR : Max retries atteint, crawl échoué
   - DEBUG : HTML size, temps réponse, status code
 
@@ -226,16 +224,15 @@ class Flight(BaseModel):
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 1 | `test_crawl_success_without_proxy` | Crawl réussi sans proxy (dev mode) | `url="https://google.com/travel/flights?..."`, `use_proxy=False` | `result.success == True`, `result.html` non vide | Vérifie comportement nominal sans proxy |
-| 2 | `test_crawl_success_with_proxy` | Crawl réussi avec proxy Decodo | `url=URL_GOOGLE_FLIGHTS`, `use_proxy=True` | `result.success == True`, proxy utilisé loggé | Vérifie configuration proxy Decodo |
-| 3 | `test_crawl_recaptcha_v2_detection` | HTML contient reCAPTCHA v2 | Mock HTML avec `<div class="g-recaptcha">` | Lève `CaptchaDetectedError`, `captcha_type="recaptcha_v2"` | Vérifie détection pattern reCAPTCHA |
-| 4 | `test_crawl_hcaptcha_detection` | HTML contient hCaptcha | Mock HTML avec `<div class="h-captcha">` | Lève `CaptchaDetectedError`, `captcha_type="hcaptcha"` | Vérifie détection pattern hCaptcha |
-| 5 | `test_crawl_retry_on_captcha` | Captcha détecté, retry avec rotation proxy | 1ère tentative captcha, 2ème succès | `result.success == True`, 2 proxies différents utilisés | Vérifie retry logic avec rotation IP |
-| 6 | `test_crawl_max_retries_exceeded` | Max retries atteint, tous captcha | 3 tentatives, toutes avec captcha | Lève `CaptchaDetectedError` final | Vérifie abandon après max_retries |
-| 7 | `test_crawl_network_timeout` | Timeout réseau AsyncWebCrawler | Mock `arun()` timeout après 10s | Lève `NetworkError`, `status_code=None` | Vérifie gestion timeout |
-| 8 | `test_crawl_status_403_retry` | Status code 403 (rate limiting) | Mock response status 403 | Retry avec exponential backoff 4s, 8s, 16s | Vérifie retry logic sur 403 |
-| 9 | `test_crawl_stealth_mode_enabled` | BrowserConfig avec stealth mode actif | `enable_stealth=True` dans config | `result.success == True`, stealth mode loggé | Vérifie activation stealth mode |
-| 10 | `test_crawl_structured_logging` | Logging structuré avec contexte | Crawl avec URL et proxy | Logs contiennent `url`, `proxy_used`, `status_code`, `html_size` | Vérifie qualité logging JSON |
+| 1 | `test_crawl_success_dev_local` | Crawl réussi mode POC dev local | `url="https://google.com/travel/flights?..."` | `result.success == True`, `result.html` non vide, stealth mode actif | Vérifie comportement nominal POC |
+| 2 | `test_crawl_recaptcha_v2_detection` | HTML contient reCAPTCHA v2 | Mock HTML avec `<div class="g-recaptcha">` | Lève `CaptchaDetectedError`, `captcha_type="recaptcha_v2"` | Vérifie détection pattern reCAPTCHA |
+| 3 | `test_crawl_hcaptcha_detection` | HTML contient hCaptcha | Mock HTML avec `<div class="h-captcha">` | Lève `CaptchaDetectedError`, `captcha_type="hcaptcha"` | Vérifie détection pattern hCaptcha |
+| 4 | `test_crawl_retry_on_captcha` | Captcha détecté, retry automatique | 1ère tentative captcha, 2ème succès | `result.success == True`, logs WARNING captcha puis INFO success | Vérifie retry logic simple |
+| 5 | `test_crawl_max_retries_exceeded` | Max retries atteint, tous captcha | 3 tentatives, toutes avec captcha | Lève `CaptchaDetectedError` final | Vérifie abandon après max_retries |
+| 6 | `test_crawl_network_timeout` | Timeout réseau AsyncWebCrawler | Mock `arun()` timeout après 10s | Lève `NetworkError`, `status_code=None` | Vérifie gestion timeout |
+| 7 | `test_crawl_status_403_retry` | Status code 403 (rate limiting) | Mock response status 403 | Retry avec exponential backoff 4s, 8s, 16s | Vérifie retry logic sur 403 |
+| 8 | `test_crawl_stealth_mode_enabled` | BrowserConfig avec stealth mode actif | `enable_stealth=True` dans config | `result.success == True`, stealth mode loggé | Vérifie activation stealth mode |
+| 9 | `test_crawl_structured_logging` | Logging structuré avec contexte | Crawl avec URL | Logs contiennent `url`, `status_code`, `html_size`, `stealth_mode` | Vérifie qualité logging JSON POC |
 
 ### FlightParser (10 tests)
 
@@ -332,14 +329,13 @@ Tous les logs doivent suivre le format JSON structuré avec les champs suivants 
 | `service` | String | Service concerné | `"CrawlerService"` |
 | `message` | String | Message descriptif | `"Crawl successful"` |
 | `url` | String | URL crawlée | URL Google Flights complète |
-| `proxy_used` | String (optionnel) | Proxy utilisé (masqué si sensible) | Format customer générique |
 | `status_code` | Integer | Code HTTP réponse | `200`, `403`, `429` |
 | `html_size` | Integer | Taille HTML en bytes | `245678` |
 | `response_time_ms` | Integer | Temps réponse en ms | `2345` |
 | `stealth_mode` | Boolean | Stealth mode activé | `true` |
 | `retry_attempt` | Integer | Numéro tentative (0 = première) | `0`, `1`, `2` |
 
-**Note** : Secrets (mots de passe proxy, API keys) doivent être masqués dans les logs pour sécurité.
+**Note** : Logs POC dev local (pas de proxy, stealth mode actif).
 
 ---
 
@@ -351,9 +347,9 @@ Tous les logs doivent suivre le format JSON structuré avec les champs suivants 
 
 2. **Stealth mode actif** : BrowserConfig configuré avec `enable_stealth=True`, vérifié dans logs structurés (champ `stealth_mode: true`)
 
-3. **Captcha détecté et loggé** : Si reCAPTCHA/hCaptcha présent dans HTML → CaptchaDetectedError levée avec `captcha_type` et `proxy_used` loggés en WARNING
+3. **Captcha détecté et loggé** : Si reCAPTCHA/hCaptcha présent dans HTML → CaptchaDetectedError levée avec `captcha_type` loggé en WARNING
 
-4. **Retry logic avec rotation IP** : En cas de captcha/403/timeout → retry avec exponential backoff (4s, 8s, 16s) et rotation proxies Decodo (3 proxies différents utilisés max)
+4. **Retry logic exponential backoff** : En cas de captcha/403/timeout → retry avec exponential backoff (4s, 8s, 16s)
 
 5. **Parsing extrait minimum 5 vols** : FlightParser parse HTML Google Flights et retourne liste ≥5 Flight validés Pydantic (champs obligatoires présents)
 
@@ -375,30 +371,28 @@ Tous les logs doivent suivre le format JSON structuré avec les champs suivants 
 
 13. **JsonCssExtractionStrategy** : Configuration extraction CSS avec sélecteur de base pour identifier conteneurs vols, 8 champs minimum à extraire (types text/attribute selon besoin), pas de LLM
 
-14. **Decodo Proxies configuration** : Authentification format customer avec clé API et ciblage pays (France), endpoint dédié, système de rotation cyclique entre pool de proxies disponibles
+14. **Logging structuré JSON** : Tous logs incluent contexte métier dans champs dédiés : URL crawlée, code status HTTP, taille HTML reçu, temps de réponse en millisecondes, activation stealth mode, numéro tentative retry
 
-15. **Logging structuré JSON** : Tous logs incluent contexte métier dans champs dédiés : URL crawlée, proxy utilisé, code status HTTP, taille HTML reçu, temps de réponse en millisecondes, activation stealth mode, numéro tentative retry
-
-16. **Exceptions custom** : CaptchaDetectedError et ParsingError héritent de Exception standard Python, incluent attributs contextuels pour debugging : URL concernée, proxy utilisé, type captcha détecté, taille HTML, nombre vols trouvés
+15. **Exceptions custom** : CaptchaDetectedError et ParsingError héritent de Exception standard Python, incluent attributs contextuels pour debugging : URL concernée, type captcha détecté, taille HTML, nombre vols trouvés
 
 ## Critères qualité
 
-17. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% du code de CrawlerService et FlightParser (pytest-cov)
+16. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% du code de CrawlerService et FlightParser (pytest-cov)
 
-18. **24 tests passent** : 20 tests unitaires (10 CrawlerService + 10 FlightParser) + 4 tests intégration tous verts (pytest -v)
+17. **23 tests passent** : 19 tests unitaires (9 CrawlerService + 10 FlightParser) + 4 tests intégration tous verts (pytest -v)
 
-19. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type
+18. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type
 
-20. **Tests TDD format AAA** : Tests unitaires suivent strictement Arrange/Act/Assert, tableaux specs complétés avec 6 colonnes (N°, Nom, Scénario, Input, Output, Vérification)
+19. **Tests TDD format AAA** : Tests unitaires suivent strictement Arrange/Act/Assert, tableaux specs complétés avec 6 colonnes (N°, Nom, Scénario, Input, Output, Vérification)
 
-21. **Tests intégration format Given/When/Then** : Tests intégration suivent BDD avec 5 colonnes (N°, Nom, Prérequis, Action, Résultat), mocks AsyncWebCrawler configurés
+20. **Tests intégration format Given/When/Then** : Tests intégration suivent BDD avec 5 colonnes (N°, Nom, Prérequis, Action, Résultat), mocks AsyncWebCrawler configurés
 
-22. **Docstrings 1 ligne** : CrawlerService et FlightParser avec docstring descriptive, méthodes principales documentées, focus POURQUOI pas QUOI
+21. **Docstrings 1 ligne** : CrawlerService et FlightParser avec docstring descriptive, méthodes principales documentées, focus POURQUOI pas QUOI
 
-23. **Aucun code production dans specs** : Ce document contient uniquement signatures, tableaux tests, descriptions comportements, exemples JSON (pas d'implémentation complète de méthodes)
+22. **Aucun code production dans specs** : Ce document contient uniquement signatures, tableaux tests, descriptions comportements, exemples JSON (pas d'implémentation complète de méthodes)
 
-24. **Commits conventional** : Story 4 committée avec message `docs(specs): add story 4 specifications` conforme Conventional Commits
+23. **Commits conventional** : Story 4 committée avec message `docs(specs): add story 4 specifications` conforme Conventional Commits
 
 ---
 
-**💡 Note** : Cette story est un Proof of Concept (8 story points). Les 24 critères couvrent faisabilité technique (crawl + parsing 1 destination), robustesse (captcha detection, retry logic), qualité (coverage, types, tests), et foundation réutilisable pour stories 5-6 (proxies + multi-city search orchestration).
+**💡 Note** : Cette story est un Proof of Concept (8 story points). Les 23 critères couvrent faisabilité technique (crawl + parsing 1 destination), robustesse (captcha detection, retry logic), qualité (coverage, types, tests), et foundation réutilisable pour stories 5-6 (proxies + multi-city search orchestration).
