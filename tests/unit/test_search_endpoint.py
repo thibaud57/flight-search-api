@@ -2,6 +2,7 @@
 
 from datetime import date, timedelta
 
+
 def test_endpoint_accepts_valid_request(client_with_mock_search):
     """Test 39: Endpoint accepte request valide."""
     tomorrow = date.today() + timedelta(days=1)
