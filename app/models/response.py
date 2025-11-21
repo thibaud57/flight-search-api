@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, field_validator, model_validator
 
@@ -49,7 +49,7 @@ class SearchResponse(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def validate_results_sorted(self) -> "SearchResponse":
+    def validate_results_sorted(self) -> Self:
         """Valide results triés par prix croissant."""
         if not all(
             a.price <= b.price

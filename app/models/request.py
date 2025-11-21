@@ -1,7 +1,7 @@
 import math
 import re
 from datetime import date, datetime
-from typing import Annotated
+from typing import Annotated, Self
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
@@ -88,7 +88,7 @@ class SearchRequest(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def validate_explosion_combinatoire(self) -> "SearchRequest":
+    def validate_explosion_combinatoire(self) -> Self:
         """Valide max 1000 combinaisons totales avec message UX-friendly."""
         days_per_segment = []
 
