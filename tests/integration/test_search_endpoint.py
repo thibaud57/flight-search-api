@@ -1,7 +1,9 @@
 from datetime import date, timedelta
 
+from fastapi.testclient import TestClient
 
-def test_end_to_end_search_request_valid(client):
+
+def test_end_to_end_search_request_valid(client: TestClient) -> None:
     """Test intégration 1: Request valide retourne 200 avec SearchResponse."""
     tomorrow = date.today() + timedelta(days=1)
 
@@ -44,7 +46,7 @@ def test_end_to_end_search_request_valid(client):
     assert data["search_stats"]["search_time_ms"] > 0
 
 
-def test_end_to_end_validation_error_empty_segments(client):
+def test_end_to_end_validation_error_empty_segments(client: TestClient) -> None:
     """Test intégration 2: Segments vide retourne 422."""
     request_data = {"segments": []}
 
@@ -56,7 +58,7 @@ def test_end_to_end_validation_error_empty_segments(client):
     assert "detail" in data
 
 
-def test_end_to_end_validation_error_invalid_dates(client):
+def test_end_to_end_validation_error_invalid_dates(client: TestClient) -> None:
     """Test intégration 3: Dates invalides retourne 422."""
     tomorrow = date.today() + timedelta(days=1)
 
@@ -89,7 +91,7 @@ def test_end_to_end_validation_error_invalid_dates(client):
     assert "detail" in data
 
 
-def test_end_to_end_search_request_exact_dates(client):
+def test_end_to_end_search_request_exact_dates(client: TestClient) -> None:
     """Test intégration 4: Request avec dates exactes (start=end) retourne 200."""
     tomorrow = date.today() + timedelta(days=1)
 
@@ -132,7 +134,7 @@ def test_end_to_end_search_request_exact_dates(client):
     assert data["search_stats"]["segments_count"] == 3
 
 
-def test_end_to_end_openapi_schema_includes_endpoint(client):
+def test_end_to_end_openapi_schema_includes_endpoint(client: TestClient) -> None:
     """Test intégration 5: OpenAPI schema contient endpoint search-flights."""
     response = client.get("/openapi.json")
 
