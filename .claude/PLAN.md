@@ -470,11 +470,11 @@
 
 **Branche** : `feature/story-4-crawler-parser`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-4-crawler-parser.md
-- [ ] **Validation manuelle** : Vraies données Google Flights, logs parsing success
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(services): add crawler and parser with real Google Flights data`
-- [ ] **PR** : feature/story-4 → develop
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-4-crawler-parser.md
+- [x] **Validation manuelle** : Vraies données Google Flights, logs parsing success
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(services): add crawler and parser with real Google Flights data`
+- [x] **PR** : feature/story-4 → develop
 
 📝 **Output** : Story 4 complétée (8 story points)
 
@@ -573,7 +573,7 @@
 **🔍 Validation qualité automatique** :
 
 - [ ] Lancer agent `reviewer` avec paramètres :
-  - `epic_number`: "MVP"
+  - `epic_number`: "1-2-3"
   - `previous_version_tag`: "v0.7.0"
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit si refactor** : `chore(mvp): refactor for standards compliance`

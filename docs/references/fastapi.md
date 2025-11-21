@@ -1,8 +1,8 @@
 ---
 title: "FastAPI - Framework Web Asynchrone"
-description: "Référence FastAPI : Dependency Injection (Depends, sous-dépendances, caching), Async Routes (async def vs def, appels externes), TestClient (tests intégration, GET/POST, validation erreurs). Consulter pour patterns API, tests, best practices async."
+description: "Référence FastAPI : Dependency Injection (Depends, sous-dépendances, caching), Settings & Logger Injection (@lru_cache + Depends, dependency_overrides tests), Async Routes (async def vs def, appels externes), TestClient (tests intégration, GET/POST, validation erreurs). Consulter pour patterns API, tests, best practices async."
 date: "2025-17-11"
-keywords: ["fastapi", "dependency-injection", "depends", "async-routes", "async", "testclient", "testing", "pytest", "api", "rest-api", "routes", "endpoints", "httpx"]
+keywords: ["fastapi", "dependency-injection", "depends", "async-routes", "async", "testclient", "testing", "pytest", "api", "rest-api", "routes", "endpoints", "httpx", "lru-cache", "settings", "logger", "dependency-overrides"]
 scope: ["code", "test"]
 technologies: ["fastapi", "httpx", "pytest"]
 ---
@@ -72,6 +72,117 @@ async def read_items(query: Annotated[str, Depends(query_or_cookie_extractor)]):
 - **OpenAPI** : Intégrées automatiquement dans le schéma
 - **Type aliases** : `QueryDep = Annotated[str, Depends(get_query)]` pour réutilisation
 - **Classes** : Utilisables directement comme dépendances (inférence automatique)
+
+# Settings & Logger Injection (Pattern @lru_cache)
+
+## Description
+
+Pattern officiel FastAPI pour injecter Settings (Pydantic) et Logger avec lazy loading. Combine `@lru_cache` (évite lecture répétée .env) + `Depends()` (injection + testabilité).
+
+## Exemple minimal
+
+```python
+# app/core/config.py
+from functools import lru_cache
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    api_key: str
+    debug: bool = False
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+```
+
+```python
+# app/core/logger.py
+import logging
+from functools import lru_cache
+from app.core.config import get_settings
+
+@lru_cache
+def get_logger() -> logging.Logger:
+    settings = get_settings()
+    logger = logging.getLogger("app")
+    logger.setLevel(settings.LOG_LEVEL)
+    return logger
+```
+
+```python
+# app/api/routes.py
+from logging import Logger
+from typing import Annotated
+from fastapi import APIRouter, Depends
+from app.core.config import Settings, get_settings
+from app.core.logger import get_logger
+
+router = APIRouter()
+
+@router.get("/info")
+def get_info(
+    settings: Annotated[Settings, Depends(get_settings)],
+    logger: Annotated[Logger, Depends(get_logger)],
+):
+    logger.info("Info requested")
+    return {"debug": settings.debug}
+```
+
+## Tests avec dependency_overrides
+
+```python
+# tests/conftest.py
+import pytest
+from fastapi.testclient import TestClient
+from app.core.config import Settings, get_settings
+from app.core.logger import get_logger, setup_logger
+from app.main import app
+
+@pytest.fixture
+def test_settings() -> Settings:
+    return Settings(api_key="test_key", debug=True)
+
+@pytest.fixture
+def client(test_settings: Settings) -> TestClient:
+    # Clear caches avant test
+    get_settings.cache_clear()
+    get_logger.cache_clear()
+
+    # Override dependencies
+    app.dependency_overrides[get_settings] = lambda: test_settings
+    app.dependency_overrides[get_logger] = lambda: setup_logger("DEBUG")
+
+    yield TestClient(app)
+
+    # Cleanup après test
+    app.dependency_overrides.clear()
+    get_settings.cache_clear()
+    get_logger.cache_clear()
+```
+
+## Points clés
+
+- **@lru_cache** : Settings/Logger créés une seule fois (évite I/O répétée)
+- **Depends()** : Injection lazy (pas d'appel à l'import module)
+- **cache_clear()** : Obligatoire dans tests pour isolation entre fixtures
+- **dependency_overrides** : Permet injection mocks sans modifier code prod
+- **Éviter module-level** : Ne PAS faire `logger = get_logger()` en global (cause ValidationError en CI)
+
+## Anti-patterns
+
+```python
+# ❌ MAUVAIS : Appel à l'import (ValidationError si env vars manquantes)
+logger = get_logger()
+
+@router.get("/")
+def endpoint():
+    logger.info("...")
+
+# ✅ BON : Injection via Depends (lazy loading)
+@router.get("/")
+def endpoint(logger: Annotated[Logger, Depends(get_logger)]):
+    logger.info("...")
+```
 
 # Async Routes (Routes Asynchrones)
 
@@ -202,5 +313,6 @@ def test_invalid_request():
 
 - **FastAPI Documentation** : https://fastapi.tiangolo.com
 - **Dependency Injection** : https://fastapi.tiangolo.com/tutorial/dependencies/
+- **Settings & Environment Variables** : https://fastapi.tiangolo.com/advanced/settings/
 - **Async Routes** : https://fastapi.tiangolo.com/async/
 - **Testing** : https://fastapi.tiangolo.com/tutorial/testing/
