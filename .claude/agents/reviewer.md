@@ -36,7 +36,8 @@ Valider Epic terminé pour conformité :
 
 ### 2. Identifier Fichiers Modifiés
 
-- Bash: `git diff --name-only {previous_version_tag}..{current_branch} --diff-filter=AM`
+- Bash: `git tag -l "{previous_version_tag}*"` pour trouver le tag exact
+- Bash: `git diff --name-only {tag_exact}..{current_branch} --diff-filter=AM`
 - Séparer : code source vs tests
 - Output : Liste fichiers à valider
 
