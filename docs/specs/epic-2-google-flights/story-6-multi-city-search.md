@@ -424,7 +424,7 @@ class CombinationResult(BaseModel):
 
 ---
 
-**TOTAL TESTS** : 25 unitaires + 5 intégration = **30 tests**
+**TOTAL TESTS** : 24 unitaires + 5 intégration = **29 tests**
 
 ---
 
@@ -640,7 +640,7 @@ class CombinationResult(BaseModel):
 
 19. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% du code de CombinationGenerator et SearchService (pytest-cov)
 
-20. **30 tests passent** : 25 tests unitaires (10 CombinationGenerator + 15 SearchService) + 5 tests intégration tous verts (pytest -v)
+20. **29 tests passent** : 24 tests unitaires (10 CombinationGenerator + 14 SearchService) + 5 tests intégration tous verts (pytest -v)
 
 21. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type
 
@@ -658,4 +658,4 @@ class CombinationResult(BaseModel):
 
 **Note importante** : Story moyenne complexité (5 story points) → 26 critères couvrent exhaustivement orchestration multi-city (9 fonctionnels), architecture services modulaires (10 techniques), qualité tests TDD (7 qualité).
 
-**Principe SMART** : Chaque critère est **S**pécifique (top 10 triés prix, produit cartésien dates), **M**esurable (30 tests passent, coverage ≥80%), **A**tteignable (réutilisation Story 3, 4, 5), **R**elevant (foundation scalable multi-city), **T**emporel (MVP Phase 5, avant intégration API complète Phase 6).
+**Principe SMART** : Chaque critère est **S**pécifique (top 10 triés prix, produit cartésien dates), **M**esurable (29 tests passent, coverage ≥80%), **A**tteignable (réutilisation Story 3, 4, 5), **R**elevant (foundation scalable multi-city), **T**emporel (MVP Phase 5, avant intégration API complète Phase 6).
