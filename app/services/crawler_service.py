@@ -15,6 +15,8 @@ from app.exceptions import CaptchaDetectedError, NetworkError
 if TYPE_CHECKING:
     from app.services.proxy_service import ProxyService
 
+logger = logging.getLogger(__name__)
+
 CAPTCHA_PATTERNS = {
     "recaptcha": ["g-recaptcha", 'class="recaptcha"', "grecaptcha"],
     "hcaptcha": ["h-captcha", "hcaptcha"],
@@ -33,14 +35,9 @@ class CrawlResult:
 class CrawlerService:
     """Service de crawling Google Flights avec stealth mode et proxy rotation."""
 
-    def __init__(
-        self,
-        proxy_service: ProxyService | None = None,
-        logger: logging.Logger | None = None,
-    ) -> None:
-        """Initialise service avec ProxyService et Logger optionnels."""
+    def __init__(self, proxy_service: ProxyService | None = None) -> None:
+        """Initialise service avec ProxyService optionnel."""
         self._proxy_service = proxy_service
-        self._logger = logger or logging.getLogger(__name__)
 
     async def crawl_google_flights(
         self, url: str, *, use_proxy: bool = True
@@ -62,7 +59,7 @@ class CrawlerService:
             proxy_host = proxy.host
             proxy_country = proxy.country
 
-        self._logger.info(
+        logger.info(
             "Starting crawl",
             extra={
                 "url": url,
@@ -84,13 +81,13 @@ class CrawlerService:
                     timeout=10.0,
                 )
         except TimeoutError as err:
-            self._logger.error("Crawl timeout", extra={"url": url, "proxy_host": proxy_host})
+            logger.error("Crawl timeout", extra={"url": url, "proxy_host": proxy_host})
             raise NetworkError(url=url, status_code=None) from err
 
         response_time_ms = int((time.time() - start_time) * 1000)
 
         if not result.success or result.status_code in (403, 429):
-            self._logger.error(
+            logger.error(
                 "Crawl failed",
                 extra={
                     "url": url,
@@ -103,7 +100,7 @@ class CrawlerService:
         html = result.html or ""
         self._detect_captcha(html, url)
 
-        self._logger.info(
+        logger.info(
             "Crawl successful",
             extra={
                 "url": url,
@@ -129,7 +126,7 @@ class CrawlerService:
         for captcha_type, patterns in CAPTCHA_PATTERNS.items():
             for pattern in patterns:
                 if pattern.lower() in html_lower:
-                    self._logger.warning(
+                    logger.warning(
                         "Captcha detected",
                         extra={"url": url, "captcha_type": captcha_type},
                     )

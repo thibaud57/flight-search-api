@@ -18,9 +18,7 @@ from app.services.search_service import SearchService
 router = APIRouter()
 
 
-def get_search_service(
-    logger: Annotated[Logger, Depends(get_logger)],
-) -> SearchService:
+def get_search_service() -> SearchService:
     """Dependency injection pour SearchService."""
     settings = get_settings()
     proxy_service: ProxyService | None = None
@@ -28,9 +26,8 @@ def get_search_service(
         proxy_service = ProxyService(proxy_pool=[settings.proxy_config])
     return SearchService(
         combination_generator=CombinationGenerator(),
-        crawler_service=CrawlerService(proxy_service=proxy_service, logger=logger),
+        crawler_service=CrawlerService(proxy_service=proxy_service),
         flight_parser=FlightParser(),
-        logger=logger,
     )
 
 
