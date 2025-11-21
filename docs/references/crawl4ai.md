@@ -54,7 +54,23 @@ BrowserConfig contrôle le comportement global du navigateur incluant le type de
 - `enable_stealth` : Active le stealth mode via playwright-stealth (True/False)
 - `user_agent` : User-Agent personnalisé
 - `viewport` : Dimensions de la fenêtre
-- `proxy` : Configuration proxy
+- `proxy_config` : Configuration proxy (dict avec server, username, password)
+
+## Exemple avec proxy_config (v0.7+)
+
+```python
+from crawl4ai import AsyncWebCrawler, BrowserConfig
+
+browser_conf = BrowserConfig(
+    headless=True,
+    enable_stealth=True,
+    proxy_config={
+        "server": "http://proxy.example.com:8080",
+        "username": "myuser",
+        "password": "mypass",
+    }
+)
+```
 
 ## Exemple avec stealth mode
 

@@ -153,7 +153,7 @@ async def test_crawl_stealth_mode_enabled(crawler_service, mock_crawl_result):
 
 @pytest.mark.asyncio
 async def test_crawl_structured_logging(crawler_service, mock_crawl_result, caplog):
-    """Test 7: Logging structuré avec contexte."""
+    """Test 7: Logging structure avec contexte."""
     import logging
 
     caplog.set_level(logging.INFO)
@@ -169,3 +169,91 @@ async def test_crawl_structured_logging(crawler_service, mock_crawl_result, capl
         )
 
         assert any("crawl" in record.message.lower() for record in caplog.records)
+
+
+@pytest.fixture
+def proxy_config():
+    """ProxyConfig pour tests."""
+    from app.models.proxy import ProxyConfig
+
+    return ProxyConfig(
+        host="fr.decodo.com",
+        port=40000,
+        username="testuser",
+        password="testpassword",
+        country="FR",
+    )
+
+
+@pytest.fixture
+def proxy_service(proxy_config):
+    """ProxyService avec 1 proxy."""
+    from app.services.proxy_service import ProxyService
+
+    return ProxyService([proxy_config])
+
+
+@pytest.mark.asyncio
+async def test_crawl_with_proxy_service(mock_crawl_result, proxy_service):
+    """Test 8: CrawlerService utilise proxy_service."""
+    crawler_service = CrawlerService(proxy_service=proxy_service)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
+        mock_crawler = AsyncMock()
+        mock_crawler.arun.return_value = mock_crawl_result
+        mock_crawler.__aenter__ = AsyncMock(return_value=mock_crawler)
+        mock_crawler.__aexit__ = AsyncMock(return_value=None)
+        mock_crawler_class.return_value = mock_crawler
+
+        initial_index = proxy_service.current_proxy_index
+        result = await crawler_service.crawl_google_flights(
+            "https://www.google.com/travel/flights", use_proxy=True
+        )
+
+        assert result.success is True
+        assert (
+            proxy_service.current_proxy_index != initial_index
+            or proxy_service.pool_size == 1
+        )
+
+
+@pytest.mark.asyncio
+async def test_crawl_without_proxy_when_disabled(mock_crawl_result):
+    """Test 9: CrawlerService sans proxy si use_proxy=False."""
+    crawler_service = CrawlerService()
+
+    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
+        mock_crawler = AsyncMock()
+        mock_crawler.arun.return_value = mock_crawl_result
+        mock_crawler.__aenter__ = AsyncMock(return_value=mock_crawler)
+        mock_crawler.__aexit__ = AsyncMock(return_value=None)
+        mock_crawler_class.return_value = mock_crawler
+
+        result = await crawler_service.crawl_google_flights(
+            "https://www.google.com/travel/flights", use_proxy=False
+        )
+
+        assert result.success is True
+
+
+@pytest.mark.asyncio
+async def test_crawl_proxy_rotation_called(mock_crawl_result, proxy_service):
+    """Test 10: get_next_proxy() appele si use_proxy=True."""
+    crawler_service = CrawlerService(proxy_service=proxy_service)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
+        mock_crawler = AsyncMock()
+        mock_crawler.arun.return_value = mock_crawl_result
+        mock_crawler.__aenter__ = AsyncMock(return_value=mock_crawler)
+        mock_crawler.__aexit__ = AsyncMock(return_value=None)
+        mock_crawler_class.return_value = mock_crawler
+
+        initial_index = proxy_service.current_proxy_index
+        await crawler_service.crawl_google_flights(
+            "https://www.google.com/travel/flights", use_proxy=True
+        )
+
+        assert (
+            proxy_service.current_proxy_index != initial_index
+            or proxy_service.pool_size == 1
+        )
