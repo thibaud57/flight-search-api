@@ -445,6 +445,17 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
+**⚡ Validation légère Epic 1** (15-30min) :
+- [ ] **Standards Python** : Type hints PEP 695 partout, pas de commentaires inline
+- [ ] **Versions** : Conforme Python 3.13, FastAPI 0.121.2, Pydantic 2.12.4, pytest 8.0+ (vérifier via `docs/VERSIONS.md`)
+- [ ] **Quality checks** : `ruff check . && ruff format . && mypy app/ && pytest tests/unit/ --cov=app`
+  - ruff ✅ (0 erreurs)
+  - mypy ✅ (0 erreurs)
+  - pytest ✅ (tous tests passent)
+  - coverage ≥ 80%
+- [ ] **Cohérence code** : Nomenclature uniforme, pas de duplication (DRY), architecture respectée
+- [ ] **Documentation** : CHANGELOG.md à jour, specs complètes
+
 **Fin Epic 1** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.5.0 sur master → GitHub Release (workflow automatique)
 
 ---
@@ -494,6 +505,18 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
+**⚡ Validation légère Epic 2** (15-30min) :
+- [ ] **Standards Python** : Type hints PEP 695 partout, pas de commentaires inline
+- [ ] **Versions** : Conforme Crawl4AI 0.7.7+, Decodo proxies patterns, tenacity 9.1.2+ (vérifier via `docs/VERSIONS.md`)
+- [ ] **Quality checks** : `ruff check . && ruff format . && mypy app/ && pytest tests/unit/ --cov=app`
+  - ruff ✅ (0 erreurs)
+  - mypy ✅ (0 erreurs)
+  - pytest ✅ (tous tests passent)
+  - coverage ≥ 80%
+- [ ] **Cohérence code** : Nomenclature uniforme, pas de duplication (DRY), architecture respectée
+- [ ] **Documentation** : CHANGELOG.md à jour, specs complètes
+- [ ] **Logs structurés** : Crawler logs avec contexte (proxy_used, parsing_success)
+
 **Fin Epic 2** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.6.0 sur master → GitHub Release (workflow automatique)
 
 ---
@@ -519,27 +542,119 @@
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
+**⚡ Validation légère Epic 3** (15-30min) :
+- [ ] **Standards Python** : Type hints PEP 695 partout, pas de commentaires inline
+- [ ] **Versions** : Conforme tenacity 9.1.2+ retry patterns (vérifier via `docs/VERSIONS.md`)
+- [ ] **Quality checks** : `ruff check . && ruff format . && mypy app/ && pytest tests/unit/ --cov=app`
+  - ruff ✅ (0 erreurs)
+  - mypy ✅ (0 erreurs)
+  - pytest ✅ (tous tests passent)
+  - coverage ≥ 80%
+- [ ] **Cohérence code** : Nomenclature uniforme, pas de duplication (DRY), architecture respectée
+- [ ] **Documentation** : CHANGELOG.md à jour, specs complètes
+- [ ] **Logs retry** : before_sleep callback actif, erreurs loggées avec contexte
+- [ ] **Error handling** : 4xx non-retry, 5xx retry, exceptions spécifiques (pas `except Exception:`)
+
 **Fin Epic 3** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.7.0 sur master → GitHub Release (workflow automatique)
 
 ---
 
-### 5.11 Validation complète
+### 5.11 Validation complète MVP (2-4h)
 
-**Tests end-to-end complets** :
+**🔍 Audit global architecture & standards** :
 
-- [ ] Lancer 10+ recherches multi-city avec vraies clés Decodo
-- [ ] Démo client : Validation UX, performance, format JSON
-- [ ] Validation business : Feedback client, acceptation MVP
-- [ ] Analyse logs : Taux de succès, taux d'erreurs, temps réponse, captcha detection
-- [ ] Build Docker : `docker build -t flight-search-api:v0.7.0 .`
-- [ ] Tests Docker : `docker run -p 8000:8000 --env-file .env flight-search-api:v0.7.0`
+- [ ] **Architecture (ARCHITECTURE.md)** :
+  - [ ] Diagrammes à jour (composants, séquence)
+  - [ ] ADRs conformes implémentation (crawl4ai, proxies, retry, captcha detection)
+  - [ ] Pas de déviation non documentée
 
-**Décision Phase 6** :
+- [ ] **Standards Python 3.13 (VERSIONS.md + CLAUDE.md)** :
+  - [ ] Type hints PEP 695 partout (`list[T]`, `X | None`, generics modernes)
+  - [ ] Pas de commentaires inline (sauf justification explicite)
+  - [ ] Docstrings pragmatiques (1 ligne par défaut)
+  - [ ] Async patterns corrects (`async with`, pas de blocking calls)
 
-- **Si v0.7.0 OK sans bugs critiques** : Passer à Phase 6 (Documentation + Release v1.0.0)
-- **Si bugs critiques trouvés** : Fix via hotfix → Nouveau tag v0.7.1 → Revalider
+- [ ] **Conformité versions frameworks** :
+  - [ ] FastAPI 0.121.2+ : Dependency injection avec `Depends()`, `@lru_cache` pour singletons
+  - [ ] Pydantic 2.12.4+ : `.model_validate()`, `model_config = ConfigDict()`, `field_validator`
+  - [ ] Crawl4AI 0.7.7+ : `AsyncWebCrawler`, `JsonCssExtractionStrategy`, stealth mode
+  - [ ] tenacity 9.1.2+ : `@retry` decorator async, exponential backoff + jitter
+  - [ ] pytest 8.0+ : Fixtures avec yield cleanup, scopes corrects, `asyncio_mode = "auto"`
+
+- [ ] **Quality checks globaux** :
+  - [ ] `ruff check .` → 0 erreurs (warnings tolérés selon config)
+  - [ ] `ruff format . --check` → Pas de changements nécessaires
+  - [ ] `mypy app/` → 0 erreurs (strict mode)
+  - [ ] `pytest tests/ --cov=app --cov-report=term-missing` → Coverage ≥ 80%
+  - [ ] Tous tests unitaires + intégration passent ✅
+
+**🧪 Tests end-to-end complets** :
+
+- [ ] **Recherches multi-city avec vraies clés Decodo** :
+  - [ ] 2 segments : Paris → Tokyo (7 jours) → New York (5 jours)
+  - [ ] 3 segments : Paris → Tokyo → Sydney → Paris
+  - [ ] 5 segments (max) : Tour du monde multi-stops
+  - [ ] Vérifier Top 10 résultats triés par prix croissant
+  - [ ] Vérifier structure JSON conforme `SearchResponse` schema
+
+- [ ] **Analyse logs production** :
+  - [ ] Taux de succès parsing ≥ 90%
+  - [ ] Taux captcha détecté (baseline pour Phase 7 décision)
+  - [ ] Temps réponse moyen < 15s par recherche multi-city
+  - [ ] Proxy rotation active (logs montrent IPs différentes)
+  - [ ] Structured JSON logs avec contexte (search_id, destinations, proxy_used)
+
+- [ ] **Validation Docker** :
+  - [ ] `docker build -t flight-search-api:v0.7.0 .` → Succès
+  - [ ] `docker run -p 8000:8000 --env-file .env flight-search-api:v0.7.0` → App démarre
+  - [ ] Health check : `curl http://localhost:8000/health` → `{"status": "ok"}`
+  - [ ] Search endpoint : `curl -X POST http://localhost:8000/api/v1/search-flights` → 10 résultats
+
+**📊 Validation business** :
+
+- [ ] **Démo client** :
+  - [ ] UX validée : Format JSON lisible, champs pertinents (price, airline, departure_date, segments)
+  - [ ] Performance acceptable : Temps réponse < 15s pour 2-3 segments
+  - [ ] Feedback client positif : Acceptation MVP
+
+- [ ] **Monitoring coûts** :
+  - [ ] Bandwidth Decodo : ~200KB par recherche (optimisations actives)
+  - [ ] Coût estimé : ~0.0008€ par recherche (~$4/GB Decodo)
+  - [ ] Pas de coûts LLM (extraction CSS uniquement)
+
+**🔒 Cohérence globale codebase** :
+
+- [ ] **Nomenclature uniforme** :
+  - [ ] Fichiers : `snake_case.py`
+  - [ ] Classes : `PascalCase`
+  - [ ] Fonctions/vars : `snake_case`
+  - [ ] Constants : `UPPER_SNAKE_CASE`
+
+- [ ] **DRY (Don't Repeat Yourself)** :
+  - [ ] Pas de duplication code (fixtures pytest, helpers utils)
+  - [ ] Abstractions pertinentes (services, models séparés)
+
+- [ ] **Logs structurés cohérents** :
+  - [ ] Tous logs JSON format avec `pythonjsonlogger`
+  - [ ] `extra={}` context partout (search_id, destinations, proxy_used, etc.)
+  - [ ] Pas de secrets dans logs (passwords, API keys masqués)
+
+**📚 Documentation synchronisée** :
+
+- [ ] **CHANGELOG.md** : Entrées v0.5.0, v0.6.0, v0.7.0 complètes
+- [ ] **ARCHITECTURE.md** : ADRs à jour avec implémentation réelle
+- [ ] **SPECS.md** : Index complet (stories 1-7)
+- [ ] **REFERENCES.md** : Index à jour (10 fichiers références techniques)
+- [ ] **VERSIONS.md** : Matrice compatibilité conforme dépendances installées
+
+**✅ Décision Phase 6** :
+
+- **Si v0.7.0 OK sans bugs critiques** : ✅ Passer à Phase 6 (Documentation + Release v1.0.0)
+- **Si bugs critiques trouvés** : ❌ Fix via hotfix → Nouveau tag v0.7.1 → Revalider
 
 📝 **Output** : v0.7.0 validé, prêt pour Phase 6 (Documentation finale)
+
+**Note** : Cette checklist exhaustive sert aussi de modèle pour validation futures versions majeures (v2.0.0, v3.0.0, etc.)
 
 ---
 
