@@ -1,3 +1,4 @@
+import math
 import re
 from datetime import date, datetime
 from typing import Annotated
@@ -97,9 +98,7 @@ class SearchRequest(BaseModel):
             days_diff = (end_date - start_date).days + 1
             days_per_segment.append(days_diff)
 
-        total_combinations = 1
-        for days in days_per_segment:
-            total_combinations *= days
+        total_combinations = math.prod(days_per_segment)
 
         if total_combinations > 1000:
             max_days_index = days_per_segment.index(max(days_per_segment))

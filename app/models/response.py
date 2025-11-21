@@ -51,10 +51,9 @@ class SearchResponse(BaseModel):
     @model_validator(mode="after")
     def validate_results_sorted(self) -> "SearchResponse":
         """Valide results triés par prix croissant."""
-        if len(self.results) > 1:
-            for i in range(len(self.results) - 1):
-                if self.results[i].price > self.results[i + 1].price:
-                    raise ValueError(
-                        "Results must be sorted by price (ascending order)"
-                    )
+        if not all(
+            a.price <= b.price
+            for a, b in zip(self.results, self.results[1:], strict=False)
+        ):
+            raise ValueError("Results must be sorted by price (ascending order)")
         return self
