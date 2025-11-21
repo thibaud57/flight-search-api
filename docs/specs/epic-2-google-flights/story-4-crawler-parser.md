@@ -4,9 +4,9 @@ epic: "Epic 2: Google Flights Integration"
 story_points: 8
 dependencies: ["epic-1/story-1", "epic-1/story-2", "epic-1/story-3"]
 date: "2025-19-11"
-keywords: ["crawler", "parser", "crawl4ai", "google-flights", "scraping", "stealth-mode", "decodo-proxies", "jsoncssstrategy", "captcha-detection", "pydantic", "proof-of-concept"]
+keywords: ["crawler", "parser", "crawl4ai", "google-flights", "scraping", "stealth-mode", "jsoncssstrategy", "captcha-detection", "pydantic", "proof-of-concept"]
 scope: ["specs"]
-technologies: ["crawl4ai", "playwright", "pydantic", "decodo", "tenacity"]
+technologies: ["crawl4ai", "playwright", "pydantic"]
 ---
 
 # 🎯 Contexte Business
@@ -21,7 +21,7 @@ technologies: ["crawl4ai", "playwright", "pydantic", "decodo", "tenacity"]
 ## Contraintes métier
 
 - **Anti-détection Google Flights** : Google utilise Cloudflare/DataDome pour détecter et bloquer les bots (stealth mode Crawl4AI activé, proxies ajoutés Story 5)
-- **Captcha detection MVP** : Phase MVP = détection uniquement (logging + retry), pas de résolution automatique (rotation proxies Story 5, 2Captcha Phase 7 si taux blocage >5%)
+- **Captcha detection MVP** : Phase MVP = détection uniquement (logging), pas de résolution automatique (rotation proxies Story 5, retry Story 7, 2Captcha Phase 7 optionnel si taux blocage >5%)
 - **Bandwidth Google Flights** : Minimiser nombre de requêtes et taille HTML téléchargé pour éviter rate limiting (POC = tests dev local limités)
 - **Pas de Database** : Résultats en mémoire uniquement (pas de persistence), focus sur extraction et transformation données
 - **Structure HTML Google Flights non documentée** : Sélecteurs CSS peuvent changer sans préavis, nécessite monitoring et robustesse parsing
@@ -37,7 +37,7 @@ technologies: ["crawl4ai", "playwright", "pydantic", "decodo", "tenacity"]
 ## Métriques succès
 
 - **Taux succès crawl** : ≥85% de requêtes Google Flights retournent HTML valide (status 200, pas de captcha)
-- **Temps réponse crawl** : ≤10 secondes par URL Google Flights (P95 percentile, incluant retry logic)
+- **Temps réponse crawl** : ≤10 secondes par URL Google Flights (P95 percentile, POC dev local)
 - **Taux captcha détecté** : ≤5% de requêtes bloquées par reCAPTCHA/hCaptcha (target MVP)
 - **Taux parsing réussi** : ≥95% de HTML valides parsés avec succès (minimum 5 vols extraits par recherche)
 - **Qualité extraction** : 100% des champs obligatoires (price, airline, departure_time, arrival_time, duration) présents et valides selon schéma Pydantic
@@ -49,7 +49,7 @@ technologies: ["crawl4ai", "playwright", "pydantic", "decodo", "tenacity"]
 
 ## 1. CrawlerService
 
-**Rôle** : Orchestrer le crawling Google Flights avec Crawl4AI en mode POC (dev local), gérer stealth mode, détection captchas, et retry logic (proxies ajoutés Story 5).
+**Rôle** : Orchestrer le crawling Google Flights avec Crawl4AI en mode POC (dev local), gérer stealth mode et détection captchas (proxies ajoutés Story 5, retry logic ajouté Story 7).
 
 **Interface** :
 ```python
@@ -254,15 +254,13 @@ class Flight(BaseModel):
 | # | Nom test | Prérequis (Given) | Action (When) | Résultat attendu (Then) |
 |---|----------|-------------------|---------------|-------------------------|
 | 1 | `test_integration_crawl_and_parse_success` | Mock AsyncWebCrawler avec HTML Google Flights valide (10 vols) | Crawl URL → Parse HTML | `len(flights) == 10`, tous Flight validés Pydantic, pas d'exception |
-| 2 | `test_integration_crawl_captcha_retry_parse_success` | Mock AsyncWebCrawler : 1ère tentative captcha, 2ème HTML valide | Crawl avec retry → Parse HTML 2ème tentative | `len(flights) >= 5`, 2 proxies utilisés, logs WARNING captcha puis SUCCESS |
-| 3 | `test_integration_crawl_max_retries_no_parse` | Mock AsyncWebCrawler : toutes tentatives retournent captcha | Crawl avec max_retries=3 | Lève `CaptchaDetectedError`, aucun parsing tenté, 3 proxies différents utilisés |
-| 4 | `test_integration_crawl_success_parse_zero_flights` | Mock AsyncWebCrawler avec HTML Google Flights vide (aucun `.pIav2d`) | Crawl URL → Parse HTML vide | Lève `ParsingError("Zero valid flights extracted")`, crawl success mais parsing fail |
+| 2 | `test_integration_crawl_success_parse_zero_flights` | Mock AsyncWebCrawler avec HTML Google Flights vide (aucun `.pIav2d`) | Crawl URL → Parse HTML vide | Lève `ParsingError("Zero valid flights extracted")`, crawl success mais parsing fail |
 
-**Total tests intégration** : 4 tests
+**Total tests intégration** : 2 tests
 
 ---
 
-**TOTAL TESTS** : 20 unitaires + 4 intégration = **24 tests**
+**TOTAL TESTS** : 17 unitaires + 2 intégration = **19 tests**
 
 ---
 

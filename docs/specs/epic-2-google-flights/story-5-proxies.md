@@ -518,7 +518,7 @@ DECODO_PROXY_POOL_SIZE=3
 
 19. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% du code de ProxyConfig, ProxyService, Settings extension (pytest-cov report)
 
-20. **24 tests passent** : 18 tests unitaires (6 ProxyConfig + 6 ProxyService + 6 Settings) + 6 tests intégration tous verts (pytest -v), aucun test skipped ou xfail
+20. **23 tests passent** : 18 tests unitaires (6 ProxyConfig + 6 ProxyService + 6 Settings) + 5 tests intégration tous verts (pytest -v), aucun test skipped ou xfail
 
 21. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type (type hints ProxyConfig, ProxyService, Settings validés)
 
@@ -536,4 +536,4 @@ DECODO_PROXY_POOL_SIZE=3
 
 **Note importante** : Story moyenne complexité (5 story points) → 26 critères couvrent exhaustivement gestion proxies (8 fonctionnels), architecture Pydantic v2 validation (10 techniques), qualité tests TDD (8 qualité).
 
-**Principe SMART** : Chaque critère est **S**pécifique (rotation round-robin itertools.cycle, regex username strict), **M**esurable (24 tests passent, coverage ≥80%, distribution équitable ±1), **A**tteignable (réutilisation Story 4 CrawlerService, patterns Pydantic v2 existants), **R**elevant (foundation anti-détection scalable, économie bandwidth Decodo), **T**emporel (MVP Phase 5, avant orchestration multi-city Story 6).
+**Principe SMART** : Chaque critère est **S**pécifique (rotation round-robin itertools.cycle, regex username strict), **M**esurable (23 tests passent, coverage ≥80%, distribution équitable ±1), **A**tteignable (réutilisation Story 4 CrawlerService, patterns Pydantic v2 existants), **R**elevant (foundation anti-détection scalable, économie bandwidth Decodo), **T**emporel (MVP Phase 5, avant orchestration multi-city Story 6).
