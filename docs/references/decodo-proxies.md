@@ -56,8 +56,8 @@ Decodo permet de cibler précisément les IPs résidentielles de France via des 
 ### Endpoint France (tous les modes)
 
 ```
-fr.decodo.com:30001-39999  # Sticky session (port spécifique)
-fr.decodo.com:30000        # Rotating session (port terminé en 0)
+fr.decodo.com:40001-49999  # Sticky session (port spécifique)
+fr.decodo.com:40000        # Rotating session (port terminé en 0)
 ```
 
 ### Avec authentification Username/Password
@@ -75,7 +75,7 @@ curl -U user-username-country-fr-city-paris:password -x gate.decodo.com:7000 htt
 ## Points clés
 
 - **Code pays** : Toujours en minuscules (fr, pas FR)
-- **Endpoints France** : fr.decodo.com:30000 (rotating) ou :30001-39999 (sticky)
+- **Endpoints France** : fr.decodo.com:40000 (rotating) ou :40001-49999 (sticky)
 - **Ciblage ville** : country-fr-city-paris pour ciblage géographique précis
 - **Exclusivité** : Ciblage ville et ASN mutuellement exclusifs
 - **IPv4 uniquement** : Whitelisted IP n'accepte que IPv4 (pas IPv6)

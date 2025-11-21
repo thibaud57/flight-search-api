@@ -22,9 +22,9 @@ technologies: ["decodo", "pydantic"]
 
 - **Coûts bandwidth Decodo variables** : Proxies résidentiels facturés au GB consommé ($2.60-3.50/GB selon volume mensuel d'après VERSIONS.md et decodo-proxies.md), chaque HTML Google Flights = ~200-500KB, nécessite optimisation nombre de requêtes
 - **Rate limiting Google Flights** : Trop de requêtes depuis même IP déclenchent blocages temporaires (status 429) ou captchas, rotation IP obligatoire pour distribution charge
-- **Authentification customer-XXX-country-FR stricte** : Format username Decodo exige exactement `customer-{api_key}-country-{country}` (minuscules obligatoires, tirets séparateurs), validation regex nécessaire pour éviter erreurs auth
+- **Authentification simple** : Format username Decodo = identifiant simple fourni par dashboard (ex: `spierhheqr`), pas de format complexe customer-XXX-country-FR
 - **France targeting MVP** : Focus MVP sur proxies résidentiels France uniquement (country=FR) pour cohérence géographique avec Google Flights France, extensible autres pays post-MVP
-- **Pool size limité MVP** : Recommandation 3-5 proxies en pool pour MVP (balance entre distribution efficace et overhead gestion), extensible à 10-20 proxies selon monitoring taux blocage
+- **Rotation server-side Decodo** : Decodo gère la rotation IP automatiquement côté serveur via port 40000 (rotating), pas besoin de pool côté client
 
 ## Valeur business
 
@@ -68,9 +68,9 @@ class ProxyConfig(BaseModel):
 
 | Champ | Type | Description | Contraintes |
 |-------|------|-------------|-------------|
-| `host` | `str` | Hostname proxy Decodo | Format `pr.decodo.com` ou `gate.decodo.com`, min_length=10 |
-| `port` | `int` | Port proxy résidentiel | Range 7000-9000 (ports Decodo standard), ≥ 1024 |
-| `username` | `str` | Username auth format customer-XXX-country-FR | Pattern regex `^customer-[a-z0-9]+-country-[a-z]{2}$`, min_length=20 |
+| `host` | `str` | Hostname proxy Decodo | Format `fr.decodo.com` ou `gate.decodo.com`, min_length=5 |
+| `port` | `int` | Port proxy résidentiel | Port 40000 (rotating France) ou 40001-49999 (sticky), ≥ 1024 |
+| `username` | `str` | Username auth Decodo | Identifiant simple fourni par dashboard (ex: `spierhheqr`), min_length=5 |
 | `password` | `str` | Mot de passe proxy Decodo | min_length=8, max_length=100 |
 | `country` | `str` | Code pays ISO Alpha-2 (FR, US, etc.) | Default "FR", length=2, pattern `^[A-Z]{2}$` (uppercase) |
 
@@ -83,20 +83,20 @@ class ProxyConfig(BaseModel):
   4. Retour instance ProxyConfig validée
 
 - **Validations Pydantic** :
-  - `field_validator('username', mode='after')` : Vérifier format `customer-{api_key}-country-{country}` avec regex `^customer-[a-z0-9]+-country-[a-z]{2}$`
+  - `field_validator('username', mode='after')` : Vérifier min_length=5 (identifiant simple Decodo)
   - `field_validator('host', mode='after')` : Vérifier que host contient "decodo.com" (hostname Decodo valide)
-  - `field_validator('port', mode='after')` : Vérifier port dans range 7000-9000 (ports résidentiels Decodo standard)
+  - `field_validator('port', mode='after')` : Vérifier port ≥ 1024 (ports Decodo 40000+ pour France)
   - `field_validator('country', mode='before')` : Convertir automatiquement lowercase→uppercase (ex: "fr" → "FR") pour normalisation
 
 - **Edge cases** :
-  - **Username format invalide** : Si username ne contient pas "customer-" prefix ou "country-" suffix → Lève `ValidationError` Pydantic avec message explicite "Username must match format customer-XXX-country-XX"
-  - **Port hors range** : Si port <7000 ou >9000 → Lève `ValidationError` "Port must be between 7000 and 9000"
+  - **Username trop court** : Si username <5 caractères → Lève `ValidationError` "Username must be at least 5 characters"
+  - **Port invalide** : Si port <1024 → Lève `ValidationError` "Port must be >= 1024"
   - **Host invalide** : Si host ne contient pas "decodo.com" → Lève `ValidationError` "Host must be a valid Decodo hostname"
   - **Password trop court** : Si password <8 caractères → Lève `ValidationError` "Password must be at least 8 characters"
 
 - **Méthode get_proxy_url()** :
   - Format retour : `http://{username}:{password}@{host}:{port}`
-  - Exemple : `http://customer-abc123-country-fr:mypassword@pr.decodo.com:8080`
+  - Exemple : `http://spierhheqr:mypassword@fr.decodo.com:40000`
   - Utilisé par CrawlerService pour passer proxy à BrowserConfig Crawl4AI
 
 **Validations Pydantic** :
@@ -104,8 +104,8 @@ class ProxyConfig(BaseModel):
 | Champ | Contrainte | Validator |
 |-------|-----------|-----------|
 | `host` | Contient "decodo.com" | `field_validator('host', mode='after')` |
-| `port` | 7000 ≤ port ≤ 9000 | `field_validator('port', mode='after')` |
-| `username` | Regex `^customer-[a-z0-9]+-country-[a-z]{2}$` | `field_validator('username', mode='after')` |
+| `port` | port ≥ 1024 | `field_validator('port', mode='after')` |
+| `username` | min_length=5 | Field constraint standard |
 | `password` | min_length=8, max_length=100 | Field constraint standard |
 | `country` | Uppercase conversion + length=2 | `field_validator('country', mode='before')` |
 
@@ -282,56 +282,40 @@ class Settings(BaseSettings):
 
     DECODO_USERNAME: str
     DECODO_PASSWORD: SecretStr
-    DECODO_PROXY_HOST: str = "pr.decodo.com:8080"
+    DECODO_PROXY_HOST: str = "fr.decodo.com:40000"
     DECODO_PROXY_ENABLED: bool = True
-    DECODO_PROXY_POOL_SIZE: int = 3
-    proxy_pool: list[ProxyConfig] = []
-
-    @field_validator('DECODO_USERNAME', mode='after')
-    @classmethod
-    def validate_username_format(cls, v: str) -> str:
-        """Valide format customer-XXX-country-FR."""
-
-    @field_validator('DECODO_PROXY_POOL_SIZE', mode='after')
-    @classmethod
-    def validate_pool_size_range(cls, v: int) -> int:
-        """Valide pool size entre 1 et 10."""
 
     @model_validator(mode='after')
-    def generate_proxy_pool(self) -> 'Settings':
-        """Génère pool de proxies depuis DECODO_USERNAME si proxies activés."""
+    def build_proxy_config(self) -> 'Settings':
+        """Génère ProxyConfig depuis variables env si proxies activés."""
 ```
 
 **Champs Proxies** :
 
 | Champ | Type | Default | Description | Validation |
 |-------|------|---------|-------------|------------|
-| `DECODO_USERNAME` | `str` | - | Username Decodo format customer-XXX-country-FR | Regex strict `^customer-[a-z0-9]+-country-[a-z]{2}$`, conversion lowercase |
+| `DECODO_USERNAME` | `str` | - | Username Decodo (identifiant simple dashboard) | min_length 5 |
 | `DECODO_PASSWORD` | `SecretStr` | - | Password Decodo (masqué logs) | min_length 8, masqué automatiquement par SecretStr |
-| `DECODO_PROXY_HOST` | `str` | `"pr.decodo.com:8080"` | Hostname:port proxy Decodo | Format "host:port" avec validation contient "decodo.com" |
-| `DECODO_PROXY_ENABLED` | `bool` | `True` | Active/désactive proxies globalement | False désactive génération proxy_pool |
-| `DECODO_PROXY_POOL_SIZE` | `int` | `3` | Nombre proxies dans pool rotation | Range 1-10 (validation field_validator) |
-| `proxy_pool` | `list[ProxyConfig]` | `[]` | Pool proxies généré automatiquement | Généré par model_validator si DECODO_PROXY_ENABLED=True |
+| `DECODO_PROXY_HOST` | `str` | `"fr.decodo.com:40000"` | Hostname:port proxy Decodo France rotating | Format "host:port" avec validation contient "decodo.com" |
+| `DECODO_PROXY_ENABLED` | `bool` | `True` | Active/désactive proxies globalement | False désactive proxy |
 
 **Comportement** :
 
 - **Chargement variables** → Settings charge automatiquement variables depuis .env (Config.env_file=".env")
-- **Validation username** → field_validator DECODO_USERNAME vérifie regex `^customer-[a-z0-9]+-country-[a-z]{2}$` et convertit en lowercase
-- **Validation pool size** → field_validator DECODO_PROXY_POOL_SIZE vérifie range 1-10, lève ValidationError si hors limites
-- **Génération pool automatique** → model_validator génère liste proxy_pool avec DECODO_PROXY_POOL_SIZE instances ProxyConfig si DECODO_PROXY_ENABLED=True
-- **Extraction country** → model_validator extrait country code depuis username via regex `country-([a-z]{2})` et convertit en uppercase (ex: "customer-abc-country-fr" → country="FR")
+- **Validation username** → min_length 5, identifiant simple fourni par dashboard Decodo
+- **Génération ProxyConfig** → model_validator génère ProxyConfig depuis DECODO_USERNAME, PASSWORD, HOST si DECODO_PROXY_ENABLED=True
 - **Sécurité password** → SecretStr masque automatiquement DECODO_PASSWORD dans logs (affiche "**********"), get_secret_value() utilisé uniquement pour génération ProxyConfig
-- **Mode désactivé** → Si DECODO_PROXY_ENABLED=False, proxy_pool reste liste vide, ProxyService non initialisé
+- **Mode désactivé** → Si DECODO_PROXY_ENABLED=False, pas de ProxyConfig généré
+- **Rotation server-side** → Decodo gère automatiquement la rotation IP via port 40000, pas de pool côté client nécessaire
 
 **Variables .env** :
 
 ```bash
 # Proxies Decodo Configuration
-DECODO_USERNAME=customer-abc123def456-country-fr
+DECODO_USERNAME=spierhheqr
 DECODO_PASSWORD=my_secure_password_here
-DECODO_PROXY_HOST=pr.decodo.com:8080
+DECODO_PROXY_HOST=fr.decodo.com:40000
 DECODO_PROXY_ENABLED=true
-DECODO_PROXY_POOL_SIZE=3
 ```
 
 
@@ -347,11 +331,11 @@ DECODO_PROXY_POOL_SIZE=3
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 1 | `test_proxy_config_valid_fields` | ProxyConfig avec tous champs valides | `host="pr.decodo.com"`, `port=8080`, `username="customer-abc123-country-fr"`, `password="mypassword"`, `country="FR"` | Instance ProxyConfig créée sans erreur, tous champs == input | Vérifie validation Pydantic nominale |
-| 2 | `test_proxy_config_username_format_valid` | Username format customer-XXX-country-FR valide | `username="customer-abc123def456-country-fr"` | Validation passe, instance créée | Vérifie regex format username strict |
-| 3 | `test_proxy_config_username_format_invalid` | Username format invalide (manque "customer-" prefix) | `username="abc123-country-fr"` | Lève `ValidationError` avec message "must match format customer-XXX-country-XX" | Vérifie validation username stricte |
-| 4 | `test_proxy_config_invalid_port_range` | Port hors range 7000-9000 | `port=5000` (trop bas) | Lève `ValidationError` "Port must be between 7000 and 9000" | Vérifie validation port range Decodo |
-| 5 | `test_proxy_config_generate_url_format` | Méthode get_proxy_url() génère URL correcte | ProxyConfig valide avec tous champs | Retour == `"http://customer-abc123-country-fr:mypassword@pr.decodo.com:8080"` | Vérifie format URL proxy pour BrowserConfig |
+| 1 | `test_proxy_config_valid_fields` | ProxyConfig avec tous champs valides | `host="fr.decodo.com"`, `port=40000`, `username="spierhheqr"`, `password="mypassword"`, `country="FR"` | Instance ProxyConfig créée sans erreur, tous champs == input | Vérifie validation Pydantic nominale |
+| 2 | `test_proxy_config_username_valid` | Username valide (min 5 caractères) | `username="spierhheqr"` | Validation passe, instance créée | Vérifie min_length username |
+| 3 | `test_proxy_config_username_too_short` | Username trop court (<5 caractères) | `username="abc"` | Lève `ValidationError` avec message "at least 5 characters" | Vérifie validation username min_length |
+| 4 | `test_proxy_config_invalid_port` | Port invalide (<1024) | `port=80` (trop bas) | Lève `ValidationError` "Port must be >= 1024" | Vérifie validation port minimum |
+| 5 | `test_proxy_config_generate_url_format` | Méthode get_proxy_url() génère URL correcte | ProxyConfig valide avec tous champs | Retour == `"http://spierhheqr:mypassword@fr.decodo.com:40000"` | Vérifie format URL proxy pour BrowserConfig |
 | 6 | `test_proxy_config_country_uppercase_conversion` | Country automatiquement converti en uppercase | `country="fr"` (lowercase input) | ProxyConfig.country == "FR" (uppercase) | Vérifie normalisation country field_validator mode='before' |
 
 ### ProxyService (6 tests)
@@ -365,18 +349,16 @@ DECODO_PROXY_POOL_SIZE=3
 | 11 | `test_proxy_service_empty_pool_error` | Pool vide lève ValueError | `proxy_pool=[]` (liste vide) | Lève `ValueError("Proxy pool cannot be empty")` dans __init__ | Vérifie validation pool non vide |
 | 12 | `test_proxy_service_current_index_property` | Property current_proxy_index retourne index correct | Pool 3 proxies, appeler get_next_proxy() 4 fois | `current_proxy_index` property retourne 1 (4 % 3 = 1) | Vérifie observabilité index rotation |
 
-### Settings Configuration (6 tests)
+### Settings Configuration (4 tests)
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 13 | `test_settings_proxy_pool_generation` | model_validator génère pool automatiquement | .env avec DECODO_USERNAME, PASSWORD, HOST, POOL_SIZE=3, ENABLED=true | `settings.proxy_pool` length==3, tous ProxyConfig valides avec credentials cohérents | Vérifie génération automatique pool depuis env vars |
-| 14 | `test_settings_proxy_disabled` | Proxies désactivés génère pool vide | .env avec DECODO_PROXY_ENABLED=false | `settings.proxy_pool == []` (liste vide) | Vérifie comportement désactivation proxies |
-| 15 | `test_settings_username_validation_invalid_format` | Username format invalide rejette Settings | .env avec DECODO_USERNAME="invalid_format" | Lève `ValidationError` "must match format customer-XXX-country-XX" | Vérifie field_validator username strict |
-| 16 | `test_settings_pool_size_range_invalid` | Pool size hors range 1-10 rejette | DECODO_PROXY_POOL_SIZE=15 (trop grand) | Lève `ValidationError` "must be between 1 and 10" | Vérifie field_validator pool_size range |
-| 17 | `test_settings_extract_country_from_username` | Country extrait depuis username | DECODO_USERNAME="customer-abc-country-de" | `settings.proxy_pool[0].country == "DE"` (extrait depuis username) | Vérifie extraction country via regex dans model_validator |
-| 18 | `test_settings_secret_str_password_masked` | SecretStr masque password dans logs | Settings avec DECODO_PASSWORD="secret123" | `str(settings.DECODO_PASSWORD) == "**********"` (masqué) | Vérifie sécurité SecretStr Pydantic |
+| 13 | `test_settings_proxy_config_generation` | model_validator génère ProxyConfig | .env avec DECODO_USERNAME, PASSWORD, HOST, ENABLED=true | `settings.proxy_config` valide avec credentials cohérents | Vérifie génération automatique ProxyConfig depuis env vars |
+| 14 | `test_settings_proxy_disabled` | Proxies désactivés génère None | .env avec DECODO_PROXY_ENABLED=false | `settings.proxy_config == None` | Vérifie comportement désactivation proxies |
+| 15 | `test_settings_username_too_short` | Username trop court rejette Settings | .env avec DECODO_USERNAME="abc" | Lève `ValidationError` "at least 5 characters" | Vérifie validation username min_length |
+| 16 | `test_settings_secret_str_password_masked` | SecretStr masque password dans logs | Settings avec DECODO_PASSWORD="secret123" | `str(settings.DECODO_PASSWORD) == "**********"` (masqué) | Vérifie sécurité SecretStr Pydantic |
 
-**Total tests unitaires** : 6 (ProxyConfig) + 6 (ProxyService) + 6 (Settings) = **18 tests**
+**Total tests unitaires** : 6 (ProxyConfig) + 6 (ProxyService) + 4 (Settings) = **16 tests**
 
 ---
 
@@ -387,7 +369,7 @@ DECODO_PROXY_POOL_SIZE=3
 | # | Nom test | Prérequis (Given) | Action (When) | Résultat attendu (Then) |
 |---|----------|-------------------|---------------|-------------------------|
 | 1 | `test_integration_crawler_with_proxy_rotation` | Mock AsyncWebCrawler, ProxyService avec pool 3 proxies, CrawlerService initialisé avec proxy_service | Appeler `crawl_google_flights(url)` 3 fois consécutives | 3 crawls utilisent 3 proxies différents (proxy0, proxy1, proxy2 vérifiés via BrowserConfig.proxy), logs INFO contiennent proxy_host distinct pour chaque crawl |
-| 2 | `test_integration_settings_load_from_env` | Fichier .env avec DECODO_USERNAME, PASSWORD, HOST, POOL_SIZE=5, ENABLED=true | Charger Settings() depuis env | `settings.proxy_pool` length==5, tous ProxyConfig valides, country extrait=="FR", aucune exception ValidationError |
+| 2 | `test_integration_settings_load_from_env` | Fichier .env avec DECODO_USERNAME, PASSWORD, HOST, ENABLED=true | Charger Settings() depuis env | `settings.proxy_config` valide, aucune exception ValidationError |
 | 3 | `test_integration_proxy_service_injected_crawler` | Settings avec proxies enabled, ProxyService créé depuis settings.proxy_pool, CrawlerService reçoit proxy_service via DI | Appeler `crawler_service.crawl_google_flights(url, use_proxy=True)` | CrawlerService appelle `proxy_service.get_next_proxy()` 1 fois (vérifié mock spy), BrowserConfig.proxy contient URL proxy complète, crawl success |
 | 4 | `test_integration_proxy_rotation_logging_observability` | ProxyService pool 3 proxies, CrawlerService avec logging structuré activé | Crawler 10 URLs consécutives | Logs contiennent 10 entrées INFO avec extra fields proxy_host, proxy_index, proxy_country, distribution équitable proxies (3-3-4 ou 3-4-3 count), aucun password loggé |
 | 5 | `test_integration_proxy_service_disabled_no_injection` | Settings avec DECODO_PROXY_ENABLED=false, CrawlerService initialisé sans proxy_service (None) | Appeler `crawl_google_flights(url, use_proxy=True)` | CrawlerService détecte proxy_service==None, BrowserConfig.proxy==None (pas de proxy utilisé), logs contiennent proxy_host="no_proxy", crawl success en mode direct |
@@ -396,7 +378,7 @@ DECODO_PROXY_POOL_SIZE=3
 
 ---
 
-**TOTAL TESTS** : 18 unitaires + 5 intégration = **23 tests**
+**TOTAL TESTS** : 16 unitaires + 5 intégration = **21 tests**
 
 ---
 
@@ -406,22 +388,22 @@ DECODO_PROXY_POOL_SIZE=3
 
 ```json
 {
-  "host": "pr.decodo.com",
-  "port": 8080,
-  "username": "customer-abc123def456-country-fr",
+  "host": "fr.decodo.com",
+  "port": 40000,
+  "username": "spierhheqr",
   "password": "my_secure_password_123",
   "country": "FR"
 }
 ```
 
-**Note** : Tous champs validés par Pydantic (host contient "decodo.com", port dans range 7000-9000, username format regex strict, password ≥8 caractères, country uppercase ISO Alpha-2).
+**Note** : Tous champs validés par Pydantic (host contient "decodo.com", port ≥1024, username min 5 caractères, password ≥8 caractères, country uppercase ISO Alpha-2).
 
 ---
 
 **Exemple 2 : ProxyConfig URL générée (get_proxy_url())**
 
 ```json
-"http://customer-abc123def456-country-fr:my_secure_password_123@pr.decodo.com:8080"
+"http://spierhheqr:my_secure_password_123@fr.decodo.com:40000"
 ```
 
 **Note** : Format URL proxy complète utilisée par BrowserConfig Crawl4AI. Contient credentials embeddées (username:password), ne JAMAIS logger cette URL (utiliser proxy_host uniquement dans logs).
@@ -432,21 +414,19 @@ DECODO_PROXY_POOL_SIZE=3
 
 ```bash
 # Decodo Proxies Configuration (Story 5)
-DECODO_USERNAME=customer-abc123def456-country-fr
+DECODO_USERNAME=spierhheqr
 DECODO_PASSWORD=my_secure_password_here
-DECODO_PROXY_HOST=pr.decodo.com:8080
+DECODO_PROXY_HOST=fr.decodo.com:40000
 DECODO_PROXY_ENABLED=true
-DECODO_PROXY_POOL_SIZE=3
 ```
 
 **Notes** :
-- `DECODO_USERNAME` : Format strict `customer-{api_key}-country-{country}` (minuscules obligatoires)
+- `DECODO_USERNAME` : Identifiant simple fourni par dashboard Decodo
 - `DECODO_PASSWORD` : Mot de passe Decodo (masqué par SecretStr en logs)
-- `DECODO_PROXY_HOST` : Hostname:port (default "pr.decodo.com:8080")
+- `DECODO_PROXY_HOST` : Hostname:port France rotating (default "fr.decodo.com:40000")
 - `DECODO_PROXY_ENABLED` : Boolean active/désactive proxies (false pour dev local)
-- `DECODO_PROXY_POOL_SIZE` : Nombre proxies dans pool rotation (range 1-10 MVP)
 
-**Valeurs masquées production** : Remplacer `abc123def456` et `my_secure_password_here` par vraies valeurs Decodo (stockées dans Dokploy secrets UI, pas committées dans git).
+**Valeurs masquées production** : Remplacer credentials par vraies valeurs Decodo (stockées dans Dokploy secrets UI, pas committées dans git).
 
 ---
 
@@ -476,7 +456,7 @@ DECODO_PROXY_POOL_SIZE=3
 
 ## Critères fonctionnels
 
-1. **ProxyConfig validation complète** : ProxyConfig valide automatiquement 5 champs (host format "decodo.com", port range 7000-9000, username regex `^customer-[a-z0-9]+-country-[a-z]{2}$`, password min 8 caractères, country uppercase ISO Alpha-2) via field_validator Pydantic v2
+1. **ProxyConfig validation complète** : ProxyConfig valide automatiquement 5 champs (host format "decodo.com", port ≥1024, username min 5 caractères, password min 8 caractères, country uppercase ISO Alpha-2) via field_validator Pydantic v2
 
 2. **Rotation round-robin sans duplicates** : Sur 100 appels `get_next_proxy()` avec pool size 3 → chaque proxy utilisé exactement 33 ou 34 fois (distribution équitable ±1), vérifié via counter assertion `abs(count_proxy0 - count_proxy1) <= 1`
 
@@ -484,9 +464,9 @@ DECODO_PROXY_POOL_SIZE=3
 
 4. **Retry captcha change proxy automatiquement** : Si CaptchaDetectedError détectée → retry logic Tenacity (Story 4) appelle get_next_proxy() pour rotation IP automatique, 2ème tentative utilise proxy différent (vérifié proxy_index logs différents entre tentative 1 et 2)
 
-5. **Settings génère pool automatiquement** : model_validator génère `settings.proxy_pool` liste de `DECODO_PROXY_POOL_SIZE` instances ProxyConfig depuis variables env (DECODO_USERNAME, PASSWORD, HOST), country extrait automatiquement via regex `country-([a-z]{2})`, vérifié len(proxy_pool)==POOL_SIZE et tous proxies valides
+5. **Settings génère ProxyConfig automatiquement** : model_validator génère `settings.proxy_config` ProxyConfig depuis variables env (DECODO_USERNAME, PASSWORD, HOST) si DECODO_PROXY_ENABLED=True
 
-6. **Mode proxies désactivé fonctionne** : Si DECODO_PROXY_ENABLED=false → settings.proxy_pool==[], CrawlerService initialise sans proxy_service, BrowserConfig.proxy==None, crawls réussissent en mode direct sans proxy (vérifié logs proxy_host=="no_proxy")
+6. **Mode proxies désactivé fonctionne** : Si DECODO_PROXY_ENABLED=false → settings.proxy_config==None, CrawlerService initialise sans proxy, BrowserConfig.proxy==None, crawls réussissent en mode direct sans proxy (vérifié logs proxy_host=="no_proxy")
 
 7. **URL proxy format correct** : ProxyConfig.get_proxy_url() retourne exactement `"http://{username}:{password}@{host}:{port}"`, utilisable directement par BrowserConfig Crawl4AI (vérifié regex matching URL + test crawl mock réussi)
 
@@ -500,7 +480,7 @@ DECODO_PROXY_POOL_SIZE=3
 
 11. **Pydantic v2 BaseSettings extension** : Settings hérite BaseSettings avec env_file='.env', nouveaux champs DECODO_*, model_validator mode='after' pour génération proxy_pool automatique
 
-12. **field_validator username format strict** : Validation regex `^customer-[a-z0-9]+-country-[a-z]{2}$` obligatoire (minuscules only), lève ValidationError avec message explicite si format invalide
+12. **field_validator username min_length** : Validation min_length=5 obligatoire, lève ValidationError avec message explicite si trop court
 
 13. **itertools.cycle pour round-robin** : ProxyService utilise `self._cycle = itertools.cycle(proxy_pool)` pour rotation infinie équitable, next(cycle) appelé dans get_next_proxy() (pas de boucles manuelles modulo)
 
@@ -518,7 +498,7 @@ DECODO_PROXY_POOL_SIZE=3
 
 19. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% du code de ProxyConfig, ProxyService, Settings extension (pytest-cov report)
 
-20. **23 tests passent** : 18 tests unitaires (6 ProxyConfig + 6 ProxyService + 6 Settings) + 5 tests intégration tous verts (pytest -v), aucun test skipped ou xfail
+20. **21 tests passent** : 16 tests unitaires (6 ProxyConfig + 6 ProxyService + 4 Settings) + 5 tests intégration tous verts (pytest -v), aucun test skipped ou xfail
 
 21. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type (type hints ProxyConfig, ProxyService, Settings validés)
 

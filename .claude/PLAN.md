@@ -482,11 +482,11 @@
 
 **Branche** : `feature/story-5-proxies`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-5-proxies.md
-- [ ] **Validation manuelle** : Logs montrent proxies actifs + rotation
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(services): add Decodo proxies with rotation`
-- [ ] **PR** : feature/story-5 → develop
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-5-proxies.md
+- [x] **Validation manuelle** : Logs montrent proxies actifs + rotation
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(services): add Decodo proxies with rotation`
+- [x] **PR** : feature/story-5 → develop
 
 📝 **Output** : Story 5 complétée (5 story points)
 
