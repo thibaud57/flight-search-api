@@ -134,10 +134,38 @@ def test_end_to_end_search_request_exact_dates(
     assert data["search_stats"]["segments_count"] == 2
 
 
+def test_end_to_end_validation_error_too_many_segments(
+    client_with_mock_search: TestClient,
+) -> None:
+    """Test integration 5: Plus de 5 segments retourne 422."""
+    tomorrow = date.today() + timedelta(days=1)
+
+    request_data = {
+        "segments": [
+            {
+                "from_city": f"City{i}",
+                "to_city": f"City{i + 1}",
+                "date_range": {
+                    "start": (tomorrow + timedelta(days=i * 10)).isoformat(),
+                    "end": (tomorrow + timedelta(days=i * 10 + 2)).isoformat(),
+                },
+            }
+            for i in range(6)
+        ]
+    }
+
+    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
+
+    assert response.status_code == 422
+
+    data = response.json()
+    assert "detail" in data
+
+
 def test_end_to_end_openapi_schema_includes_endpoint(
     client_with_mock_search: TestClient,
 ) -> None:
-    """Test integration 5: OpenAPI schema contient endpoint search-flights."""
+    """Test integration 6: OpenAPI schema contient endpoint search-flights."""
     response = client_with_mock_search.get("/openapi.json")
 
     assert response.status_code == 200
