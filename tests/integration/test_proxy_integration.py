@@ -160,4 +160,4 @@ async def test_integration_proxy_service_disabled_no_injection(
         assert result.success is True
         call_kwargs = mock_crawler_class.call_args
         config = call_kwargs.kwargs.get("config")
-        assert config.proxy is None
+        assert config.proxy_config is None
