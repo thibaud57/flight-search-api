@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime
 from typing import Annotated
 
@@ -170,8 +171,6 @@ class CombinationResult(BaseModel):
         if not duration:
             return 0
         total = 0
-        import re
-
         hours_match = re.search(r"(\d+)\s*h", duration.lower())
         mins_match = re.search(r"(\d+)\s*m", duration.lower())
         if hours_match:
