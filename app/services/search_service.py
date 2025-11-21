@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 import time
 from typing import TYPE_CHECKING
 from urllib.parse import quote
@@ -57,7 +58,7 @@ class SearchService:
 
         crawl_results = await self._crawl_all_combinations(request, combinations)
 
-        combination_results = self._parse_all_results(crawl_results, combinations)
+        combination_results = self._parse_all_results(crawl_results)
 
         top_results = self._rank_and_select_top_10(combination_results)
 
@@ -129,7 +130,6 @@ class SearchService:
     def _parse_all_results(
         self,
         crawl_results: list[tuple[DateCombination, CrawlResult | None]],
-        combinations: list[DateCombination],
     ) -> list[CombinationResult]:
         """Parse tous les resultats de crawl."""
         combination_results: list[CombinationResult] = []
@@ -150,7 +150,7 @@ class SearchService:
                 combination_results.append(
                     CombinationResult(
                         date_combination=combo,
-                        flights=flights,
+                        best_flight=flights[0],
                     )
                 )
                 crawls_success += 1
@@ -174,18 +174,11 @@ class SearchService:
     def _rank_and_select_top_10(
         self, results: list[CombinationResult]
     ) -> list[CombinationResult]:
-        """Trie et selectionne top 10 resultats."""
+        """Trie par prix croissant et selectionne top 10."""
         if not results:
             return []
 
-        def compute_score(r: CombinationResult) -> float:
-            return (
-                r.total_price * 0.7
-                + r.total_duration_minutes * 0.002
-                + r.total_stops * 50
-            )
-
-        sorted_results = sorted(results, key=compute_score)
+        sorted_results = sorted(results, key=lambda r: r.best_flight.price)
 
         top_10 = sorted_results[:10]
 
@@ -193,10 +186,10 @@ class SearchService:
             logger.info(
                 "Ranking completed",
                 extra={
-                    "top_price_min": top_10[0].total_price,
-                    "top_price_max": top_10[-1].total_price
+                    "top_price_min": top_10[0].best_flight.price,
+                    "top_price_max": top_10[-1].best_flight.price
                     if len(top_10) > 1
-                    else top_10[0].total_price,
+                    else top_10[0].best_flight.price,
                 },
             )
 
@@ -219,16 +212,29 @@ class SearchService:
                     }
                 )
 
-            airlines = list({f.airline for f in combo_result.flights})
-            airline_str = airlines[0] if len(airlines) == 1 else "Mixed"
-
             flight_results.append(
                 FlightResult(
-                    price=combo_result.total_price,
-                    airline=airline_str,
+                    price=combo_result.best_flight.price,
+                    airline=combo_result.best_flight.airline,
                     departure_date=combo_result.date_combination.segment_dates[0],
                     segments=segments_data,
                 )
             )
 
         return flight_results
+
+    def _parse_duration(self, duration_str: str) -> int:
+        """Parse duration string (ex: '12h 30m') to minutes."""
+        if not duration_str:
+            return 0
+
+        total_minutes = 0
+        hours_match = re.search(r"(\d+)\s*h", duration_str)
+        minutes_match = re.search(r"(\d+)\s*m", duration_str)
+
+        if hours_match:
+            total_minutes += int(hours_match.group(1)) * 60
+        if minutes_match:
+            total_minutes += int(minutes_match.group(1))
+
+        return total_minutes

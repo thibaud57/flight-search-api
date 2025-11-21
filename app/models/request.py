@@ -1,5 +1,4 @@
 import math
-import re
 from datetime import date, datetime
 from typing import Annotated, Self
 
@@ -140,40 +139,4 @@ class CombinationResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     date_combination: DateCombination
-    flights: list[GoogleFlightDTO]
-    total_price: float = 0.0
-    total_duration_minutes: int = 0
-    total_stops: int = 0
-
-    @field_validator("flights", mode="after")
-    @classmethod
-    def validate_flights_not_empty(
-        cls, v: list[GoogleFlightDTO]
-    ) -> list[GoogleFlightDTO]:
-        """Valide au moins 1 vol."""
-        if len(v) < 1:
-            raise ValueError("At least 1 flight required")
-        return v
-
-    @model_validator(mode="after")
-    def compute_totals(self) -> "CombinationResult":
-        """Calcule automatiquement totaux depuis flights."""
-        self.total_price = sum(f.price for f in self.flights)
-        self.total_duration_minutes = sum(
-            self._parse_duration(f.duration) for f in self.flights
-        )
-        self.total_stops = sum(f.stops or 0 for f in self.flights)
-        return self
-
-    def _parse_duration(self, duration: str) -> int:
-        """Parse duree en minutes depuis string (ex: '10h 15min')."""
-        if not duration:
-            return 0
-        total = 0
-        hours_match = re.search(r"(\d+)\s*h", duration.lower())
-        mins_match = re.search(r"(\d+)\s*m", duration.lower())
-        if hours_match:
-            total += int(hours_match.group(1)) * 60
-        if mins_match:
-            total += int(mins_match.group(1))
-        return total
+    best_flight: GoogleFlightDTO

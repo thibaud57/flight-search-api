@@ -542,9 +542,21 @@
 
 📝 **Output** : Story 7 complétée (5 story points)
 
+### 5.10 Story 8: Filtres & Tri
+
+**Branche** : `feature/story-8-filters-sort`
+
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-8-filters-sort.md
+- [ ] **Validation manuelle** : Tester filtres (max_stops, max_duration_hours) et sélection (sort_by)
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(api): add filters and sort options for flight search`
+- [ ] **PR** : feature/story-8 → develop
+
+📝 **Output** : Story 8 complétée (3 story points)
+
 ---
 
-### 5.10 Validation Epic 3 et mise à jour CHANGELOG
+### 5.12 Validation Epic 3 et mise à jour CHANGELOG
 
 **🔍 Validation qualité** :
 
@@ -554,7 +566,7 @@
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit si refactor** : `chore(epic-3): refactor for standards compliance`
 
-📝 **Output** : Epic 3 validé - story 7 conforme aux standards
+📝 **Output** : Epic 3 validé - stories 7-8 conformes aux standards
 
 **📝 Mise à jour version** :
 
@@ -568,7 +580,7 @@
 
 ---
 
-### 5.11 Validation complète MVP et CHANGELOG
+### 5.13 Validation complète MVP et CHANGELOG
 
 **🔍 Validation qualité automatique** :
 

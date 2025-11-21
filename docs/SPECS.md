@@ -65,8 +65,9 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 
 **Stories** :
 - [Story 7: Retry + Error handling](specs/epic-3-production-ready/story-7-retry.md) - 5 pts
+- [Story 8: Filtres & Tri](specs/epic-3-production-ready/story-8-filters-sort.md) - 3 pts
 
-**Total** : 5 story points
+**Total** : 8 story points
 
 **Valeur business** : SLA production, robustesse
 

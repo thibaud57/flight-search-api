@@ -188,16 +188,16 @@ Pour chaque DateCombination :
 
 **Étape 4 : Parsing Vols**
 Pour chaque HTML crawlé avec succès :
-1. Appeler `flight_parser.parse(html)` (retourne `list[Flight]`)
-2. Agréger vols par combinaison : `CombinationResult(date_combination=combo, flights=parsed_flights)`
-3. Gérer erreurs parsing : Si ParsingError → Logger WARNING, skip combinaison
-4. Logger INFO : Nombre combinaisons parsées avec succès
+1. Appeler `flight_parser.parse(html)` (retourne `list[GoogleFlightDTO]` = N options de vol)
+2. Sélectionner meilleure option : `best = flights[0]` (Google retourne options triées par prix)
+3. Créer résultat : `CombinationResult(date_combination=combo, best_flight=best)`
+4. Gérer erreurs parsing : Si ParsingError → Logger WARNING, skip combinaison
+5. Logger INFO : Nombre combinaisons parsées avec succès
 
 **Étape 5 : Ranking Top 10**
-1. Calculer prix total pour chaque CombinationResult : `sum(flight.price for flight in flights)`
-2. Trier CombinationResult par prix total croissant
-3. Sélectionner top 10 résultats (ou moins si <10 combinaisons réussies)
-4. Logger INFO : Prix min/max trouvés, top 1 combinaison
+1. Trier tous les `CombinationResult` par `best_flight.price` croissant
+2. Sélectionner top 10 résultats (ou moins si <10 combinaisons réussies)
+3. Logger INFO : Prix min/max trouvés
 
 **Étape 6 : Construction SearchResponse**
 1. Transformer top 10 CombinationResult en FlightResult (format SearchResponse Story 3)
@@ -225,58 +225,35 @@ Pour chaque HTML crawlé avec succès :
 
 ## 3. Top 10 Ranking (Algorithme)
 
-**Rôle** : Sélectionner et trier les 10 meilleures combinaisons de vols selon critères pondérés (prix principal, durée, escales).
+**Rôle** : Sélectionner et trier les 10 meilleures combinaisons de vols par prix croissant.
 
-**Critères de Ranking** :
-
-| Critère | Poids | Description | Calcul |
-|---------|-------|-------------|--------|
-| **Prix total** | 70% | Somme prix tous vols de la combinaison | `sum(flight.price for flight in flights)` |
-| **Durée totale** | 20% | Somme durées tous vols (en minutes) | `sum(parse_duration(flight.duration) for flight in flights)` |
-| **Nombre escales** | 10% | Somme escales tous vols | `sum(flight.stops or 0 for flight in flights)` |
-
-**Formule Pondération** :
-
-Score final (plus bas = meilleur) :
-```
-score = (prix_total * 0.7) + (durée_totale_minutes * 0.002) + (nombre_escales * 50)
-```
-
-**Justification pondération** :
-- Prix dominant (70%) car critère principal utilisateurs
-- Durée secondaire (20%) pour confort voyage
-- Escales tertiaire (10%) pour fluidité itinéraire
+**Critère de Ranking** : **Prix total uniquement** (`best_flight.price`)
 
 **Algorithme Sélection Top 10** :
 
-1. **Calculer score** pour chaque CombinationResult
-2. **Trier** par score croissant (meilleur score = score le plus bas)
-3. **Sélectionner** top 10 résultats
-4. **Départager ex-aequo** :
-   - Si 2+ combinaisons même score → trier par prix total croissant
-   - Si même prix → trier par durée totale croissante
-   - Si même durée → trier par nombre escales croissant
+1. **Trier** tous les `CombinationResult` par `best_flight.price` croissant
+2. **Sélectionner** les 10 premiers résultats
+3. **Retourner** liste triée (prix min en position 0)
 
 **Exemple Concret Ranking** :
 
 **Input (3 combinaisons)** :
 
-| # | Dates segments | Prix Total | Durée Total | Escales | Score |
-|---|----------------|-----------|-------------|---------|-------|
-| 1 | [2025-06-01, 2025-06-15] | 1250€ | 18h 30min (1110 min) | 1 | 875 + 2.22 + 50 = **927.22** |
-| 2 | [2025-06-03, 2025-06-17] | 1800€ | 15h 00min (900 min) | 0 | 1260 + 1.80 + 0 = **1261.80** |
-| 3 | [2025-06-05, 2025-06-20] | 1300€ | 20h 15min (1215 min) | 2 | 910 + 2.43 + 100 = **1012.43** |
+| # | Dates segments | Prix Total |
+|---|----------------|-----------|
+| 1 | [2025-06-01, 2025-06-15] | 1250€ |
+| 2 | [2025-06-03, 2025-06-17] | 1800€ |
+| 3 | [2025-06-05, 2025-06-20] | 980€ |
 
-**Output Top 10 (trié)** :
+**Output Top 10 (trié par prix)** :
 
-1. Dates [2025-06-01, 2025-06-15] (score 927.22, 1250€)
-2. Dates [2025-06-05, 2025-06-20] (score 1012.43, 1300€)
-3. Dates [2025-06-03, 2025-06-17] (score 1261.80, 1800€)
+1. Dates [2025-06-05, 2025-06-20] (980€)
+2. Dates [2025-06-01, 2025-06-15] (1250€)
+3. Dates [2025-06-03, 2025-06-17] (1800€)
 
 **Edge cases** :
 - **<10 combinaisons totales** : Retourner toutes les combinaisons disponibles (ex: 5 combinaisons → top 5)
-- **Toutes combinaisons même prix** : Départager par durée puis escales
-- **Vols avec champs manquants** : Si flight.duration ou flight.stops manquants → utiliser valeurs par défaut (duration=0, stops=0) et logger WARNING
+- **Combinaisons même prix** : Ordre stable (premier crawlé en premier)
 
 ---
 
@@ -336,10 +313,7 @@ class CombinationResult(BaseModel):
     """Résultat intermédiaire pour une combinaison dates."""
 
     date_combination: DateCombination
-    flights: list[Flight]
-    total_price: float
-    total_duration_minutes: int
-    total_stops: int
+    best_flight: GoogleFlightDTO
 ```
 
 **Champs** :
@@ -347,20 +321,16 @@ class CombinationResult(BaseModel):
 | Champ | Type | Description | Contraintes |
 |-------|------|-------------|-------------|
 | `date_combination` | `DateCombination` | Combinaison dates testée | Modèle nested DateCombination |
-| `flights` | `list[Flight]` | Vols extraits par FlightParser | min_length=1 (au moins 1 vol) |
-| `total_price` | `float` | Somme prix tous vols | ≥ 0.0, calculé automatiquement |
-| `total_duration_minutes` | `int` | Somme durées en minutes | ≥ 0, calculé automatiquement |
-| `total_stops` | `int` | Somme escales tous vols | ≥ 0, calculé automatiquement |
+| `best_flight` | `GoogleFlightDTO` | Meilleure option vol sélectionnée | Requis, contient price (total itinéraire), duration, stops |
 
-**Validations Pydantic** :
-
-- `model_validator(mode='after')` : Calculer automatiquement `total_price`, `total_duration_minutes`, `total_stops` depuis liste flights
-- `field_validator('flights', mode='after')` : Vérifier min_length ≥ 1 (au moins 1 vol extrait)
-- `field_validator('total_price', mode='after')` : Vérifier ≥ 0.0
+**Notes importantes** :
+- `best_flight.price` = prix TOTAL de l'itinéraire (pas par segment, fourni par Google Flights)
+- `best_flight.duration` et `best_flight.stops` = données du segment affiché (limitation Google Flights multi-city)
+- Pas de champs calculés (`total_price`, etc.) car accès direct via `best_flight.price`
 
 **Comportement** :
-- Modèle calculé automatiquement par SearchService après parsing
-- Utilisé pour ranking avant transformation en FlightResult final (format SearchResponse Story 3)
+- Modèle créé par SearchService après parsing avec `best_flight=flights[0]`
+- Utilisé pour ranking (tri par `best_flight.price`) avant transformation en FlightResult
 
 ---
 
@@ -395,8 +365,8 @@ class CombinationResult(BaseModel):
 | 14 | `test_search_flights_parallel_crawling_asyncio_gather` | Crawling parallèle avec asyncio.gather | Mock 10 combinaisons | asyncio.gather utilisé avec liste 10 tasks async | Vérifie parallélisation async |
 | 15 | `test_search_flights_parses_all_html` | Parse HTML de tous crawls réussis | Mock 42 HTML valides crawlés | `flight_parser.parse()` appelé 42 fois avec chaque HTML | Vérifie parsing systématique après crawl |
 | 16 | `test_search_flights_ranking_top_10` | Sélectionne top 10 résultats par prix | Mock 50 combinaisons avec prix variés 800-2000€ | `SearchResponse.results` length=10, trié prix croissant (results[0].price < results[9].price) | Vérifie algorithme ranking prix |
-| 17 | `test_search_flights_ranking_price_primary` | Prix total est critère dominant ranking | Mock 3 combinaisons : 1000€ (lent), 1200€ (rapide), 900€ (moyen) | Top 1 = 900€ (prix min), top 2 = 1000€, top 3 = 1200€ | Vérifie pondération prix 70% |
-| 18 | `test_search_flights_ranking_tie_breaker_duration` | Départage ex-aequo prix par durée | Mock 2 combinaisons même prix 1000€ : durée 10h vs 15h | Top 1 = combinaison 10h (durée min) | Vérifie tie-breaker durée |
+| 17 | `test_search_flights_ranking_price_only` | Tri par prix uniquement | Mock 3 combinaisons : 1000€, 1200€, 900€ | Top 1 = 900€, top 2 = 1000€, top 3 = 1200€ | Vérifie tri prix croissant |
+| 18 | `test_search_flights_ranking_same_price_stable` | Ordre stable si même prix | Mock 2 combinaisons même prix 1000€ | Ordre préservé (premier crawlé en premier) | Vérifie stabilité tri |
 | 19 | `test_search_flights_handles_partial_crawl_failures` | Gestion erreurs crawl partielles (50% échecs) | Mock 42 combinaisons : 21 crawls succès, 21 CaptchaDetectedError | `SearchResponse` avec 10 résultats (meilleurs parmi 21 crawls réussis), logs WARNING pour 21 échecs | Vérifie résilience erreurs partielles |
 | 20 | `test_search_flights_returns_empty_all_crawls_failed` | Retourne response vide si tous crawls échouent | Mock 42 combinaisons : toutes lèvent NetworkError | `SearchResponse.results=[]`, `search_stats.total_results=0`, logs ERROR | Vérifie edge case échec total |
 | 21 | `test_search_flights_constructs_google_flights_urls` | Construction URLs multi-city correctes | `DateCombination` segment_dates=["2025-06-01", "2025-06-15"], segments=[Paris→Tokyo, Tokyo→NYC] | URL contient `flight_type=3`, `multi_city_json=[{"departure_id":"CDG","arrival_id":"NRT","date":"2025-06-01"},{"departure_id":"NRT","arrival_id":"JFK","date":"2025-06-15"}]`, `hl=fr`, `curr=EUR` | Vérifie format URL Google Flights Story 4 ref |
@@ -472,31 +442,16 @@ class CombinationResult(BaseModel):
   "date_combination": {
     "segment_dates": ["2025-06-01", "2025-06-15"]
   },
-  "flights": [
-    {
-      "price": 650.0,
-      "airline": "Air France",
-      "departure_time": "2025-06-01T10:30:00Z",
-      "arrival_time": "2025-06-02T06:45:00Z",
-      "duration": "10h 15min",
-      "stops": 0,
-      "departure_airport": "CDG",
-      "arrival_airport": "NRT"
-    },
-    {
-      "price": 600.0,
-      "airline": "United Airlines",
-      "departure_time": "2025-06-15T14:00:00Z",
-      "arrival_time": "2025-06-15T18:30:00Z",
-      "duration": "13h 30min",
-      "stops": 1,
-      "departure_airport": "NRT",
-      "arrival_airport": "JFK"
-    }
-  ],
-  "total_price": 1250.0,
-  "total_duration_minutes": 1425,
-  "total_stops": 1
+  "best_flight": {
+    "price": 1250.0,
+    "airline": "Air France",
+    "departure_time": "2025-06-01T10:30:00Z",
+    "arrival_time": "2025-06-02T06:45:00Z",
+    "duration": "10h 15min",
+    "stops": 0,
+    "departure_airport": "CDG",
+    "arrival_airport": "NRT"
+  }
 }
 ```
 
@@ -624,7 +579,7 @@ class CombinationResult(BaseModel):
 
 12. **Dependency Injection services** : SearchService reçoit CombinationGenerator, CrawlerService, FlightParser via constructeur (testable, mockable)
 
-13. **Pydantic v2 modèles** : DateCombination et CombinationResult héritent BaseModel avec Field validation, model_validator pour calculs automatiques (total_price, total_duration_minutes)
+13. **Pydantic v2 modèles** : DateCombination et CombinationResult héritent BaseModel avec `ConfigDict(extra="forbid")`, CombinationResult simplifié avec `best_flight: GoogleFlightDTO`
 
 14. **Réutilisation Story 3 modèles** : SearchRequest, FlightSegment, SearchResponse, FlightResult référencés sans redéfinition (imports depuis `app/models/request.py`, `response.py`)
 
