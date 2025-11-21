@@ -58,4 +58,4 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """Retourne instance Settings cached (singleton via lru_cache)."""
-    return Settings()  # type: ignore[call-arg]
+    return Settings()  # type: ignore[call-arg]  # Mypy faux positif : args depuis .env

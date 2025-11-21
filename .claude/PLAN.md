@@ -438,25 +438,29 @@
 
 📝 **Output** : Story 3 complétée (8 story points)
 
-**⚡ Validation légère Epic 1** (15-30min) :
-- [ ] **Standards Python** : Vérifier conformité avec `.claude/CLAUDE.md` (section Standards Python modernes)
-- [ ] **Versions frameworks** : Vérifier conformité avec `docs/VERSIONS.md` (matrice compatibilité)
-- [ ] **Quality checks** : `ruff check . && ruff format . && mypy app/ && pytest tests/unit/ --cov=app`
-  - ruff ✅ (0 erreurs)
-  - mypy ✅ (0 erreurs)
-  - pytest ✅ (tous tests passent)
-  - coverage ≥ 80%
-- [ ] **Cohérence code** : Nomenclature uniforme, pas de duplication (DRY), architecture respectée (voir `.claude/CLAUDE.md` - Section Organisation fichiers)
-- [ ] **Documentation** : Specs complètes pour stories 1-3
+---
 
-### 5.4 Mise à jour CHANGELOG et version
+### 5.4 Validation Epic 1 et mise à jour CHANGELOG
+
+**🔍 Validation qualité** :
+
+- [x] Lancer agent `reviewer` avec paramètres :
+  - `epic_number`: "1"
+  - `previous_version_tag`: "v0.4.0"
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit si refactor** : `chore(epic-1): refactor for standards compliance`
+
+📝 **Output** : Epic 1 validé - stories 1-3 conformes aux standards
+
+**📝 Mise à jour version** :
+
 - [x] Ajouter entrée v0.5.0 dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.5.0"`
-- [x] Commit : `chore: bump version to 0.5.0 and update changelog`
+- [x] **Commit** : `chore: bump version to 0.5.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-**Fin Epic 1** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.5.0 sur master → GitHub Release (workflow automatique)
+**Fin Epic 1** : Merge develop→master → Tag v0.5.0 → GitHub Release
 
 ---
 
@@ -498,26 +502,29 @@
 
 📝 **Output** : Story 6 complétée (5 story points)
 
-**⚡ Validation légère Epic 2** (15-30min) :
-- [ ] **Standards Python** : Vérifier conformité avec `.claude/CLAUDE.md` (section Standards Python modernes)
-- [ ] **Versions frameworks** : Vérifier conformité avec `docs/VERSIONS.md` (matrice compatibilité)
-- [ ] **Quality checks** : `ruff check . && ruff format . && mypy app/ && pytest tests/unit/ --cov=app`
-  - ruff ✅ (0 erreurs)
-  - mypy ✅ (0 erreurs)
-  - pytest ✅ (tous tests passent)
-  - coverage ≥ 80%
-- [ ] **Cohérence code** : Nomenclature uniforme, pas de duplication (DRY), architecture respectée (voir `.claude/CLAUDE.md` - Section Organisation fichiers)
-- [ ] **Documentation** : Specs complètes pour stories 4-6
-- [ ] **Logs structurés** : Vérifier conformité avec `.claude/CLAUDE.md` (section Structured Logging)
+---
 
-### 5.8 Mise à jour CHANGELOG et version
+### 5.8 Validation Epic 2 et mise à jour CHANGELOG
+
+**🔍 Validation qualité** :
+
+- [ ] Lancer agent `reviewer` avec paramètres :
+  - `epic_number`: "2"
+  - `previous_version_tag`: "v0.5.0"
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit si refactor** : `chore(epic-2): refactor for standards compliance`
+
+📝 **Output** : Epic 2 validé - stories 4-6 conformes aux standards
+
+**📝 Mise à jour version** :
+
 - [ ] Ajouter entrée v0.6.0 dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="0.6.0"`
-- [ ] Commit : `chore: bump version to 0.6.0 and update changelog`
+- [ ] **Commit** : `chore: bump version to 0.6.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-**Fin Epic 2** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.6.0 sur master → GitHub Release (workflow automatique)
+**Fin Epic 2** : Merge develop→master → Tag v0.6.0 → GitHub Release
 
 ---
 
@@ -535,53 +542,49 @@
 
 📝 **Output** : Story 7 complétée (5 story points)
 
-**⚡ Validation légère Epic 3** (15-30min) :
-- [ ] **Standards Python** : Vérifier conformité avec `.claude/CLAUDE.md` (section Standards Python modernes)
-- [ ] **Versions frameworks** : Vérifier conformité avec `docs/VERSIONS.md` (matrice compatibilité)
-- [ ] **Quality checks** : `ruff check . && ruff format . && mypy app/ && pytest tests/unit/ --cov=app`
-  - ruff ✅ (0 erreurs)
-  - mypy ✅ (0 erreurs)
-  - pytest ✅ (tous tests passent)
-  - coverage ≥ 80%
-- [ ] **Cohérence code** : Nomenclature uniforme, pas de duplication (DRY), architecture respectée (voir `.claude/CLAUDE.md` - Section Organisation fichiers)
-- [ ] **Documentation** : Specs complètes pour story 7
-- [ ] **Patterns async** : Vérifier conformité avec `.claude/CLAUDE.md` (section Patterns Async - retry logic, error handling)
+---
 
-### 5.10 Mise à jour CHANGELOG et version
+### 5.10 Validation Epic 3 et mise à jour CHANGELOG
+
+**🔍 Validation qualité** :
+
+- [ ] Lancer agent `reviewer` avec paramètres :
+  - `epic_number`: "3"
+  - `previous_version_tag`: "v0.6.0"
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit si refactor** : `chore(epic-3): refactor for standards compliance`
+
+📝 **Output** : Epic 3 validé - story 7 conforme aux standards
+
+**📝 Mise à jour version** :
+
 - [ ] Ajouter entrée v0.7.0 dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="0.7.0"`
-- [ ] Commit : `chore: bump version to 0.7.0 and update changelog`
+- [ ] **Commit** : `chore: bump version to 0.7.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
 
-**Fin Epic 3** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.7.0 sur master → GitHub Release (workflow automatique)
+**Fin Epic 3** : Merge develop→master → Tag v0.7.0 → GitHub Release
 
 ---
 
-### 5.11 Validation complète MVP (2-4h)
+### 5.11 Validation complète MVP et CHANGELOG
 
-**🔍 Audit global architecture & standards** :
+**🔍 Validation qualité automatique** :
+
+- [ ] Lancer agent `reviewer` avec paramètres :
+  - `epic_number`: "MVP"
+  - `previous_version_tag`: "v0.7.0"
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit si refactor** : `chore(mvp): refactor for standards compliance`
+
+📝 **Output** : MVP validé - codebase complète conforme aux standards
+
+**🔍 Audit spécifique MVP** (éléments non couverts par reviewer) :
 
 - [ ] **Architecture (`docs/ARCHITECTURE.md`)** :
   - [ ] Diagrammes à jour (composants, séquence)
   - [ ] ADRs conformes implémentation réelle
-  - [ ] Pas de déviation non documentée
-
-- [ ] **Standards Python** :
-  - [ ] Vérifier conformité complète avec `.claude/CLAUDE.md` (section Standards Python modernes)
-  - [ ] Vérifier conformité avec `.claude/CLAUDE.md` (section Anti-patterns)
-  - [ ] Vérifier conformité avec `.claude/CLAUDE.md` (section Patterns Async)
-
-- [ ] **Conformité versions frameworks** :
-  - [ ] Vérifier patterns conformes `docs/VERSIONS.md` (matrice compatibilité complète)
-  - [ ] Vérifier best practices selon versions installées (FastAPI, Pydantic, Crawl4AI, tenacity, pytest)
-
-- [ ] **Quality checks globaux** :
-  - [ ] `ruff check .` → 0 erreurs (warnings tolérés selon config)
-  - [ ] `ruff format . --check` → Pas de changements nécessaires
-  - [ ] `mypy app/` → 0 erreurs (strict mode)
-  - [ ] `pytest tests/ --cov=app --cov-report=term-missing` → Coverage ≥ 80%
-  - [ ] Tous tests unitaires + intégration passent ✅
 
 **🧪 Tests end-to-end complets** :
 
@@ -616,19 +619,6 @@
   - [ ] Bandwidth Decodo : ~200KB par recherche (optimisations actives)
   - [ ] Coût estimé : ~0.0008€ par recherche (~$4/GB Decodo)
   - [ ] Pas de coûts LLM (extraction CSS uniquement)
-
-**🔒 Cohérence globale codebase** :
-
-- [ ] **Nomenclature** :
-  - [ ] Vérifier conformité avec `.claude/CLAUDE.md` (section Organisation fichiers)
-  - [ ] Uniformité selon conventions Python standards
-
-- [ ] **DRY (Don't Repeat Yourself)** :
-  - [ ] Pas de duplication code (fixtures pytest, helpers utils)
-  - [ ] Abstractions pertinentes (services, models séparés)
-
-- [ ] **Logs structurés** :
-  - [ ] Vérifier conformité avec `.claude/CLAUDE.md` (section Structured Logging)
 
 **📚 Documentation synchronisée** :
 
@@ -818,7 +808,20 @@
 
 ---
 
-### 7B.2 Mise à jour CHANGELOG et version
+### 7B.2 Validation Epic 4 et mise à jour CHANGELOG
+
+**🔍 Validation qualité** :
+
+- [ ] Lancer agent `reviewer` avec paramètres :
+  - `epic_number`: "4"
+  - `previous_version_tag`: "v1.0.0"
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit si refactor** : `chore(epic-4): refactor for standards compliance`
+
+📝 **Output** : Epic 4 validé - story 8 conforme aux standards
+
+**📝 Mise à jour version** :
+
 - [ ] Ajouter entrée v1.1.0 dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="1.1.0"`
 - [ ] Commit : `chore: bump version to 1.1.0 and update changelog`

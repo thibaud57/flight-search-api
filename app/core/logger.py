@@ -45,6 +45,7 @@ def setup_logger(log_level: str) -> logging.Logger:
 @lru_cache
 def get_logger() -> logging.Logger:
     """Retourne instance Logger cached configurée avec Settings."""
+    # Import local pour éviter circular import (config → logger → config)
     from app.core.config import get_settings
 
     settings = get_settings()

@@ -37,6 +37,18 @@ def mock_search_service():
     return service
 
 
+@pytest.fixture
+def mock_search_service_override(mock_search_service):
+    """Override get_search_service avec cleanup automatique."""
+    from app.api.routes import get_search_service
+
+    app.dependency_overrides[get_search_service] = lambda: mock_search_service
+
+    yield mock_search_service
+
+    app.dependency_overrides.clear()
+
+
 def test_endpoint_accepts_valid_request(client):
     """Test 39: Endpoint accepte request valide."""
     tomorrow = date.today() + timedelta(days=1)
@@ -160,12 +172,10 @@ def test_endpoint_response_matches_schema(client):
     assert "segments_count" in stats
 
 
-def test_endpoint_injects_search_service_dependency(client, mock_search_service):
+def test_endpoint_injects_search_service_dependency(
+    client, mock_search_service_override
+):
     """Test 43: SearchService injecté via Depends()."""
-    from app.api.routes import get_search_service
-
-    app.dependency_overrides[get_search_service] = lambda: mock_search_service
-
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
@@ -192,4 +202,4 @@ def test_endpoint_injects_search_service_dependency(client, mock_search_service)
     response = client.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200
-    mock_search_service.search_flights.assert_called_once()
+    mock_search_service_override.search_flights.assert_called_once()
