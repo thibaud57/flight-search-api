@@ -58,16 +58,14 @@ class CrawlerService:
 
     async def crawl_google_flights(
         self,
-        url: str,
-        *,
-        max_retries: int = 3
+        url: str
     ) -> CrawlResult:
         """
-        Crawl une URL Google Flights en mode POC (dev local) avec retry logic et captcha detection.
+        Crawl une URL Google Flights en mode POC (dev local) avec captcha detection.
 
         Raises:
-            CaptchaDetectedError: Si captcha détecté après max_retries
-            NetworkError: Si erreur réseau persistante après max_retries
+            CaptchaDetectedError: Si captcha détecté
+            NetworkError: Si erreur réseau
         """
 ```
 
@@ -76,7 +74,6 @@ class CrawlerService:
 | Champ | Type | Description | Contraintes |
 |-------|------|-------------|-------------|
 | `url` | `str` | URL Google Flights complète avec paramètres query | Format `https://www.google.com/travel/flights?...` |
-| `max_retries` | `int` | Nombre maximum de tentatives | Default `3`, range `1-5` |
 
 **Comportement** :
 
@@ -87,19 +84,18 @@ class CrawlerService:
   4. Retourne CrawlResult avec `html`, `cleaned_html`, `success=True`
 
 - **Edge cases** :
-  - **Captcha détecté** : Si HTML contient patterns reCAPTCHA/hCaptcha → Lève `CaptchaDetectedError` avec URL
-  - **Status code 403/429** : Rate limiting Google → Retry avec exponential backoff (4s, 8s, 16s)
-  - **Timeout réseau** : Si `arun()` timeout après 10s → Retry automatique
-  - **Max retries dépassé** : Lève `NetworkError` avec détails des tentatives échouées
+  - **Captcha détecté** : Si HTML contient patterns reCAPTCHA/hCaptcha → Lève `CaptchaDetectedError` avec URL et type captcha
+  - **Status code 403/429** : Rate limiting Google → Lève `NetworkError` avec status code
+  - **Timeout réseau** : Si `arun()` timeout après 10s → Lève `NetworkError`
 
 - **Erreurs levées** :
   - `CaptchaDetectedError` : Hérité de `Exception`, contient `url`, `captcha_type` (recaptcha_v2/v3/hcaptcha)
-  - `NetworkError` : Hérité de `Exception`, contient `url`, `status_code`, `attempts`
+  - `NetworkError` : Hérité de `Exception`, contient `url`, `status_code`
 
 - **Logging structuré** :
   - INFO : Début crawl avec URL (mode POC dev local)
-  - WARNING : Captcha détecté (tentative N/max_retries)
-  - ERROR : Max retries atteint, crawl échoué
+  - WARNING : Captcha détecté
+  - ERROR : Erreur réseau ou crawl échoué
   - DEBUG : HTML size, temps réponse, status code
 
 ---
@@ -227,12 +223,10 @@ class Flight(BaseModel):
 | 1 | `test_crawl_success_dev_local` | Crawl réussi mode POC dev local | `url="https://google.com/travel/flights?..."` | `result.success == True`, `result.html` non vide, stealth mode actif | Vérifie comportement nominal POC |
 | 2 | `test_crawl_recaptcha_v2_detection` | HTML contient reCAPTCHA v2 | Mock HTML avec `<div class="g-recaptcha">` | Lève `CaptchaDetectedError`, `captcha_type="recaptcha_v2"` | Vérifie détection pattern reCAPTCHA |
 | 3 | `test_crawl_hcaptcha_detection` | HTML contient hCaptcha | Mock HTML avec `<div class="h-captcha">` | Lève `CaptchaDetectedError`, `captcha_type="hcaptcha"` | Vérifie détection pattern hCaptcha |
-| 4 | `test_crawl_retry_on_captcha` | Captcha détecté, retry automatique | 1ère tentative captcha, 2ème succès | `result.success == True`, logs WARNING captcha puis INFO success | Vérifie retry logic simple |
-| 5 | `test_crawl_max_retries_exceeded` | Max retries atteint, tous captcha | 3 tentatives, toutes avec captcha | Lève `CaptchaDetectedError` final | Vérifie abandon après max_retries |
-| 6 | `test_crawl_network_timeout` | Timeout réseau AsyncWebCrawler | Mock `arun()` timeout après 10s | Lève `NetworkError`, `status_code=None` | Vérifie gestion timeout |
-| 7 | `test_crawl_status_403_retry` | Status code 403 (rate limiting) | Mock response status 403 | Retry avec exponential backoff 4s, 8s, 16s | Vérifie retry logic sur 403 |
-| 8 | `test_crawl_stealth_mode_enabled` | BrowserConfig avec stealth mode actif | `enable_stealth=True` dans config | `result.success == True`, stealth mode loggé | Vérifie activation stealth mode |
-| 9 | `test_crawl_structured_logging` | Logging structuré avec contexte | Crawl avec URL | Logs contiennent `url`, `status_code`, `html_size`, `stealth_mode` | Vérifie qualité logging JSON POC |
+| 4 | `test_crawl_network_timeout` | Timeout réseau AsyncWebCrawler | Mock `arun()` timeout après 10s | Lève `NetworkError`, `status_code=None` | Vérifie gestion timeout |
+| 5 | `test_crawl_status_403` | Status code 403 (rate limiting) | Mock response status 403 | Lève `NetworkError`, `status_code=403` | Vérifie levée erreur sur 403 |
+| 6 | `test_crawl_stealth_mode_enabled` | BrowserConfig avec stealth mode actif | `enable_stealth=True` dans config | `result.success == True`, stealth mode loggé | Vérifie activation stealth mode |
+| 7 | `test_crawl_structured_logging` | Logging structuré avec contexte | Crawl avec URL | Logs contiennent `url`, `status_code`, `html_size`, `stealth_mode` | Vérifie qualité logging JSON POC |
 
 ### FlightParser (10 tests)
 
@@ -333,9 +327,8 @@ Tous les logs doivent suivre le format JSON structuré avec les champs suivants 
 | `html_size` | Integer | Taille HTML en bytes | `245678` |
 | `response_time_ms` | Integer | Temps réponse en ms | `2345` |
 | `stealth_mode` | Boolean | Stealth mode activé | `true` |
-| `retry_attempt` | Integer | Numéro tentative (0 = première) | `0`, `1`, `2` |
 
-**Note** : Logs POC dev local (pas de proxy, stealth mode actif).
+**Note** : Logs POC dev local (pas de proxy, pas de retry, stealth mode actif).
 
 ---
 
@@ -349,50 +342,46 @@ Tous les logs doivent suivre le format JSON structuré avec les champs suivants 
 
 3. **Captcha détecté et loggé** : Si reCAPTCHA/hCaptcha présent dans HTML → CaptchaDetectedError levée avec `captcha_type` loggé en WARNING
 
-4. **Retry logic exponential backoff** : En cas de captcha/403/timeout → retry avec exponential backoff (4s, 8s, 16s)
+4. **Parsing extrait minimum 5 vols** : FlightParser parse HTML Google Flights et retourne liste ≥5 Flight validés Pydantic (champs obligatoires présents)
 
-5. **Parsing extrait minimum 5 vols** : FlightParser parse HTML Google Flights et retourne liste ≥5 Flight validés Pydantic (champs obligatoires présents)
+5. **Format Flight valide** : Chaque Flight contient `price > 0`, `airline` (2-100 caractères), `departure_time` et `arrival_time` (datetime ISO 8601), `duration` (format "Xh Ymin"), `stops` (int ≥0 ou None)
 
-6. **Format Flight valide** : Chaque Flight contient `price > 0`, `airline` (2-100 caractères), `departure_time` et `arrival_time` (datetime ISO 8601), `duration` (format "Xh Ymin"), `stops` (int ≥0 ou None)
+6. **Gestion champs manquants** : Si prix/compagnie/horaires absents → vol skippé avec log WARNING, parsing continue pour vols suivants (pas d'exception bloquante)
 
-7. **Gestion champs manquants** : Si prix/compagnie/horaires absents → vol skippé avec log WARNING, parsing continue pour vols suivants (pas d'exception bloquante)
-
-8. **Erreurs explicites** : CaptchaDetectedError et ParsingError levées avec messages descriptifs et contexte (URL, proxy, HTML size, attempts)
+7. **Erreurs explicites** : CaptchaDetectedError et ParsingError levées avec messages descriptifs et contexte (URL, HTML size)
 
 ## Critères techniques
 
-9. **Type hints PEP 695** : Toutes signatures CrawlerService, FlightParser, Flight annotées avec type hints modernes (`list[Flight]`, `str | None`, `async def`)
+8. **Type hints PEP 695** : Toutes signatures CrawlerService, FlightParser, Flight annotées avec type hints modernes (`list[Flight]`, `str | None`, `async def`)
 
-10. **Async/Await cohérent** : CrawlerService.crawl_google_flights async, utilise `async with AsyncWebCrawler`, `await crawler.arun()`, pas de blocking IO
+9. **Async/Await cohérent** : CrawlerService.crawl_google_flights async, utilise `async with AsyncWebCrawler`, `await crawler.arun()`, pas de blocking IO
 
-11. **Retry logic Tenacity** : Système de retry automatique avec maximum 3 tentatives, délai exponentiel entre tentatives (4s, 8s, 16s jusqu'à 60s max), déclenchement sur exceptions CaptchaDetectedError et NetworkError uniquement
+10. **Pydantic v2** : Flight utilise BaseModel avec Field pour définir contraintes de validation, validation cross-champs pour cohérence temporelle, configuration strict (extra='forbid')
 
-12. **Pydantic v2** : Flight utilise BaseModel avec Field pour définir contraintes de validation, validation cross-champs pour cohérence temporelle, configuration strict (extra='forbid')
+11. **JsonCssExtractionStrategy** : Configuration extraction CSS avec sélecteur de base pour identifier conteneurs vols, 8 champs minimum à extraire (types text/attribute selon besoin), pas de LLM
 
-13. **JsonCssExtractionStrategy** : Configuration extraction CSS avec sélecteur de base pour identifier conteneurs vols, 8 champs minimum à extraire (types text/attribute selon besoin), pas de LLM
+12. **Logging structuré JSON** : Tous logs incluent contexte métier dans champs dédiés : URL crawlée, code status HTTP, taille HTML reçu, temps de réponse en millisecondes, activation stealth mode
 
-14. **Logging structuré JSON** : Tous logs incluent contexte métier dans champs dédiés : URL crawlée, code status HTTP, taille HTML reçu, temps de réponse en millisecondes, activation stealth mode, numéro tentative retry
-
-15. **Exceptions custom** : CaptchaDetectedError et ParsingError héritent de Exception standard Python, incluent attributs contextuels pour debugging : URL concernée, type captcha détecté, taille HTML, nombre vols trouvés
+13. **Exceptions custom** : CaptchaDetectedError et ParsingError héritent de Exception standard Python, incluent attributs contextuels pour debugging : URL concernée, type captcha détecté, taille HTML, nombre vols trouvés
 
 ## Critères qualité
 
-16. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% du code de CrawlerService et FlightParser (pytest-cov)
+14. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% du code de CrawlerService et FlightParser (pytest-cov)
 
-17. **23 tests passent** : 19 tests unitaires (9 CrawlerService + 10 FlightParser) + 4 tests intégration tous verts (pytest -v)
+15. **21 tests passent** : 17 tests unitaires (7 CrawlerService + 10 FlightParser) + 4 tests intégration tous verts (pytest -v)
 
-18. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type
+16. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type
 
-19. **Tests TDD format AAA** : Tests unitaires suivent strictement Arrange/Act/Assert, tableaux specs complétés avec 6 colonnes (N°, Nom, Scénario, Input, Output, Vérification)
+17. **Tests TDD format AAA** : Tests unitaires suivent strictement Arrange/Act/Assert, tableaux specs complétés avec 6 colonnes (N°, Nom, Scénario, Input, Output, Vérification)
 
-20. **Tests intégration format Given/When/Then** : Tests intégration suivent BDD avec 5 colonnes (N°, Nom, Prérequis, Action, Résultat), mocks AsyncWebCrawler configurés
+18. **Tests intégration format Given/When/Then** : Tests intégration suivent BDD avec 5 colonnes (N°, Nom, Prérequis, Action, Résultat), mocks AsyncWebCrawler configurés
 
-21. **Docstrings 1 ligne** : CrawlerService et FlightParser avec docstring descriptive, méthodes principales documentées, focus POURQUOI pas QUOI
+19. **Docstrings 1 ligne** : CrawlerService et FlightParser avec docstring descriptive, méthodes principales documentées, focus POURQUOI pas QUOI
 
-22. **Aucun code production dans specs** : Ce document contient uniquement signatures, tableaux tests, descriptions comportements, exemples JSON (pas d'implémentation complète de méthodes)
+20. **Aucun code production dans specs** : Ce document contient uniquement signatures, tableaux tests, descriptions comportements, exemples JSON (pas d'implémentation complète de méthodes)
 
-23. **Commits conventional** : Story 4 committée avec message `docs(specs): add story 4 specifications` conforme Conventional Commits
+21. **Commits conventional** : Story 4 committée avec message `docs(specs): add story 4 specifications` conforme Conventional Commits
 
 ---
 
-**💡 Note** : Cette story est un Proof of Concept (8 story points). Les 23 critères couvrent faisabilité technique (crawl + parsing 1 destination), robustesse (captcha detection, retry logic), qualité (coverage, types, tests), et foundation réutilisable pour stories 5-6 (proxies + multi-city search orchestration).
+**💡 Note** : Cette story est un Proof of Concept (8 story points). Les 21 critères couvrent faisabilité technique (crawl + parsing 1 destination), robustesse (captcha detection, error handling), qualité (coverage, types, tests), et foundation réutilisable pour stories 5-7 (proxies, multi-city, retry logic production).

@@ -24,7 +24,7 @@ technologies: ["Python", "itertools", "asyncio", "FastAPI", "Pydantic v2"]
 - **Explosion combinatoire** : Produit cartésien dates segments = volume requêtes important (ex: 5 segments × [10, 5, 6, 2, 8] jours = 4,800 URLs potentielles → limite 1000 validée Story 3)
 - **Coûts bandwidth Decodo** : Chaque crawl = ~200-500KB HTML téléchargé via proxies résidentiels ($2.60-3.50/GB), nécessite optimisation nombre de crawls
 - **Rate limiting Google Flights** : Requêtes massives simultanées peuvent déclencher rate limiting (status 429) ou captchas, nécessite throttling intelligent
-- **Timeout total acceptable** : Recherche multi-city doit compléter en <60 secondes au p95 (user experience web), même avec retry logic
+- **Timeout total acceptable** : Recherche multi-city doit compléter en <60 secondes au p95 (user experience web) en mode POC dev local
 
 ## Valeur business
 
@@ -36,7 +36,7 @@ technologies: ["Python", "itertools", "asyncio", "FastAPI", "Pydantic v2"]
 ## Métriques succès
 
 - **Génération combinaisons correcte** : 100% produit cartésien dates généré (ex: [7, 6] jours = 42 combinaisons, [10, 5, 6, 2, 8] jours = 4,800 combinaisons avant limite 1000)
-- **Taux succès crawl global** : ≥85% des URLs crawlées avec succès (HTML valide sans captcha), même avec retry logic inclus
+- **Taux succès crawl global POC** : Baseline POC dev local sans retry logic (taux succès variable selon captchas Google)
 - **Précision ranking Top 10** : Top 1 résultat toujours prix minimum réel sur ensemble combinaisons testées (validation manuelle échantillon)
 - **Temps exécution total** : <60 secondes au p95 pour recherche 3 segments × [7, 6, 5] jours (210 combinaisons × crawl + parsing + ranking)
 - **Coverage tests** : ≥80% sur CombinationGenerator et SearchService (unitaires + intégration)
@@ -156,7 +156,7 @@ class SearchService:
 | Service | Rôle | Défini dans |
 |---------|------|-------------|
 | `CombinationGenerator` | Génère produit cartésien dates par segment | Story 6 (ce document) |
-| `CrawlerService` | Crawle Google Flights avec retry logic | Story 4 |
+| `CrawlerService` | Crawle Google Flights avec stealth mode | Story 4 |
 | `FlightParser` | Parse HTML Google Flights en liste Flight | Story 4 |
 
 **Comportement Orchestration** :
@@ -180,9 +180,8 @@ Pour chaque DateCombination :
 **Étape 3 : Crawling Parallèle**
 1. Appeler `crawler_service.crawl_google_flights(url)` pour chaque combinaison
 2. Stratégie parallélisation : `asyncio.gather()` avec limite concurrence (ex: 5-10 requêtes simultanées max pour éviter rate limiting)
-3. Retry automatique via Tenacity (déjà intégré dans CrawlerService Story 4)
-4. Gérer erreurs crawl partielles : Si captcha/timeout → Logger WARNING, continuer autres combinaisons
-5. Logger INFO : Nombre crawls réussis vs échecs
+3. Gérer erreurs crawl : Si captcha/timeout (CrawlerService lève exception) → Logger WARNING, continuer autres combinaisons
+4. Logger INFO : Nombre crawls réussis vs échecs
 
 **Étape 4 : Parsing Vols**
 Pour chaque HTML crawlé avec succès :
@@ -397,13 +396,12 @@ class CombinationResult(BaseModel):
 | 18 | `test_search_flights_ranking_tie_breaker_duration` | Départage ex-aequo prix par durée | Mock 2 combinaisons même prix 1000€ : durée 10h vs 15h | Top 1 = combinaison 10h (durée min) | Vérifie tie-breaker durée |
 | 19 | `test_search_flights_handles_partial_crawl_failures` | Gestion erreurs crawl partielles (50% échecs) | Mock 42 combinaisons : 21 crawls succès, 21 CaptchaDetectedError | `SearchResponse` avec 10 résultats (meilleurs parmi 21 crawls réussis), logs WARNING pour 21 échecs | Vérifie résilience erreurs partielles |
 | 20 | `test_search_flights_returns_empty_all_crawls_failed` | Retourne response vide si tous crawls échouent | Mock 42 combinaisons : toutes lèvent NetworkError | `SearchResponse.results=[]`, `search_stats.total_results=0`, logs ERROR | Vérifie edge case échec total |
-| 21 | `test_search_flights_retry_logic_integrated` | Retry automatique via CrawlerService Tenacity | Mock CrawlerService avec retry_count trackable | CrawlerService retry logic déclenché (vérifié via mock spy) | Vérifie intégration retry Story 4 |
-| 22 | `test_search_flights_constructs_google_flights_urls` | Construction URLs multi-city correctes | `DateCombination` segment_dates=["2025-06-01", "2025-06-15"], segments=[Paris→Tokyo, Tokyo→NYC] | URL contient `flight_type=3`, `multi_city_json=[{"departure_id":"CDG","arrival_id":"NRT","date":"2025-06-01"},{"departure_id":"NRT","arrival_id":"JFK","date":"2025-06-15"}]`, `hl=fr`, `curr=EUR` | Vérifie format URL Google Flights Story 4 ref |
-| 23 | `test_search_flights_logging_structured` | Logging structuré toutes étapes orchestration | `SearchRequest` nominal | Logs contiennent combinations_generated, crawls_success, crawls_failed, parsing_success, top_price_min, top_price_max | Vérifie observabilité complète |
-| 24 | `test_search_flights_search_stats_accurate` | search_stats cohérentes avec résultats | Mock 38 combinaisons réussies sur 42 | `search_stats.total_results=10` (top 10), `segments_count=len(request.segments)` | Vérifie métadonnées SearchResponse |
-| 25 | `test_search_flights_less_than_10_results` | Retourne <10 résultats si <10 combinaisons réussies | Mock 5 combinaisons crawlées avec succès | `SearchResponse.results` length=5 (tous résultats disponibles) | Vérifie edge case <10 résultats |
+| 21 | `test_search_flights_constructs_google_flights_urls` | Construction URLs multi-city correctes | `DateCombination` segment_dates=["2025-06-01", "2025-06-15"], segments=[Paris→Tokyo, Tokyo→NYC] | URL contient `flight_type=3`, `multi_city_json=[{"departure_id":"CDG","arrival_id":"NRT","date":"2025-06-01"},{"departure_id":"NRT","arrival_id":"JFK","date":"2025-06-15"}]`, `hl=fr`, `curr=EUR` | Vérifie format URL Google Flights Story 4 ref |
+| 22 | `test_search_flights_logging_structured` | Logging structuré toutes étapes orchestration | `SearchRequest` nominal | Logs contiennent combinations_generated, crawls_success, crawls_failed, parsing_success, top_price_min, top_price_max | Vérifie observabilité complète |
+| 23 | `test_search_flights_search_stats_accurate` | search_stats cohérentes avec résultats | Mock 38 combinaisons réussies sur 42 | `search_stats.total_results=10` (top 10), `segments_count=len(request.segments)` | Vérifie métadonnées SearchResponse |
+| 24 | `test_search_flights_less_than_10_results` | Retourne <10 résultats si <10 combinaisons réussies | Mock 5 combinaisons crawlées avec succès | `SearchResponse.results` length=5 (tous résultats disponibles) | Vérifie edge case <10 résultats |
 
-**Total tests unitaires** : 10 (CombinationGenerator) + 15 (SearchService) = **25 tests**
+**Total tests unitaires** : 10 (CombinationGenerator) + 14 (SearchService) = **24 tests**
 
 ---
 
@@ -415,7 +413,7 @@ class CombinationResult(BaseModel):
 |---|----------|-------------------|---------------|-------------------------|
 | 1 | `test_integration_search_two_segments_success` | Mock AsyncWebCrawler avec HTML Google Flights valide (10 vols par combinaison), 2 segments × [7j, 6j] = 42 combinaisons | Appeler `search_service.search_flights(SearchRequest)` avec Paris→Tokyo, Tokyo→NYC | `SearchResponse` avec 10 résultats (top 10 parmi 42), triés prix croissant, tous Flight validés Pydantic, pas d'exception |
 | 2 | `test_integration_search_five_segments_asymmetric` | Mock AsyncWebCrawler HTML valide, 5 segments × [15, 2, 2, 2, 2] jours = 240 combinaisons | Appeler `search_service.search_flights(SearchRequest)` avec 5 segments | `SearchResponse` avec top 10 résultats (sur 240 combinaisons générées), prix min dans top 1, logs INFO count 240 combinaisons |
-| 3 | `test_integration_search_with_captcha_partial_failures` | Mock AsyncWebCrawler : 60% combinaisons HTML valide, 40% CaptchaDetectedError, 2 segments × [10j, 8j] = 80 combinaisons | Appeler `search_service.search_flights(SearchRequest)` | `SearchResponse` avec ~10 résultats (crawls réussis), logs WARNING captcha détecté pour 32 combinaisons, retry logic CrawlerService utilisé |
+| 3 | `test_integration_search_with_captcha_partial_failures` | Mock AsyncWebCrawler : 60% combinaisons HTML valide, 40% CaptchaDetectedError, 2 segments × [10j, 8j] = 80 combinaisons | Appeler `search_service.search_flights(SearchRequest)` | `SearchResponse` avec ~10 résultats (crawls réussis), logs WARNING captcha détecté pour 32 combinaisons échouées |
 | 4 | `test_integration_search_dates_ranking` | Mock AsyncWebCrawler HTML valide avec prix variés par date combinaison, 2 segments × [7j, 6j] = 42 combinaisons | Appeler `search_service.search_flights(SearchRequest)` | `SearchResponse` top 10 triés prix croissant, combinaisons dates différentes présentes, meilleures dates identifiées dans top 1 |
 | 5 | `test_integration_end_to_end_search_endpoint` | Application FastAPI running avec TestClient, mock CrawlerService/FlightParser injectés | POST `/api/v1/search-flights` avec body JSON 3 segments × [5j, 4j, 3j] = 60 combinaisons | Status 200 + JSON response conforme SearchResponse schema avec top 10 results triés prix, search_stats.total_results=10, execution_time_seconds <10s |
 
