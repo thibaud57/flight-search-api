@@ -132,3 +132,13 @@ def client_with_mock_search(test_settings: Settings, mock_search_service):
     app.dependency_overrides.clear()
     get_settings.cache_clear()
     get_logger.cache_clear()
+
+
+@pytest.fixture
+def mock_crawl_result():
+    """Mock CrawlResult success (partagé entre tests crawler/proxy)."""
+    result = MagicMock()
+    result.success = True
+    result.html = "<html><body>Valid Google Flights HTML</body></html>"
+    result.status_code = 200
+    return result

@@ -39,14 +39,7 @@ def proxy_pool() -> list[ProxyConfig]:
     ]
 
 
-@pytest.fixture
-def mock_crawl_result():
-    """Mock CrawlResult success."""
-    result = MagicMock()
-    result.success = True
-    result.html = "<html><body>Valid HTML</body></html>"
-    result.status_code = 200
-    return result
+# Note: mock_crawl_result est défini dans conftest.py (partagé)
 
 
 @pytest.mark.asyncio

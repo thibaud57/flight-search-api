@@ -1,50 +1,8 @@
 """Tests unitaires endpoint search."""
 
 from datetime import date, timedelta
-from unittest.mock import MagicMock
 
-import pytest
-
-from app.api.routes import get_search_service
-from app.main import app
-from app.models.response import FlightResult, SearchResponse, SearchStats
-from app.services.search_service import SearchService
-
-
-@pytest.fixture
-def mock_search_service():
-    """Fixture pour SearchService mocke async."""
-    service = MagicMock(spec=SearchService)
-
-    mock_results = [
-        FlightResult(
-            price=1000.0 + i * 100,
-            airline=f"Airline{i}",
-            departure_date="2025-06-01",
-            segments=[{"from": "Paris", "to": "Tokyo", "date": "2025-06-01"}],
-        )
-        for i in range(10)
-    ]
-
-    mock_stats = SearchStats(
-        total_results=10,
-        search_time_ms=50,
-        segments_count=2,
-    )
-
-    async def mock_search(request):
-        return SearchResponse(results=mock_results, search_stats=mock_stats)
-
-    service.search_flights = mock_search
-    return service
-
-
-@pytest.fixture
-def mock_search_service_override(mock_search_service):
-    """Override get_search_service avec cleanup automatique."""
-    app.dependency_overrides[get_search_service] = lambda: mock_search_service
-    yield mock_search_service
-    app.dependency_overrides.clear()
+# Note: mock_search_service et client_with_mock_search sont définis dans conftest.py
 
 
 def test_endpoint_accepts_valid_request(client_with_mock_search):
@@ -170,9 +128,7 @@ def test_endpoint_response_matches_schema(client_with_mock_search):
     assert "segments_count" in stats
 
 
-def test_endpoint_injects_search_service_dependency(
-    client, mock_search_service_override
-):
+def test_endpoint_injects_search_service_dependency(client_with_mock_search):
     """Test 43: SearchService injecte via Depends()."""
     tomorrow = date.today() + timedelta(days=1)
 
@@ -197,6 +153,6 @@ def test_endpoint_injects_search_service_dependency(
         ]
     }
 
-    response = client.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200
