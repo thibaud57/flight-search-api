@@ -438,23 +438,23 @@
 
 📝 **Output** : Story 3 complétée (8 story points)
 
+**⚡ Validation légère Epic 1** (15-30min) :
+- [ ] **Standards Python** : Vérifier conformité avec `.claude/CLAUDE.md` (section Standards Python modernes)
+- [ ] **Versions frameworks** : Vérifier conformité avec `docs/VERSIONS.md` (matrice compatibilité)
+- [ ] **Quality checks** : `ruff check . && ruff format . && mypy app/ && pytest tests/unit/ --cov=app`
+  - ruff ✅ (0 erreurs)
+  - mypy ✅ (0 erreurs)
+  - pytest ✅ (tous tests passent)
+  - coverage ≥ 80%
+- [ ] **Cohérence code** : Nomenclature uniforme, pas de duplication (DRY), architecture respectée (voir `.claude/CLAUDE.md` - Section Organisation fichiers)
+- [ ] **Documentation** : Specs complètes pour stories 1-3
+
 ### 5.4 Mise à jour CHANGELOG et version
 - [x] Ajouter entrée v0.5.0 dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.5.0"`
 - [x] Commit : `chore: bump version to 0.5.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
-
-**⚡ Validation légère Epic 1** (15-30min) :
-- [ ] **Standards Python** : Type hints PEP 695 partout, pas de commentaires inline
-- [ ] **Versions** : Conforme Python 3.13, FastAPI 0.121.2, Pydantic 2.12.4, pytest 8.0+ (vérifier via `docs/VERSIONS.md`)
-- [ ] **Quality checks** : `ruff check . && ruff format . && mypy app/ && pytest tests/unit/ --cov=app`
-  - ruff ✅ (0 erreurs)
-  - mypy ✅ (0 erreurs)
-  - pytest ✅ (tous tests passent)
-  - coverage ≥ 80%
-- [ ] **Cohérence code** : Nomenclature uniforme, pas de duplication (DRY), architecture respectée
-- [ ] **Documentation** : CHANGELOG.md à jour, specs complètes
 
 **Fin Epic 1** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.5.0 sur master → GitHub Release (workflow automatique)
 
@@ -498,24 +498,24 @@
 
 📝 **Output** : Story 6 complétée (5 story points)
 
+**⚡ Validation légère Epic 2** (15-30min) :
+- [ ] **Standards Python** : Vérifier conformité avec `.claude/CLAUDE.md` (section Standards Python modernes)
+- [ ] **Versions frameworks** : Vérifier conformité avec `docs/VERSIONS.md` (matrice compatibilité)
+- [ ] **Quality checks** : `ruff check . && ruff format . && mypy app/ && pytest tests/unit/ --cov=app`
+  - ruff ✅ (0 erreurs)
+  - mypy ✅ (0 erreurs)
+  - pytest ✅ (tous tests passent)
+  - coverage ≥ 80%
+- [ ] **Cohérence code** : Nomenclature uniforme, pas de duplication (DRY), architecture respectée (voir `.claude/CLAUDE.md` - Section Organisation fichiers)
+- [ ] **Documentation** : Specs complètes pour stories 4-6
+- [ ] **Logs structurés** : Vérifier conformité avec `.claude/CLAUDE.md` (section Structured Logging)
+
 ### 5.8 Mise à jour CHANGELOG et version
 - [ ] Ajouter entrée v0.6.0 dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="0.6.0"`
 - [ ] Commit : `chore: bump version to 0.6.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
-
-**⚡ Validation légère Epic 2** (15-30min) :
-- [ ] **Standards Python** : Type hints PEP 695 partout, pas de commentaires inline
-- [ ] **Versions** : Conforme Crawl4AI 0.7.7+, Decodo proxies patterns, tenacity 9.1.2+ (vérifier via `docs/VERSIONS.md`)
-- [ ] **Quality checks** : `ruff check . && ruff format . && mypy app/ && pytest tests/unit/ --cov=app`
-  - ruff ✅ (0 erreurs)
-  - mypy ✅ (0 erreurs)
-  - pytest ✅ (tous tests passent)
-  - coverage ≥ 80%
-- [ ] **Cohérence code** : Nomenclature uniforme, pas de duplication (DRY), architecture respectée
-- [ ] **Documentation** : CHANGELOG.md à jour, specs complètes
-- [ ] **Logs structurés** : Crawler logs avec contexte (proxy_used, parsing_success)
 
 **Fin Epic 2** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.6.0 sur master → GitHub Release (workflow automatique)
 
@@ -535,25 +535,24 @@
 
 📝 **Output** : Story 7 complétée (5 story points)
 
+**⚡ Validation légère Epic 3** (15-30min) :
+- [ ] **Standards Python** : Vérifier conformité avec `.claude/CLAUDE.md` (section Standards Python modernes)
+- [ ] **Versions frameworks** : Vérifier conformité avec `docs/VERSIONS.md` (matrice compatibilité)
+- [ ] **Quality checks** : `ruff check . && ruff format . && mypy app/ && pytest tests/unit/ --cov=app`
+  - ruff ✅ (0 erreurs)
+  - mypy ✅ (0 erreurs)
+  - pytest ✅ (tous tests passent)
+  - coverage ≥ 80%
+- [ ] **Cohérence code** : Nomenclature uniforme, pas de duplication (DRY), architecture respectée (voir `.claude/CLAUDE.md` - Section Organisation fichiers)
+- [ ] **Documentation** : Specs complètes pour story 7
+- [ ] **Patterns async** : Vérifier conformité avec `.claude/CLAUDE.md` (section Patterns Async - retry logic, error handling)
+
 ### 5.10 Mise à jour CHANGELOG et version
 - [ ] Ajouter entrée v0.7.0 dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="0.7.0"`
 - [ ] Commit : `chore: bump version to 0.7.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` mis à jour
-
-**⚡ Validation légère Epic 3** (15-30min) :
-- [ ] **Standards Python** : Type hints PEP 695 partout, pas de commentaires inline
-- [ ] **Versions** : Conforme tenacity 9.1.2+ retry patterns (vérifier via `docs/VERSIONS.md`)
-- [ ] **Quality checks** : `ruff check . && ruff format . && mypy app/ && pytest tests/unit/ --cov=app`
-  - ruff ✅ (0 erreurs)
-  - mypy ✅ (0 erreurs)
-  - pytest ✅ (tous tests passent)
-  - coverage ≥ 80%
-- [ ] **Cohérence code** : Nomenclature uniforme, pas de duplication (DRY), architecture respectée
-- [ ] **Documentation** : CHANGELOG.md à jour, specs complètes
-- [ ] **Logs retry** : before_sleep callback actif, erreurs loggées avec contexte
-- [ ] **Error handling** : 4xx non-retry, 5xx retry, exceptions spécifiques (pas `except Exception:`)
 
 **Fin Epic 3** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.7.0 sur master → GitHub Release (workflow automatique)
 
@@ -563,23 +562,19 @@
 
 **🔍 Audit global architecture & standards** :
 
-- [ ] **Architecture (ARCHITECTURE.md)** :
+- [ ] **Architecture (`docs/ARCHITECTURE.md`)** :
   - [ ] Diagrammes à jour (composants, séquence)
-  - [ ] ADRs conformes implémentation (crawl4ai, proxies, retry, captcha detection)
+  - [ ] ADRs conformes implémentation réelle
   - [ ] Pas de déviation non documentée
 
-- [ ] **Standards Python 3.13 (VERSIONS.md + CLAUDE.md)** :
-  - [ ] Type hints PEP 695 partout (`list[T]`, `X | None`, generics modernes)
-  - [ ] Pas de commentaires inline (sauf justification explicite)
-  - [ ] Docstrings pragmatiques (1 ligne par défaut)
-  - [ ] Async patterns corrects (`async with`, pas de blocking calls)
+- [ ] **Standards Python** :
+  - [ ] Vérifier conformité complète avec `.claude/CLAUDE.md` (section Standards Python modernes)
+  - [ ] Vérifier conformité avec `.claude/CLAUDE.md` (section Anti-patterns)
+  - [ ] Vérifier conformité avec `.claude/CLAUDE.md` (section Patterns Async)
 
 - [ ] **Conformité versions frameworks** :
-  - [ ] FastAPI 0.121.2+ : Dependency injection avec `Depends()`, `@lru_cache` pour singletons
-  - [ ] Pydantic 2.12.4+ : `.model_validate()`, `model_config = ConfigDict()`, `field_validator`
-  - [ ] Crawl4AI 0.7.7+ : `AsyncWebCrawler`, `JsonCssExtractionStrategy`, stealth mode
-  - [ ] tenacity 9.1.2+ : `@retry` decorator async, exponential backoff + jitter
-  - [ ] pytest 8.0+ : Fixtures avec yield cleanup, scopes corrects, `asyncio_mode = "auto"`
+  - [ ] Vérifier patterns conformes `docs/VERSIONS.md` (matrice compatibilité complète)
+  - [ ] Vérifier best practices selon versions installées (FastAPI, Pydantic, Crawl4AI, tenacity, pytest)
 
 - [ ] **Quality checks globaux** :
   - [ ] `ruff check .` → 0 erreurs (warnings tolérés selon config)
@@ -624,20 +619,16 @@
 
 **🔒 Cohérence globale codebase** :
 
-- [ ] **Nomenclature uniforme** :
-  - [ ] Fichiers : `snake_case.py`
-  - [ ] Classes : `PascalCase`
-  - [ ] Fonctions/vars : `snake_case`
-  - [ ] Constants : `UPPER_SNAKE_CASE`
+- [ ] **Nomenclature** :
+  - [ ] Vérifier conformité avec `.claude/CLAUDE.md` (section Organisation fichiers)
+  - [ ] Uniformité selon conventions Python standards
 
 - [ ] **DRY (Don't Repeat Yourself)** :
   - [ ] Pas de duplication code (fixtures pytest, helpers utils)
   - [ ] Abstractions pertinentes (services, models séparés)
 
-- [ ] **Logs structurés cohérents** :
-  - [ ] Tous logs JSON format avec `pythonjsonlogger`
-  - [ ] `extra={}` context partout (search_id, destinations, proxy_used, etc.)
-  - [ ] Pas de secrets dans logs (passwords, API keys masqués)
+- [ ] **Logs structurés** :
+  - [ ] Vérifier conformité avec `.claude/CLAUDE.md` (section Structured Logging)
 
 **📚 Documentation synchronisée** :
 
