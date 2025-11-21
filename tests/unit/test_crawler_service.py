@@ -8,9 +8,6 @@ from app.exceptions import CaptchaDetectedError, NetworkError
 from app.services.crawler_service import CrawlerService
 
 
-# Note: mock_crawl_result est défini dans conftest.py (partagé)
-
-
 @pytest.fixture
 def crawler_service():
     """Instance CrawlerService."""

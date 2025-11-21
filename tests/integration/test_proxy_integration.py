@@ -39,9 +39,6 @@ def proxy_pool() -> list[ProxyConfig]:
     ]
 
 
-# Note: mock_crawl_result est défini dans conftest.py (partagé)
-
-
 @pytest.mark.asyncio
 async def test_integration_crawler_with_proxy_rotation(
     proxy_pool: list[ProxyConfig], mock_crawl_result: MagicMock

@@ -2,9 +2,6 @@
 
 from datetime import date, timedelta
 
-# Note: mock_search_service et client_with_mock_search sont définis dans conftest.py
-
-
 def test_endpoint_accepts_valid_request(client_with_mock_search):
     """Test 39: Endpoint accepte request valide."""
     tomorrow = date.today() + timedelta(days=1)
