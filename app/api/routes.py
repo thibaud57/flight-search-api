@@ -1,3 +1,4 @@
+from logging import Logger
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -8,7 +9,6 @@ from app.models.response import HealthResponse, SearchResponse
 from app.services.search_service import SearchService
 
 router = APIRouter()
-logger = get_logger()
 
 
 def get_search_service() -> SearchService:
@@ -26,6 +26,7 @@ def health_check() -> HealthResponse:
 def search_flights_endpoint(
     request: SearchRequest,
     search_service: Annotated[SearchService, Depends(get_search_service)],
+    logger: Annotated[Logger, Depends(get_logger)],
 ) -> SearchResponse:
     """Endpoint recherche vols multi-city (mock Phase 1)."""
     logger.info(
