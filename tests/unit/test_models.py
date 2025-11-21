@@ -1,10 +1,10 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 from pydantic import ValidationError
 
 from app.models.request import DateRange, FlightSegment, SearchRequest
-from app.models.response import FlightResult, SearchResponse, SearchStats
+from app.models.response import Flight, FlightResult, SearchResponse, SearchStats
 
 
 @pytest.fixture
@@ -628,3 +628,78 @@ def test_search_response_max_10_results():
 
     with pytest.raises(ValidationError):
         SearchResponse(results=results, search_stats=stats_data)
+
+
+def test_flight_price_must_be_positive():
+    """Test 33: Flight price doit être > 0."""
+    with pytest.raises(ValidationError):
+        Flight(
+            price=0,
+            airline="Air France",
+            departure_time=datetime(2025, 6, 1, 10, 0),
+            arrival_time=datetime(2025, 6, 1, 14, 0),
+            duration="4h 00min",
+        )
+
+
+def test_flight_airline_min_length():
+    """Test 34: Airline doit avoir au moins 2 caractères."""
+    with pytest.raises(ValidationError):
+        Flight(
+            price=100.0,
+            airline="A",
+            departure_time=datetime(2025, 6, 1, 10, 0),
+            arrival_time=datetime(2025, 6, 1, 14, 0),
+            duration="4h 00min",
+        )
+
+
+def test_flight_datetime_iso_format():
+    """Test 35: Flight accepte datetime valide."""
+    flight = Flight(
+        price=100.0,
+        airline="Air France",
+        departure_time=datetime(2025, 6, 1, 10, 30),
+        arrival_time=datetime(2025, 6, 1, 14, 45),
+        duration="4h 15min",
+    )
+    assert flight.departure_time == datetime(2025, 6, 1, 10, 30)
+    assert flight.arrival_time == datetime(2025, 6, 1, 14, 45)
+
+
+def test_flight_arrival_must_be_after_departure():
+    """Test 36: arrival_time doit être après departure_time."""
+    with pytest.raises(ValidationError) as exc_info:
+        Flight(
+            price=100.0,
+            airline="Air France",
+            departure_time=datetime(2025, 6, 1, 14, 0),
+            arrival_time=datetime(2025, 6, 1, 10, 0),
+            duration="4h 00min",
+        )
+    assert "arrival_time must be after departure_time" in str(exc_info.value)
+
+
+def test_flight_duration_format():
+    """Test 37: Flight duration accepte format string."""
+    flight = Flight(
+        price=100.0,
+        airline="Air France",
+        departure_time=datetime(2025, 6, 1, 10, 0),
+        arrival_time=datetime(2025, 6, 1, 20, 30),
+        duration="10h 30min",
+    )
+    assert flight.duration == "10h 30min"
+
+
+def test_flight_stops_must_be_non_negative():
+    """Test 38: stops doit être >= 0."""
+    with pytest.raises(ValidationError):
+        Flight(
+            price=100.0,
+            airline="Air France",
+            departure_time=datetime(2025, 6, 1, 10, 0),
+            arrival_time=datetime(2025, 6, 1, 14, 0),
+            duration="4h 00min",
+            stops=-1,
+        )
