@@ -14,7 +14,7 @@ from app.core.logger import setup_logger
 def test_settings_loaded_at_app_startup(monkeypatch: pytest.MonkeyPatch) -> None:
     """Settings instance accessible sans erreur."""
     monkeypatch.setenv("LOG_LEVEL", "INFO")
-    monkeypatch.setenv("DECODO_USERNAME", "spierhheqr")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
     monkeypatch.setenv("DECODO_PASSWORD", "testpass123")
     monkeypatch.setenv("DECODO_PROXY_HOST", "fr.decodo.com:40000")
     monkeypatch.setenv("PROXY_ROTATION_ENABLED", "true")
@@ -23,7 +23,7 @@ def test_settings_loaded_at_app_startup(monkeypatch: pytest.MonkeyPatch) -> None
     settings = Settings()
 
     assert settings.LOG_LEVEL == "INFO"
-    assert settings.DECODO_USERNAME == "spierhheqr"
+    assert settings.DECODO_USERNAME == "testuser"
     assert settings.DECODO_PASSWORD.get_secret_value() == "testpass123"
     assert settings.PROXY_ROTATION_ENABLED is True
 
@@ -33,7 +33,7 @@ def test_app_refuses_startup_with_invalid_config(
 ) -> None:
     """ValidationError levee avec config invalide."""
     monkeypatch.setenv("LOG_LEVEL", "INVALID")
-    monkeypatch.setenv("DECODO_USERNAME", "spierhheqr")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
     monkeypatch.setenv("DECODO_PASSWORD", "testpass123")
 
     with pytest.raises(ValidationError):
@@ -45,7 +45,7 @@ def test_logger_functional_with_settings_log_level(
 ) -> None:
     """Logger affiche logs DEBUG avec Settings.LOG_LEVEL=DEBUG."""
     monkeypatch.setenv("LOG_LEVEL", "DEBUG")
-    monkeypatch.setenv("DECODO_USERNAME", "spierhheqr")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
     monkeypatch.setenv("DECODO_PASSWORD", "testpass123")
     settings = Settings()
 

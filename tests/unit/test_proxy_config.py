@@ -11,14 +11,14 @@ def test_proxy_config_valid_fields() -> None:
     config = ProxyConfig(
         host="fr.decodo.com",
         port=40000,
-        username="spierhheqr",
+        username="testuser",
         password="mypassword",
         country="FR",
     )
 
     assert config.host == "fr.decodo.com"
     assert config.port == 40000
-    assert config.username == "spierhheqr"
+    assert config.username == "testuser"
     assert config.password == "mypassword"
     assert config.country == "FR"
 
@@ -28,12 +28,12 @@ def test_proxy_config_username_valid() -> None:
     config = ProxyConfig(
         host="fr.decodo.com",
         port=40000,
-        username="spierhheqr",
+        username="testuser",
         password="mypassword",
         country="FR",
     )
 
-    assert config.username == "spierhheqr"
+    assert config.username == "testuser"
 
 
 def test_proxy_config_username_too_short() -> None:
@@ -56,7 +56,7 @@ def test_proxy_config_invalid_port() -> None:
         ProxyConfig(
             host="fr.decodo.com",
             port=80,
-            username="spierhheqr",
+            username="testuser",
             password="mypassword",
             country="FR",
         )
@@ -69,12 +69,12 @@ def test_proxy_config_generate_url_format() -> None:
     config = ProxyConfig(
         host="fr.decodo.com",
         port=40000,
-        username="spierhheqr",
+        username="testuser",
         password="mypassword",
         country="FR",
     )
 
-    assert config.get_proxy_url() == "http://spierhheqr:mypassword@fr.decodo.com:40000"
+    assert config.get_proxy_url() == "http://testuser:mypassword@fr.decodo.com:40000"
 
 
 def test_proxy_config_country_uppercase_conversion() -> None:
@@ -82,7 +82,7 @@ def test_proxy_config_country_uppercase_conversion() -> None:
     config = ProxyConfig(
         host="fr.decodo.com",
         port=40000,
-        username="spierhheqr",
+        username="testuser",
         password="mypassword",
         country="fr",
     )

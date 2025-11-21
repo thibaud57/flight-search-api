@@ -75,7 +75,7 @@ async def test_integration_crawler_with_proxy_rotation(
 def test_integration_settings_load_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test 2: Settings charge depuis env avec proxy_config valide."""
     monkeypatch.setenv("LOG_LEVEL", "INFO")
-    monkeypatch.setenv("DECODO_USERNAME", "spierhheqr")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
     monkeypatch.setenv("DECODO_PASSWORD", "password123")
     monkeypatch.setenv("DECODO_PROXY_HOST", "fr.decodo.com:40000")
     monkeypatch.setenv("DECODO_PROXY_ENABLED", "true")

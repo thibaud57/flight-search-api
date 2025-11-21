@@ -22,7 +22,7 @@ technologies: ["decodo", "pydantic"]
 
 - **Coûts bandwidth Decodo variables** : Proxies résidentiels facturés au GB consommé ($2.60-3.50/GB selon volume mensuel d'après VERSIONS.md et decodo-proxies.md), chaque HTML Google Flights = ~200-500KB, nécessite optimisation nombre de requêtes
 - **Rate limiting Google Flights** : Trop de requêtes depuis même IP déclenchent blocages temporaires (status 429) ou captchas, rotation IP obligatoire pour distribution charge
-- **Authentification simple** : Format username Decodo = identifiant simple fourni par dashboard (ex: `spierhheqr`), pas de format complexe customer-XXX-country-FR
+- **Authentification simple** : Format username Decodo = identifiant simple fourni par dashboard (ex: `testuser`), pas de format complexe customer-XXX-country-FR
 - **France targeting MVP** : Focus MVP sur proxies résidentiels France uniquement (country=FR) pour cohérence géographique avec Google Flights France, extensible autres pays post-MVP
 - **Rotation server-side Decodo** : Decodo gère la rotation IP automatiquement côté serveur via port 40000 (rotating), pas besoin de pool côté client
 
@@ -70,7 +70,7 @@ class ProxyConfig(BaseModel):
 |-------|------|-------------|-------------|
 | `host` | `str` | Hostname proxy Decodo | Format `fr.decodo.com` ou `gate.decodo.com`, min_length=5 |
 | `port` | `int` | Port proxy résidentiel | Port 40000 (rotating France) ou 40001-49999 (sticky), ≥ 1024 |
-| `username` | `str` | Username auth Decodo | Identifiant simple fourni par dashboard (ex: `spierhheqr`), min_length=5 |
+| `username` | `str` | Username auth Decodo | Identifiant simple fourni par dashboard (ex: `testuser`), min_length=5 |
 | `password` | `str` | Mot de passe proxy Decodo | min_length=8, max_length=100 |
 | `country` | `str` | Code pays ISO Alpha-2 (FR, US, etc.) | Default "FR", length=2, pattern `^[A-Z]{2}$` (uppercase) |
 
@@ -96,7 +96,7 @@ class ProxyConfig(BaseModel):
 
 - **Méthode get_proxy_url()** :
   - Format retour : `http://{username}:{password}@{host}:{port}`
-  - Exemple : `http://spierhheqr:mypassword@fr.decodo.com:40000`
+  - Exemple : `http://testuser:mypassword@fr.decodo.com:40000`
   - Utilisé par CrawlerService pour passer proxy à BrowserConfig Crawl4AI
 
 **Validations Pydantic** :
@@ -312,7 +312,7 @@ class Settings(BaseSettings):
 
 ```bash
 # Proxies Decodo Configuration
-DECODO_USERNAME=spierhheqr
+DECODO_USERNAME=testuser
 DECODO_PASSWORD=my_secure_password_here
 DECODO_PROXY_HOST=fr.decodo.com:40000
 DECODO_PROXY_ENABLED=true
@@ -331,11 +331,11 @@ DECODO_PROXY_ENABLED=true
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 1 | `test_proxy_config_valid_fields` | ProxyConfig avec tous champs valides | `host="fr.decodo.com"`, `port=40000`, `username="spierhheqr"`, `password="mypassword"`, `country="FR"` | Instance ProxyConfig créée sans erreur, tous champs == input | Vérifie validation Pydantic nominale |
-| 2 | `test_proxy_config_username_valid` | Username valide (min 5 caractères) | `username="spierhheqr"` | Validation passe, instance créée | Vérifie min_length username |
+| 1 | `test_proxy_config_valid_fields` | ProxyConfig avec tous champs valides | `host="fr.decodo.com"`, `port=40000`, `username="testuser"`, `password="mypassword"`, `country="FR"` | Instance ProxyConfig créée sans erreur, tous champs == input | Vérifie validation Pydantic nominale |
+| 2 | `test_proxy_config_username_valid` | Username valide (min 5 caractères) | `username="testuser"` | Validation passe, instance créée | Vérifie min_length username |
 | 3 | `test_proxy_config_username_too_short` | Username trop court (<5 caractères) | `username="abc"` | Lève `ValidationError` avec message "at least 5 characters" | Vérifie validation username min_length |
 | 4 | `test_proxy_config_invalid_port` | Port invalide (<1024) | `port=80` (trop bas) | Lève `ValidationError` "Port must be >= 1024" | Vérifie validation port minimum |
-| 5 | `test_proxy_config_generate_url_format` | Méthode get_proxy_url() génère URL correcte | ProxyConfig valide avec tous champs | Retour == `"http://spierhheqr:mypassword@fr.decodo.com:40000"` | Vérifie format URL proxy pour BrowserConfig |
+| 5 | `test_proxy_config_generate_url_format` | Méthode get_proxy_url() génère URL correcte | ProxyConfig valide avec tous champs | Retour == `"http://testuser:mypassword@fr.decodo.com:40000"` | Vérifie format URL proxy pour BrowserConfig |
 | 6 | `test_proxy_config_country_uppercase_conversion` | Country automatiquement converti en uppercase | `country="fr"` (lowercase input) | ProxyConfig.country == "FR" (uppercase) | Vérifie normalisation country field_validator mode='before' |
 
 ### ProxyService (6 tests)
@@ -390,7 +390,7 @@ DECODO_PROXY_ENABLED=true
 {
   "host": "fr.decodo.com",
   "port": 40000,
-  "username": "spierhheqr",
+  "username": "testuser",
   "password": "my_secure_password_123",
   "country": "FR"
 }
@@ -403,7 +403,7 @@ DECODO_PROXY_ENABLED=true
 **Exemple 2 : ProxyConfig URL générée (get_proxy_url())**
 
 ```json
-"http://spierhheqr:my_secure_password_123@fr.decodo.com:40000"
+"http://testuser:my_secure_password_123@fr.decodo.com:40000"
 ```
 
 **Note** : Format URL proxy complète utilisée par BrowserConfig Crawl4AI. Contient credentials embeddées (username:password), ne JAMAIS logger cette URL (utiliser proxy_host uniquement dans logs).
@@ -414,7 +414,7 @@ DECODO_PROXY_ENABLED=true
 
 ```bash
 # Decodo Proxies Configuration (Story 5)
-DECODO_USERNAME=spierhheqr
+DECODO_USERNAME=testuser
 DECODO_PASSWORD=my_secure_password_here
 DECODO_PROXY_HOST=fr.decodo.com:40000
 DECODO_PROXY_ENABLED=true
