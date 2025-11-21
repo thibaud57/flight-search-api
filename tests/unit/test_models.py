@@ -3,8 +3,9 @@ from datetime import date, datetime, timedelta
 import pytest
 from pydantic import ValidationError
 
+from app.models.google_flight_dto import GoogleFlightDTO
 from app.models.request import DateRange, FlightSegment, SearchRequest
-from app.models.response import Flight, FlightResult, SearchResponse, SearchStats
+from app.models.response import FlightResult, SearchResponse, SearchStats
 
 
 @pytest.fixture
@@ -631,9 +632,9 @@ def test_search_response_max_10_results():
 
 
 def test_flight_price_must_be_positive():
-    """Test 33: Flight price doit être > 0."""
+    """Test 33: GoogleFlightDTO price doit être > 0."""
     with pytest.raises(ValidationError):
-        Flight(
+        GoogleFlightDTO(
             price=0,
             airline="Air France",
             departure_time=datetime(2025, 6, 1, 10, 0),
@@ -645,7 +646,7 @@ def test_flight_price_must_be_positive():
 def test_flight_airline_min_length():
     """Test 34: Airline doit avoir au moins 2 caractères."""
     with pytest.raises(ValidationError):
-        Flight(
+        GoogleFlightDTO(
             price=100.0,
             airline="A",
             departure_time=datetime(2025, 6, 1, 10, 0),
@@ -655,8 +656,8 @@ def test_flight_airline_min_length():
 
 
 def test_flight_datetime_iso_format():
-    """Test 35: Flight accepte datetime valide."""
-    flight = Flight(
+    """Test 35: GoogleFlightDTO accepte datetime valide."""
+    flight = GoogleFlightDTO(
         price=100.0,
         airline="Air France",
         departure_time=datetime(2025, 6, 1, 10, 30),
@@ -670,7 +671,7 @@ def test_flight_datetime_iso_format():
 def test_flight_arrival_must_be_after_departure():
     """Test 36: arrival_time doit être après departure_time."""
     with pytest.raises(ValidationError) as exc_info:
-        Flight(
+        GoogleFlightDTO(
             price=100.0,
             airline="Air France",
             departure_time=datetime(2025, 6, 1, 14, 0),
@@ -681,8 +682,8 @@ def test_flight_arrival_must_be_after_departure():
 
 
 def test_flight_duration_format():
-    """Test 37: Flight duration accepte format string."""
-    flight = Flight(
+    """Test 37: GoogleFlightDTO duration accepte format string."""
+    flight = GoogleFlightDTO(
         price=100.0,
         airline="Air France",
         departure_time=datetime(2025, 6, 1, 10, 0),
@@ -695,7 +696,7 @@ def test_flight_duration_format():
 def test_flight_stops_must_be_non_negative():
     """Test 38: stops doit être >= 0."""
     with pytest.raises(ValidationError):
-        Flight(
+        GoogleFlightDTO(
             price=100.0,
             airline="Air France",
             departure_time=datetime(2025, 6, 1, 10, 0),

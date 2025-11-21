@@ -9,7 +9,7 @@ from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 from pydantic import ValidationError
 
 from app.exceptions import ParsingError
-from app.models.response import Flight
+from app.models.google_flight_dto import GoogleFlightDTO
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class FlightParser:
     def __init__(self) -> None:
         self._strategy = JsonCssExtractionStrategy(EXTRACTION_SCHEMA)
 
-    def parse(self, html: str) -> list[Flight]:
+    def parse(self, html: str) -> list[GoogleFlightDTO]:
         """Extrait les vols depuis HTML Google Flights."""
         raw_flights = self._strategy.extract(url="", html_content=html)
 
@@ -61,7 +61,7 @@ class FlightParser:
                 "No flights found in HTML", html_size=len(html), flights_found=0
             )
 
-        flights: list[Flight] = []
+        flights: list[GoogleFlightDTO] = []
 
         for raw_flight in raw_flights:
             flight = self._parse_flight(raw_flight)
@@ -82,7 +82,7 @@ class FlightParser:
 
         return flights
 
-    def _parse_flight(self, raw: dict[str, Any]) -> Flight | None:
+    def _parse_flight(self, raw: dict[str, Any]) -> GoogleFlightDTO | None:
         """Parse un vol depuis les données extraites."""
         try:
             price = self._parse_price(raw.get("price"))
@@ -107,7 +107,7 @@ class FlightParser:
             departure_airport = raw.get("departure_airport")
             arrival_airport = raw.get("arrival_airport")
 
-            flight = Flight(
+            flight = GoogleFlightDTO(
                 price=price,
                 airline=airline,
                 departure_time=departure_time,
