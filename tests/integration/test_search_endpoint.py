@@ -114,19 +114,11 @@ def test_end_to_end_search_request_exact_dates(
                 },
             },
             {
-                "from_city": "Buenos Aires",
-                "to_city": "Santiago",
+                "from_city": "Rio",
+                "to_city": "Paris",
                 "date_range": {
                     "start": (tomorrow + timedelta(days=6)).isoformat(),
                     "end": (tomorrow + timedelta(days=6)).isoformat(),
-                },
-            },
-            {
-                "from_city": "Santiago",
-                "to_city": "Paris",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=8)).isoformat(),
-                    "end": (tomorrow + timedelta(days=8)).isoformat(),
                 },
             },
         ]
