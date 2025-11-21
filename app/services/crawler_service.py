@@ -45,15 +45,19 @@ class CrawlerService:
         """Crawl une URL Google Flights avec proxy rotation."""
         start_time = time.time()
 
-        proxy_url: str | None = None
+        browser_proxy_config: dict[str, str] | None = None
         proxy_host = "no_proxy"
         proxy_country = "N/A"
 
         if use_proxy and self._proxy_service is not None:
-            proxy_config = self._proxy_service.get_next_proxy()
-            proxy_url = proxy_config.get_proxy_url()
-            proxy_host = proxy_config.host
-            proxy_country = proxy_config.country
+            proxy = self._proxy_service.get_next_proxy()
+            browser_proxy_config = {
+                "server": f"http://{proxy.host}:{proxy.port}",
+                "username": proxy.username,
+                "password": proxy.password,
+            }
+            proxy_host = proxy.host
+            proxy_country = proxy.country
 
         logger.info(
             "Starting crawl",
@@ -66,7 +70,9 @@ class CrawlerService:
             },
         )
 
-        config = BrowserConfig(headless=True, enable_stealth=True, proxy=proxy_url)
+        config = BrowserConfig(
+            headless=True, enable_stealth=True, proxy_config=browser_proxy_config
+        )
 
         try:
             async with AsyncWebCrawler(config=config) as crawler:
