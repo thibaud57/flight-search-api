@@ -1,13 +1,16 @@
 """Configuration pytest globale pour tous les tests."""
 
 from datetime import date, timedelta
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api.routes import get_search_service
 from app.core.config import Settings, get_settings
 from app.core.logger import get_logger, setup_logger
 from app.main import app
+from app.models.response import FlightResult, SearchResponse, SearchStats
 
 
 @pytest.fixture(scope="session")
@@ -76,3 +79,56 @@ def valid_search_request_data():
             },
         ]
     }
+
+
+@pytest.fixture
+def mock_search_service():
+    """Mock SearchService pour tests integration endpoint."""
+    service = MagicMock()
+    tomorrow = date.today() + timedelta(days=1)
+
+    async def mock_search(request):
+        results = [
+            FlightResult(
+                price=800.0 + i * 100,
+                airline="Test Airline",
+                departure_date=tomorrow.isoformat(),
+                segments=[
+                    {"from": "Paris", "to": "Tokyo", "date": tomorrow.isoformat()},
+                    {
+                        "from": "Tokyo",
+                        "to": "New York",
+                        "date": (tomorrow + timedelta(days=14)).isoformat(),
+                    },
+                ],
+            )
+            for i in range(10)
+        ]
+        return SearchResponse(
+            results=results,
+            search_stats=SearchStats(
+                total_results=10, search_time_ms=100, segments_count=2
+            ),
+        )
+
+    service.search_flights = mock_search
+    return service
+
+
+@pytest.fixture(scope="function")
+def client_with_mock_search(test_settings: Settings, mock_search_service):
+    """TestClient avec SearchService mocke."""
+    get_settings.cache_clear()
+    get_logger.cache_clear()
+
+    test_logger = setup_logger(test_settings.LOG_LEVEL)
+
+    app.dependency_overrides[get_settings] = lambda: test_settings
+    app.dependency_overrides[get_logger] = lambda: test_logger
+    app.dependency_overrides[get_search_service] = lambda: mock_search_service
+
+    yield TestClient(app)
+
+    app.dependency_overrides.clear()
+    get_settings.cache_clear()
+    get_logger.cache_clear()

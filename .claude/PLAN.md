@@ -494,11 +494,11 @@
 
 **Branche** : `feature/story-6-multi-city-search`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-6-multi-city-search.md
-- [ ] **Validation manuelle** : 3 segments avec dates flexibles, vérifier Top 10 triés par prix
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(services): add multi-segment search and top 10 ranking`
-- [ ] **PR** : feature/story-6 → develop
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-6-multi-city-search.md
+- [x] **Validation manuelle** : 3 segments avec dates flexibles, vérifier Top 10 triés par prix
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(services): add multi-segment search and top 10 ranking`
+- [x] **PR** : feature/story-6 → develop
 
 📝 **Output** : Story 6 complétée (5 story points)
 

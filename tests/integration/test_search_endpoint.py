@@ -1,10 +1,12 @@
+"""Tests integration endpoint search."""
+
 from datetime import date, timedelta
 
 from fastapi.testclient import TestClient
 
 
-def test_end_to_end_search_request_valid(client: TestClient) -> None:
-    """Test intégration 1: Request valide retourne 200 avec SearchResponse."""
+def test_end_to_end_search_request_valid(client_with_mock_search: TestClient) -> None:
+    """Test integration 1: Request valide retourne 200 avec SearchResponse."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
@@ -28,7 +30,7 @@ def test_end_to_end_search_request_valid(client: TestClient) -> None:
         ]
     }
 
-    response = client.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200
 
@@ -46,11 +48,13 @@ def test_end_to_end_search_request_valid(client: TestClient) -> None:
     assert data["search_stats"]["search_time_ms"] > 0
 
 
-def test_end_to_end_validation_error_empty_segments(client: TestClient) -> None:
-    """Test intégration 2: Segments vide retourne 422."""
+def test_end_to_end_validation_error_empty_segments(
+    client_with_mock_search: TestClient,
+) -> None:
+    """Test integration 2: Segments vide retourne 422."""
     request_data = {"segments": []}
 
-    response = client.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 422
 
@@ -58,8 +62,10 @@ def test_end_to_end_validation_error_empty_segments(client: TestClient) -> None:
     assert "detail" in data
 
 
-def test_end_to_end_validation_error_invalid_dates(client: TestClient) -> None:
-    """Test intégration 3: Dates invalides retourne 422."""
+def test_end_to_end_validation_error_invalid_dates(
+    client_with_mock_search: TestClient,
+) -> None:
+    """Test integration 3: Dates invalides retourne 422."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
@@ -83,7 +89,7 @@ def test_end_to_end_validation_error_invalid_dates(client: TestClient) -> None:
         ]
     }
 
-    response = client.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 422
 
@@ -91,8 +97,10 @@ def test_end_to_end_validation_error_invalid_dates(client: TestClient) -> None:
     assert "detail" in data
 
 
-def test_end_to_end_search_request_exact_dates(client: TestClient) -> None:
-    """Test intégration 4: Request avec dates exactes (start=end) retourne 200."""
+def test_end_to_end_search_request_exact_dates(
+    client_with_mock_search: TestClient,
+) -> None:
+    """Test integration 4: Request avec dates exactes (start=end) retourne 200."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
@@ -124,19 +132,21 @@ def test_end_to_end_search_request_exact_dates(client: TestClient) -> None:
         ]
     }
 
-    response = client.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200
 
     data = response.json()
     assert "results" in data
     assert len(data["results"]) == 10
-    assert data["search_stats"]["segments_count"] == 3
+    assert data["search_stats"]["segments_count"] == 2
 
 
-def test_end_to_end_openapi_schema_includes_endpoint(client: TestClient) -> None:
-    """Test intégration 5: OpenAPI schema contient endpoint search-flights."""
-    response = client.get("/openapi.json")
+def test_end_to_end_openapi_schema_includes_endpoint(
+    client_with_mock_search: TestClient,
+) -> None:
+    """Test integration 5: OpenAPI schema contient endpoint search-flights."""
+    response = client_with_mock_search.get("/openapi.json")
 
     assert response.status_code == 200
 

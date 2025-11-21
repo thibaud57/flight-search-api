@@ -1,7 +1,9 @@
 from datetime import date, datetime
 from typing import Annotated
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+
+from app.models.google_flight_dto import GoogleFlightDTO
 
 
 class DateRange(BaseModel):
@@ -109,3 +111,71 @@ class SearchRequest(BaseModel):
             )
 
         return self
+
+
+class DateCombination(BaseModel):
+    """Combinaison dates pour itineraire multi-city fixe."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    segment_dates: list[str]
+
+    @field_validator("segment_dates", mode="after")
+    @classmethod
+    def validate_segment_dates(cls, v: list[str]) -> list[str]:
+        """Valide format ISO 8601 et min 2 dates."""
+        if len(v) < 2:
+            raise ValueError("At least 2 segment dates required")
+        for d in v:
+            try:
+                datetime.fromisoformat(d)
+            except (ValueError, TypeError) as e:
+                raise ValueError(f"Invalid ISO 8601 date format: {d}") from e
+        return v
+
+
+class CombinationResult(BaseModel):
+    """Resultat intermediaire pour une combinaison dates."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    date_combination: DateCombination
+    flights: list[GoogleFlightDTO]
+    total_price: float = 0.0
+    total_duration_minutes: int = 0
+    total_stops: int = 0
+
+    @field_validator("flights", mode="after")
+    @classmethod
+    def validate_flights_not_empty(
+        cls, v: list[GoogleFlightDTO]
+    ) -> list[GoogleFlightDTO]:
+        """Valide au moins 1 vol."""
+        if len(v) < 1:
+            raise ValueError("At least 1 flight required")
+        return v
+
+    @model_validator(mode="after")
+    def compute_totals(self) -> "CombinationResult":
+        """Calcule automatiquement totaux depuis flights."""
+        self.total_price = sum(f.price for f in self.flights)
+        self.total_duration_minutes = sum(
+            self._parse_duration(f.duration) for f in self.flights
+        )
+        self.total_stops = sum(f.stops or 0 for f in self.flights)
+        return self
+
+    def _parse_duration(self, duration: str) -> int:
+        """Parse duree en minutes depuis string (ex: '10h 15min')."""
+        if not duration:
+            return 0
+        total = 0
+        import re
+
+        hours_match = re.search(r"(\d+)\s*h", duration.lower())
+        mins_match = re.search(r"(\d+)\s*m", duration.lower())
+        if hours_match:
+            total += int(hours_match.group(1)) * 60
+        if mins_match:
+            total += int(mins_match.group(1))
+        return total

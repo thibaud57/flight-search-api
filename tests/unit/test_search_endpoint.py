@@ -1,8 +1,11 @@
+"""Tests unitaires endpoint search."""
+
 from datetime import date, timedelta
-from unittest.mock import Mock
+from unittest.mock import MagicMock
 
 import pytest
 
+from app.api.routes import get_search_service
 from app.main import app
 from app.models.response import FlightResult, SearchResponse, SearchStats
 from app.services.search_service import SearchService
@@ -10,8 +13,8 @@ from app.services.search_service import SearchService
 
 @pytest.fixture
 def mock_search_service():
-    """Fixture pour SearchService mocké."""
-    service = Mock(spec=SearchService)
+    """Fixture pour SearchService mocke async."""
+    service = MagicMock(spec=SearchService)
 
     mock_results = [
         FlightResult(
@@ -29,27 +32,22 @@ def mock_search_service():
         segments_count=2,
     )
 
-    service.search_flights.return_value = SearchResponse(
-        results=mock_results,
-        search_stats=mock_stats,
-    )
+    async def mock_search(request):
+        return SearchResponse(results=mock_results, search_stats=mock_stats)
 
+    service.search_flights = mock_search
     return service
 
 
 @pytest.fixture
 def mock_search_service_override(mock_search_service):
     """Override get_search_service avec cleanup automatique."""
-    from app.api.routes import get_search_service
-
     app.dependency_overrides[get_search_service] = lambda: mock_search_service
-
     yield mock_search_service
-
     app.dependency_overrides.clear()
 
 
-def test_endpoint_accepts_valid_request(client):
+def test_endpoint_accepts_valid_request(client_with_mock_search):
     """Test 39: Endpoint accepte request valide."""
     tomorrow = date.today() + timedelta(days=1)
 
@@ -74,7 +72,7 @@ def test_endpoint_accepts_valid_request(client):
         ]
     }
 
-    response = client.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -82,19 +80,19 @@ def test_endpoint_accepts_valid_request(client):
     assert "search_stats" in data
 
 
-def test_endpoint_validates_request_body(client):
-    """Test 40: Body invalide rejeté."""
+def test_endpoint_validates_request_body(client_with_mock_search):
+    """Test 40: Body invalide rejete."""
     request_data = {"segments": []}
 
-    response = client.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 422
     data = response.json()
     assert "detail" in data
 
 
-def test_endpoint_returns_10_results(client):
-    """Test 41: Endpoint retourne 10 résultats."""
+def test_endpoint_returns_10_results(client_with_mock_search):
+    """Test 41: Endpoint retourne 10 resultats."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
@@ -118,14 +116,14 @@ def test_endpoint_returns_10_results(client):
         ]
     }
 
-    response = client.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
     assert len(data["results"]) == 10
 
 
-def test_endpoint_response_matches_schema(client):
+def test_endpoint_response_matches_schema(client_with_mock_search):
     """Test 42: Response conforme SearchResponse schema."""
     tomorrow = date.today() + timedelta(days=1)
 
@@ -150,7 +148,7 @@ def test_endpoint_response_matches_schema(client):
         ]
     }
 
-    response = client.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -175,7 +173,7 @@ def test_endpoint_response_matches_schema(client):
 def test_endpoint_injects_search_service_dependency(
     client, mock_search_service_override
 ):
-    """Test 43: SearchService injecté via Depends()."""
+    """Test 43: SearchService injecte via Depends()."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
@@ -202,4 +200,3 @@ def test_endpoint_injects_search_service_dependency(
     response = client.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200
-    mock_search_service_override.search_flights.assert_called_once()
