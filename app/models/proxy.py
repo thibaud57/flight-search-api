@@ -1,10 +1,12 @@
 """Modele ProxyConfig pour configuration proxy Decodo."""
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ProxyConfig(BaseModel):
     """Configuration d'un proxy residentiel Decodo."""
+
+    model_config = ConfigDict(extra="forbid")
 
     host: str = Field(..., min_length=5)
     port: int

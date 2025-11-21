@@ -35,6 +35,7 @@
 - ✅ Annoter TOUTES les signatures (args + return)
 - ✅ Utiliser `list[T]`, `dict[K, V]` (pas `List[T]`, `Dict[K, V]`)
 - ✅ Préférer `X | None` à `Optional[X]`
+- ✅ Ajouter `model_config = ConfigDict(extra="forbid")` sur tous les models Pydantic (rejette champs inconnus)
 - ✅ Type alias : `type JsonDict = dict[str, str | int | float | bool | None]`
 - ✅ Bounds : `class Container[T: (str, int)]:` ou `class Processor[T: BaseModel]:`
 
