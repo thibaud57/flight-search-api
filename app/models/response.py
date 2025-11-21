@@ -2,11 +2,13 @@ from datetime import datetime
 from typing import Annotated, Literal
 
 import pydantic
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class Flight(BaseModel):
     """Modèle Pydantic d'un vol extrait depuis Google Flights."""
+
+    model_config = ConfigDict(extra="forbid")
 
     price: Annotated[float, Field(gt=0)]
     airline: Annotated[str, Field(min_length=2, max_length=100)]
