@@ -18,8 +18,6 @@ if TYPE_CHECKING:
     from app.services.crawler_service import CrawlerService, CrawlResult
     from app.services.flight_parser import FlightParser
 
-logger = logging.getLogger(__name__)
-
 MAX_CONCURRENCY = 10
 
 
@@ -31,17 +29,19 @@ class SearchService:
         combination_generator: CombinationGenerator,
         crawler_service: CrawlerService,
         flight_parser: FlightParser,
+        logger: logging.Logger | None = None,
     ) -> None:
         """Initialise service avec dependances injectees."""
         self._combination_generator = combination_generator
         self._crawler_service = crawler_service
         self._flight_parser = flight_parser
+        self._logger = logger or logging.getLogger(__name__)
 
     async def search_flights(self, request: SearchRequest) -> SearchResponse:
         """Orchestre recherche complete multi-city avec ranking Top 10."""
         start_time = time.time()
 
-        logger.info(
+        self._logger.info(
             "Search started",
             extra={"segments_count": len(request.segments)},
         )
@@ -50,7 +50,7 @@ class SearchService:
             request.segments
         )
 
-        logger.info(
+        self._logger.info(
             "URLs to crawl",
             extra={"combinations_count": len(combinations)},
         )
@@ -65,7 +65,7 @@ class SearchService:
 
         search_time_ms = int((time.time() - start_time) * 1000)
 
-        logger.info(
+        self._logger.info(
             "Search completed",
             extra={
                 "total_results": len(flight_results),
@@ -97,7 +97,7 @@ class SearchService:
                     result = await self._crawler_service.crawl_google_flights(url)
                     return (combo, result)
                 except (CaptchaDetectedError, NetworkError) as e:
-                    logger.warning(
+                    self._logger.warning(
                         "Crawl failed",
                         extra={"url": url, "error": str(e)},
                     )
@@ -155,13 +155,13 @@ class SearchService:
                 )
                 crawls_success += 1
             except ParsingError as e:
-                logger.warning(
+                self._logger.warning(
                     "Parsing failed",
                     extra={"error": str(e)},
                 )
                 crawls_failed += 1
 
-        logger.info(
+        self._logger.info(
             "Crawling completed",
             extra={
                 "crawls_success": crawls_success,
@@ -190,7 +190,7 @@ class SearchService:
         top_10 = sorted_results[:10]
 
         if top_10:
-            logger.info(
+            self._logger.info(
                 "Ranking completed",
                 extra={
                     "top_price_min": top_10[0].total_price,
