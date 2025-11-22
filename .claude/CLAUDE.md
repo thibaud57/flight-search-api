@@ -395,11 +395,18 @@ uv run pytest tests/
 **Lancer l'application** :
 ```bash
 # Mode développement (hot-reload)
-fastapi dev app/main.py
+# ⚠️ Windows : PYTHONUTF8=1 obligatoire pour Crawl4AI (Rich console avec Unicode)
+PYTHONUTF8=1 uv run fastapi dev app/main.py
 
 # Mode production
+PYTHONUTF8=1 uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Alternative venv activé (si PYTHONUTF8=1 en variable globale Windows)
+fastapi dev app/main.py
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
+
+**Note Windows UTF-8** : Crawl4AI utilise Rich console qui nécessite UTF-8. Sans `PYTHONUTF8=1`, erreur `UnicodeEncodeError: 'charmap' codec can't encode character`. Voir section "Troubleshooting Commun" pour configuration permanente.
 
 **Quality Checks** (à exécuter avant commit) :
 ```bash
@@ -569,6 +576,25 @@ debugpy.wait_for_client()
 ```
 
 ### Troubleshooting Commun
+
+**Erreur UTF-8 Windows : `UnicodeEncodeError: 'charmap' codec can't encode character`** :
+```bash
+# Cause : Crawl4AI utilise Rich console avec caractères Unicode (→, ✓, etc.)
+# Windows utilise cp1252 par défaut au lieu d'UTF-8
+
+# Solution temporaire (session actuelle)
+PYTHONUTF8=1 uv run uvicorn app.main:app --port 8001
+
+# Solution permanente (recommandé)
+# 1. Ouvrir Variables d'environnement Windows (Win+R → sysdm.cpl → Avancé → Variables d'environnement)
+# 2. Variables utilisateur → Nouvelle
+#    - Nom : PYTHONUTF8
+#    - Valeur : 1
+# 3. OK → Fermer/rouvrir terminaux
+
+# Vérification
+echo $env:PYTHONUTF8  # PowerShell (doit afficher : 1)
+```
 
 **Erreur `crawl4ai-setup` échoue** :
 - Vérifier connexion internet (télécharge Playwright browsers)

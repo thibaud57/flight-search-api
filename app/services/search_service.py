@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import re
 import time
 from typing import TYPE_CHECKING
-from urllib.parse import quote
 
 from app.exceptions import CaptchaDetectedError, NetworkError, ParsingError
 from app.models.request import CombinationResult, DateCombination, SearchRequest
 from app.models.response import FlightResult, SearchResponse, SearchStats
+from app.utils import generate_google_flights_url
 
 if TYPE_CHECKING:
     from app.services.combination_generator import CombinationGenerator
@@ -44,11 +43,11 @@ class SearchService:
 
         logger.info(
             "Search started",
-            extra={"segments_count": len(request.segments)},
+            extra={"segments_count": len(request.segments_date_ranges)},
         )
 
         combinations = self._combination_generator.generate_combinations(
-            request.segments
+            request.segments_date_ranges
         )
 
         logger.info(
@@ -62,7 +61,7 @@ class SearchService:
 
         top_results = self._rank_and_select_top_10(combination_results)
 
-        flight_results = self._convert_to_flight_results(top_results, request)
+        flight_results = self._convert_to_flight_results(top_results)
 
         search_time_ms = int((time.time() - start_time) * 1000)
 
@@ -79,7 +78,7 @@ class SearchService:
             search_stats=SearchStats(
                 total_results=len(flight_results),
                 search_time_ms=search_time_ms,
-                segments_count=len(request.segments),
+                segments_count=len(request.segments_date_ranges),
             ),
         )
 
@@ -94,8 +93,12 @@ class SearchService:
         ) -> tuple[DateCombination, CrawlResult | None]:
             async with semaphore:
                 url = self._build_google_flights_url(request, combo)
+                logger.info(
+                    "Crawling combination",
+                    extra={"dates": combo.segment_dates, "url": url},
+                )
                 try:
-                    result = await self._crawler_service.crawl_google_flights(url)
+                    result = await self._crawler_service.crawl_google_flights(url, use_proxy=True)
                     return (combo, result)
                 except (CaptchaDetectedError, NetworkError) as e:
                     logger.warning(
@@ -111,39 +114,54 @@ class SearchService:
     def _build_google_flights_url(
         self, request: SearchRequest, combination: DateCombination
     ) -> str:
-        """Construit URL multi-city Google Flights."""
-        multi_city_data = []
-        for i, segment in enumerate(request.segments):
-            multi_city_data.append(
-                {
-                    "departure_id": segment.from_city,
-                    "arrival_id": segment.to_city,
-                    "date": combination.segment_dates[i],
-                }
-            )
-
-        json_str = json.dumps(multi_city_data)
-        encoded_json = quote(json_str)
-
-        return f"https://www.google.com/travel/flights?flight_type=3&multi_city_json={encoded_json}&hl=fr&curr=EUR"
+        """Genere URL Google Flights en remplacant dates dans template."""
+        return generate_google_flights_url(
+            request.template_url, combination.segment_dates
+        )
 
     def _parse_all_results(
         self,
         crawl_results: list[tuple[DateCombination, CrawlResult | None]],
     ) -> list[CombinationResult]:
         """Parse tous les resultats de crawl."""
+        logger.info(
+            "🔄 [SEARCH] Starting to parse all crawl results",
+            extra={"total_crawls": len(crawl_results)},
+        )
+
         combination_results: list[CombinationResult] = []
         crawls_success = 0
         crawls_failed = 0
 
-        for combo, result in crawl_results:
+        for idx, (combo, result) in enumerate(crawl_results):
+            logger.info(
+                f"📦 [SEARCH] Processing crawl result {idx + 1}/{len(crawl_results)}",
+                extra={"dates": combo.segment_dates},
+            )
+
             if result is None or not result.success:
+                logger.warning(
+                    f"⚠️  [SEARCH] Crawl {idx + 1}: Result is None or failed",
+                    extra={"result_is_none": result is None},
+                )
                 crawls_failed += 1
                 continue
 
+            logger.info(
+                f"🌐 [SEARCH] Crawl {idx + 1}: HTML received",
+                extra={"html_size": len(result.html)},
+            )
+
             try:
+                logger.info(f"🔍 [SEARCH] Crawl {idx + 1}: Calling parser...")
                 flights = self._flight_parser.parse(result.html)
+
+                logger.info(
+                    f"📊 [SEARCH] Crawl {idx + 1}: Parser returned {len(flights)} flights",
+                )
+
                 if not flights:
+                    logger.warning(f"⚠️  [SEARCH] Crawl {idx + 1}: Zero flights returned")
                     crawls_failed += 1
                     continue
 
@@ -153,10 +171,13 @@ class SearchService:
                         best_flight=flights[0],
                     )
                 )
+                logger.info(
+                    f"✅ [SEARCH] Crawl {idx + 1}: Added to results (best price: {flights[0].price}€)",
+                )
                 crawls_success += 1
             except ParsingError as e:
                 logger.warning(
-                    "Parsing failed",
+                    f"❌ [SEARCH] Crawl {idx + 1}: Parsing failed",
                     extra={"error": str(e)},
                 )
                 crawls_failed += 1
@@ -196,28 +217,17 @@ class SearchService:
         return top_10
 
     def _convert_to_flight_results(
-        self, combination_results: list[CombinationResult], request: SearchRequest
+        self, combination_results: list[CombinationResult]
     ) -> list[FlightResult]:
         """Convertit CombinationResult en FlightResult pour response."""
         flight_results: list[FlightResult] = []
 
         for combo_result in combination_results:
-            segments_data = []
-            for i, segment in enumerate(request.segments):
-                segments_data.append(
-                    {
-                        "from": segment.from_city,
-                        "to": segment.to_city,
-                        "date": combo_result.date_combination.segment_dates[i],
-                    }
-                )
-
             flight_results.append(
                 FlightResult(
                     price=combo_result.best_flight.price,
                     airline=combo_result.best_flight.airline,
-                    departure_date=combo_result.date_combination.segment_dates[0],
-                    segments=segments_data,
+                    segment_dates=combo_result.date_combination.segment_dates,
                 )
             )
 

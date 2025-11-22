@@ -14,8 +14,7 @@ class FlightResult(BaseModel):
 
     price: Annotated[float, "Prix total itinéraire en EUR"]
     airline: str
-    departure_date: str
-    segments: list[dict[str, str]]
+    segment_dates: Annotated[list[str], "Dates par segment (ISO 8601)"]
 
     @field_validator("price", mode="after")
     @classmethod
@@ -23,6 +22,14 @@ class FlightResult(BaseModel):
         """Valide prix >= 0."""
         if v < 0:
             raise ValueError("Price must be >= 0")
+        return v
+
+    @field_validator("segment_dates", mode="after")
+    @classmethod
+    def validate_segment_dates_min(cls, v: list[str]) -> list[str]:
+        """Valide min 2 dates."""
+        if len(v) < 2:
+            raise ValueError("At least 2 segment dates required")
         return v
 
 
