@@ -9,16 +9,6 @@ from app.services.crawler_service import CrawlerService
 
 
 @pytest.fixture
-def mock_crawl_result():
-    """Mock CrawlResult success."""
-    result = MagicMock()
-    result.success = True
-    result.html = "<html><body>Valid Google Flights HTML</body></html>"
-    result.status_code = 200
-    return result
-
-
-@pytest.fixture
 def crawler_service():
     """Instance CrawlerService."""
     return CrawlerService()

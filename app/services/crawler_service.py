@@ -8,9 +8,10 @@ import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from crawl4ai import AsyncWebCrawler, BrowserConfig
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CacheMode, CrawlerRunConfig
 
 from app.exceptions import CaptchaDetectedError, NetworkError
+from app.utils import generate_fresh_browser_config
 
 if TYPE_CHECKING:
     from app.services.proxy_service import ProxyService
@@ -40,7 +41,7 @@ class CrawlerService:
         self._proxy_service = proxy_service
 
     async def crawl_google_flights(
-        self, url: str, *, use_proxy: bool = True
+        self, url: str, *, use_proxy: bool = False
     ) -> CrawlResult:
         """Crawl une URL Google Flights avec proxy rotation."""
         start_time = time.time()
@@ -63,26 +64,41 @@ class CrawlerService:
             "Starting crawl",
             extra={
                 "url": url,
-                "stealth_mode": True,
+                "stealth_mode": False,
                 "proxy_host": proxy_host,
                 "proxy_country": proxy_country,
                 "use_proxy": use_proxy and self._proxy_service is not None,
             },
         )
 
-        config = BrowserConfig(
-            headless=True, enable_stealth=True, proxy_config=browser_proxy_config
-        )
+        logger.info("Generating fresh browser config...")
+        config_dict = await generate_fresh_browser_config(url, browser_proxy_config)
+        config = BrowserConfig(**config_dict)
 
         try:
             async with AsyncWebCrawler(config=config) as crawler:
+                run_config = CrawlerRunConfig(
+                    cache_mode=CacheMode.DISABLED,
+                    magic=True,
+                    simulate_user=True,
+                    override_navigator=True,
+                    page_timeout=30000,
+                    wait_for="css:.pIav2d",
+                    delay_before_return_html=15.0
+                )
+
                 result = await asyncio.wait_for(
-                    crawler.arun(url=url),
-                    timeout=10.0,
+                    crawler.arun(
+                        url=url,
+                        config=run_config,
+                    ),
+                    timeout=50.0,
                 )
         except TimeoutError as err:
             logger.error("Crawl timeout", extra={"url": url, "proxy_host": proxy_host})
             raise NetworkError(url=url, status_code=None) from err
+        except Exception as e:
+            raise
 
         response_time_ms = int((time.time() - start_time) * 1000)
 
@@ -107,7 +123,7 @@ class CrawlerService:
                 "status_code": result.status_code,
                 "html_size": len(html),
                 "response_time_ms": response_time_ms,
-                "stealth_mode": True,
+                "stealth_mode": False,
                 "proxy_host": proxy_host,
                 "proxy_country": proxy_country,
             },

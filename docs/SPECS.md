@@ -76,8 +76,8 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 
 ## 📊 Statistiques
 
-- **Total stories** : 7
-- **Total story points** : 36
+- **Total stories** : 6
+- **Total story points** : 33
 - **Epics** : 3
 - **Releases** : v0.5.0, v0.6.0, v0.7.0 → v1.0.0
 
@@ -106,7 +106,7 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 - 7A : Specs Story 8 (si monitoring >5% blocages)
 - 7B : Implémentation Story 8 → v1.1.0
 
-**Ordre exécution** : Story 1 → 2 → 3 → 4 → 5 (Proxies) → 6 (Multi-city) → 7 (→ 8 si Phase 7)
+**Ordre exécution** : Story 1 → 2 → 3 → 4 → 5 (Proxies) → 6 (Multi-city) → 7
 
 ---
 

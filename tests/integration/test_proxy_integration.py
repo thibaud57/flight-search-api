@@ -39,16 +39,6 @@ def proxy_pool() -> list[ProxyConfig]:
     ]
 
 
-@pytest.fixture
-def mock_crawl_result():
-    """Mock CrawlResult success."""
-    result = MagicMock()
-    result.success = True
-    result.html = "<html><body>Valid HTML</body></html>"
-    result.status_code = 200
-    return result
-
-
 @pytest.mark.asyncio
 async def test_integration_crawler_with_proxy_rotation(
     proxy_pool: list[ProxyConfig], mock_crawl_result: MagicMock

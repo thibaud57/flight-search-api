@@ -494,11 +494,11 @@
 
 **Branche** : `feature/story-6-multi-city-search`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-6-multi-city-search.md
-- [ ] **Validation manuelle** : 3 segments avec dates flexibles, vérifier Top 10 triés par prix
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(services): add multi-segment search and top 10 ranking`
-- [ ] **PR** : feature/story-6 → develop
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-6-multi-city-search.md
+- [x] **Validation manuelle** : 3 segments avec dates flexibles, vérifier Top 10 triés par prix
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(services): add multi-segment search and top 10 ranking`
+- [x] **PR** : feature/story-6 → develop
 
 📝 **Output** : Story 6 complétée (5 story points)
 
@@ -624,7 +624,7 @@
 
 - [ ] **CHANGELOG.md** : Entrées v0.5.0, v0.6.0, v0.7.0 complètes
 - [ ] **ARCHITECTURE.md** : ADRs à jour avec implémentation réelle
-- [ ] **SPECS.md** : Index complet (stories 1-7)
+- [ ] **SPECS.md** : Index complet (stories 1-6)
 - [ ] **REFERENCES.md** : Index à jour (10 fichiers références techniques)
 - [ ] **VERSIONS.md** : Matrice compatibilité conforme dépendances installées
 
@@ -697,23 +697,58 @@
 
 ## 6.4 Déploiement Dokploy
 
-**Objectif** : Déployer MVP en production
+**Objectif** : Déployer MVP en production avec logs structurés fichier + header traçabilité
+
+### Logs Fichier & Rotation
+- [ ] Configurer RotatingFileHandler dans `app/core/logger.py` :
+      - Créer dossier `logs/` si absent
+      - Ajouter handler fichier avec rotation (10MB max, 5 backups)
+      - Formatter JSON identique au stdout
+      - Logger dans `logs/app.log`
+- [ ] Ajouter header traçabilité `X-Search-ID` dans `app/api/routes.py` :
+      - Générer UUID unique par recherche
+      - Retourner dans header response (pas dans body JSON)
+      - Logger search_id dans extra context de tous les logs
+- [ ] Créer script cleanup logs dans `app/utils/cleanup.py` :
+      - Fonction `cleanup_old_logs(retention_days=30)`
+      - Parcourir dossier `logs/`
+      - Supprimer fichiers modifiés il y a plus de 30 jours
+      - Logger nombre fichiers supprimés
+- [ ] Commit : `feat(logs): add file logging with rotation and cleanup`
 
 ### Déploiement
 - [ ] Configurer Dokploy : connecter repo GitHub
 - [ ] Ajouter env vars dans UI Dokploy :
-      - LOG_LEVEL
+      - LOG_LEVEL=INFO
       - DECODO_USERNAME
       - DECODO_PASSWORD
       - DECODO_PROXY_HOST
-      - PROXY_ROTATION_ENABLED
-      - CAPTCHA_DETECTION_ENABLED
+      - PROXY_ROTATION_ENABLED=true
+      - CAPTCHA_DETECTION_ENABLED=true
 - [ ] Déclencher build automatique (push sur master)
 - [ ] Vérifier deployment : `curl https://ton-domaine.com/health`
-- [ ] Tester endpoint complet avec n8n
-- [ ] Monitorer logs : captcha rate, proxy costs, success rate
+- [ ] Tester endpoint complet avec n8n : vérifier header `X-Search-ID` dans response
+- [ ] Monitorer logs Dokploy UI (stdout) : captcha rate, proxy costs, success rate
+- [ ] Vérifier logs fichiers sur VPS : `docker exec <container_id> ls -lh logs/`
 
-📝 **Output** : API MVP en production avec monitoring actif
+### Scheduled Task Cleanup (Dokploy UI)
+- [ ] Créer Schedule Job via UI Dokploy :
+      - Nom : "Log Cleanup"
+      - Cron expression : `0 3 * * *` (tous les jours à 3h du matin)
+      - Commande : `python -c "from app.utils.cleanup import cleanup_old_logs; cleanup_old_logs(30)"`
+      - Activer logs exécution
+- [ ] Tester manuellement : exécuter via bouton "Run Now" dans UI
+- [ ] Vérifier logs Schedule Job : confirmer suppression fichiers > 30 jours
+
+📝 **Output** : API MVP en production avec monitoring actif + logs fichiers rotatifs + traçabilité X-Search-ID
+
+**Notes** :
+- Dokploy capture stdout automatiquement (logs JSON visibles dans UI)
+- Logs fichiers stockés dans container : `/app/logs/app.log`
+- Rotation automatique : 10MB × 5 backups = 50MB max
+- Cleanup automatique : Dokploy Schedule Jobs exécute `cleanup_old_logs()` chaque nuit à 3h
+- Header `X-Search-ID` permet de corréler logs sans polluer response JSON
+- Pas besoin de volume Docker persistant : logs rotatifs suffisants pour debugging (50MB max)
 
 ---
 
@@ -938,10 +973,8 @@ flight-search-api/
 │   │   │   ├── story-4-crawler-parser.md
 │   │   │   ├── story-5-proxies.md
 │   │   │   └── story-6-multi-city-search.md
-│   │   ├── epic-3-production-ready/
-│   │   │   └── story-7-retry.md
-│   │   └── epic-4-captcha-solving/    # Phase 7A optionnelle
-│   │       └── story-8-captcha-solver.md
+│   │   └── epic-3-production-ready/
+│   │       └── story-7-retry.md
 │   ├── ARCHITECTURE.md
 │   ├── CHANGELOG.md
 │   ├── SPECS.md        # Index specs (liens vers stories)
@@ -991,11 +1024,13 @@ flight-search-api/
 [project]
 dependencies = [
     "fastapi>=0.121.2",
-    "pydantic>=2.10",
+    "pydantic>=2.12.4",
     "pydantic-settings>=2.0",
-    "crawl4ai>=0.7",  # Inclut Playwright automatiquement
-    "tenacity>=9.0",
+    "crawl4ai>=0.7.7",  # Inclut Playwright automatiquement
+    "tenacity>=9.1.2",
     "uvicorn>=0.30",
+    "httpx>=0.27",
+    "python-json-logger>=2.0",
 ]
 
 [project.optional-dependencies]

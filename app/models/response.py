@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, field_validator, model_validator
 
@@ -14,8 +14,7 @@ class FlightResult(BaseModel):
 
     price: Annotated[float, "Prix total itinéraire en EUR"]
     airline: str
-    departure_date: str
-    segments: list[dict[str, str]]
+    segment_dates: Annotated[list[str], "Dates par segment (ISO 8601)"]
 
     @field_validator("price", mode="after")
     @classmethod
@@ -23,6 +22,14 @@ class FlightResult(BaseModel):
         """Valide prix >= 0."""
         if v < 0:
             raise ValueError("Price must be >= 0")
+        return v
+
+    @field_validator("segment_dates", mode="after")
+    @classmethod
+    def validate_segment_dates_min(cls, v: list[str]) -> list[str]:
+        """Valide min 2 dates."""
+        if len(v) < 2:
+            raise ValueError("At least 2 segment dates required")
         return v
 
 
@@ -49,12 +56,11 @@ class SearchResponse(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def validate_results_sorted(self) -> "SearchResponse":
+    def validate_results_sorted(self) -> Self:
         """Valide results triés par prix croissant."""
-        if len(self.results) > 1:
-            for i in range(len(self.results) - 1):
-                if self.results[i].price > self.results[i + 1].price:
-                    raise ValueError(
-                        "Results must be sorted by price (ascending order)"
-                    )
+        if not all(
+            a.price <= b.price
+            for a, b in zip(self.results, self.results[1:], strict=False)
+        ):
+            raise ValueError("Results must be sorted by price (ascending order)")
         return self
