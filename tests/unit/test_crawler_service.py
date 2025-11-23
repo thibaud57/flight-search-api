@@ -8,11 +8,17 @@ from app.exceptions import CaptchaDetectedError, NetworkError
 from app.services.crawler_service import CrawlerService
 
 
-@pytest.fixture
-def crawler_service(test_settings):
-    """Instance CrawlerService avec Settings mocké pour CI."""
+@pytest.fixture(autouse=True)
+def mock_settings(test_settings):
+    """Mock get_settings pour tous les tests du module (CI compatibility)."""
     with patch("app.services.crawler_service.get_settings", return_value=test_settings):
-        yield CrawlerService()
+        yield
+
+
+@pytest.fixture
+def crawler_service():
+    """Instance CrawlerService."""
+    return CrawlerService()
 
 
 @pytest.mark.asyncio
