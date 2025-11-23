@@ -132,12 +132,13 @@
 
 📝 **Output** : `docs/ARCHITECTURE.md`
 
-### 1.5 Mise à jour CHANGELOG et version
+### 1.5 Mise à jour CHANGELOG, version et PLAN.md
 - [x] Ajouter entrée v0.1.0-research dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.1.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 1.5)
 - [x] Commit : `chore: bump version to 0.1.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.1.0-research sur master
 
@@ -185,12 +186,13 @@
 
 📝 **Output** : `.claude/CLAUDE.md` complet
 
-### 2.4 Mise à jour CHANGELOG et version
+### 2.4 Mise à jour CHANGELOG, version et PLAN.md
 - [x] Ajouter entrée v0.2.0-structure dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.2.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 2.4)
 - [x] Commit : `chore: bump version to 0.2.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.2.0-structure sur master
 
@@ -261,12 +263,13 @@
 
 **Note** : Step "Tests with coverage" temporairement désactivé (commenté dans ci.yml) car aucun test n'existe encore. À réactiver en Phase 5.1+ lors de l'implémentation TDD.
 
-### 3.6 Mise à jour CHANGELOG et version
+### 3.6 Mise à jour CHANGELOG, version et PLAN.md
 - [x] Ajouter entrée v0.3.0-build dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.3.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 3.6)
 - [x] Commit : `chore: bump version to 0.3.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.3.0-build sur master
 
@@ -383,12 +386,13 @@
 
 ---
 
-### 4.10 Mise à jour CHANGELOG et version
+### 4.10 Mise à jour CHANGELOG, version et PLAN.md
 - [x] Ajouter entrée v0.4.0-specs dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.4.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 4)
 - [x] Commit : `chore: bump version to 0.4.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.4.0-specs sur master
 
@@ -689,14 +693,15 @@
 
 ---
 
-### 6.2 CHANGELOG consolidé v1.0.0 et version
+### 6.2 CHANGELOG consolidé v1.0.0, version et PLAN.md
 - [ ] Vérifier entrées v0.5.0, v0.6.0, v0.7.0 complètes dans CHANGELOG.md
 - [ ] Créer section v1.0.0 avec résumé features MVP complètes
 - [ ] Enrichir SPECS.md section Statistiques avec timeline releases
 - [ ] Mettre à jour version dans `app/main.py` : `version="1.0.0"`
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 6)
 - [ ] Commit : `chore: bump version to 1.0.0 and update changelog`
 
-📝 **Output** : CHANGELOG.md v1.0.0 complet + SPECS.md enrichi avec releases
+📝 **Output** : CHANGELOG.md v1.0.0 complet + SPECS.md enrichi avec releases + `.claude/PLAN.md` mis à jour
 
 ---
 
@@ -829,12 +834,13 @@
 
 ---
 
-### 7A.4 Mise à jour CHANGELOG et version
+### 7A.4 Mise à jour CHANGELOG, version et PLAN.md
 - [ ] Ajouter entrée v0.8.0-specs dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="0.8.0"`
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 7A)
 - [ ] Commit : `chore: bump version to 0.8.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.8.0-specs sur master
 
