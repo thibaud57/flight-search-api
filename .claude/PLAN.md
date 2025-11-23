@@ -389,7 +389,7 @@
 ### 4.10 Mise à jour CHANGELOG, version et PLAN.md
 - [x] Ajouter entrée v0.4.0-specs dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.4.0"`
-- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 4)
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 4.10)
 - [x] Commit : `chore: bump version to 0.4.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
@@ -472,9 +472,10 @@
 
 - [x] Ajouter entrée v0.5.0 dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.5.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 5.4)
 - [x] **Commit** : `chore: bump version to 0.5.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin Epic 1** : Merge develop→master → Tag v0.5.0 → GitHub Release
 
@@ -536,9 +537,10 @@
 
 - [ ] Ajouter entrée v0.6.0 dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="0.6.0"`
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 5.8)
 - [ ] **Commit** : `chore: bump version to 0.6.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin Epic 2** : Merge develop→master → Tag v0.6.0 → GitHub Release
 
@@ -588,9 +590,10 @@
 
 - [ ] Ajouter entrée v0.7.0 dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="0.7.0"`
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 5.11)
 - [ ] **Commit** : `chore: bump version to 0.7.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin Epic 3** : Merge develop→master → Tag v0.7.0 → GitHub Release
 
@@ -698,7 +701,7 @@
 - [ ] Créer section v1.0.0 avec résumé features MVP complètes
 - [ ] Enrichir SPECS.md section Statistiques avec timeline releases
 - [ ] Mettre à jour version dans `app/main.py` : `version="1.0.0"`
-- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 6)
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 6.2)
 - [ ] Commit : `chore: bump version to 1.0.0 and update changelog`
 
 📝 **Output** : CHANGELOG.md v1.0.0 complet + SPECS.md enrichi avec releases + `.claude/PLAN.md` mis à jour
@@ -714,6 +717,7 @@
 - [ ] Tag v1.0.0 : `git tag v1.0.0 && git push origin master --tags` (déclenche workflow release.yml)
 - [ ] Vérifier GitHub Release auto-créée
 - [ ] Marquer "Latest release" (pas Pre-release)
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 6.3)
 
 📝 **Output** : v1.0.0 Production release sur GitHub
 
@@ -889,9 +893,10 @@
 
 - [ ] Ajouter entrée v1.1.0 dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="1.1.0"`
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour Epic 4)
 - [ ] Commit : `chore: bump version to 1.1.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin Epic 4** : Push branche → PR → Merge develop → Merge develop→master → Tag v1.1.0 sur master → GitHub Release (workflow automatique)
 

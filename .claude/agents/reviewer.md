@@ -64,6 +64,14 @@ Valider Epic terminé pour conformité :
    - Exemples : `"Pydantic 2.12 Settings best practices"`, `"FastAPI 0.121 dependency injection"`, `"pytest 8.0 fixture scope"`
    - Comparer implémentation vs recommandations officielles
 
+7. **Quality Checks Automatiques**
+   - Identifier stack (pyproject.toml → Python, package.json → Node.js)
+   - Exécuter tools selon stack détecté :
+     - **Python** : `ruff check .` + `ruff format . --check` + `mypy app/` + `pytest --cov=app --cov-fail-under=80`
+     - **Node.js** : `npm run lint` + `npm run typecheck` + `npm test`
+   - Classifier résultats : ✅ Pass (exit 0) | ❌ Fail (exit non-0) | ⚠️ Warning (env local)
+   - **Si AU MOINS 1 check critique ❌ Fail** → REFACTOR NEEDED
+
 ## Output Format
 
 ```markdown
@@ -87,10 +95,10 @@ Valider Epic terminé pour conformité :
 - ✅/❌ [Framework pattern 2] : [détail]
 
 ### Quality Checks
-- ✅/❌ Linter : [résultat]
-- ✅/❌ Formatter : [résultat]
-- ✅/❌ Type checker : [résultat]
-- ✅/❌ Coverage : [%] (seuil ≥ 80%)
+- ✅/❌ Linter : [commande exécutée + exit code + résultat]
+- ✅/❌ Formatter : [commande exécutée + exit code + résultat]
+- ✅/❌ Type checker : [commande exécutée + exit code + résultat]
+- ✅/❌/⚠️ Coverage : [commande exécutée + exit code + % coverage]
 
 ## Issues Détectés
 
