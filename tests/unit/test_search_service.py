@@ -200,7 +200,10 @@ async def test_search_flights_ranking_top_10(
 
     assert len(response.results) == 10
     for i in range(len(response.results) - 1):
-        assert response.results[i].flights[0].price <= response.results[i + 1].flights[0].price
+        assert (
+            response.results[i].flights[0].price
+            <= response.results[i + 1].flights[0].price
+        )
 
 
 @pytest.mark.asyncio

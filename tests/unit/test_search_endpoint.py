@@ -18,7 +18,7 @@ def test_endpoint_accepts_valid_request(client_with_mock_search):
                 "start": (tomorrow + timedelta(days=14)).isoformat(),
                 "end": (tomorrow + timedelta(days=19)).isoformat(),
             },
-        ]
+        ],
     }
 
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
@@ -31,7 +31,10 @@ def test_endpoint_accepts_valid_request(client_with_mock_search):
 
 def test_endpoint_validates_request_body(client_with_mock_search):
     """Body invalide rejete."""
-    request_data = {"template_url": "https://www.google.com/travel/flights?tfs=test", "segments_date_ranges": []}
+    request_data = {
+        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "segments_date_ranges": [],
+    }
 
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
@@ -55,7 +58,7 @@ def test_endpoint_returns_10_results(client_with_mock_search):
                 "start": (tomorrow + timedelta(days=14)).isoformat(),
                 "end": (tomorrow + timedelta(days=19)).isoformat(),
             },
-        ]
+        ],
     }
 
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
@@ -80,7 +83,7 @@ def test_endpoint_response_matches_schema(client_with_mock_search):
                 "start": (tomorrow + timedelta(days=14)).isoformat(),
                 "end": (tomorrow + timedelta(days=19)).isoformat(),
             },
-        ]
+        ],
     }
 
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
@@ -118,7 +121,7 @@ def test_endpoint_injects_search_service_dependency(client_with_mock_search):
                 "start": (tomorrow + timedelta(days=14)).isoformat(),
                 "end": (tomorrow + timedelta(days=19)).isoformat(),
             },
-        ]
+        ],
     }
 
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
