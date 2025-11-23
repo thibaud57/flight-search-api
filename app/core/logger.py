@@ -2,9 +2,10 @@
 
 import logging
 import sys
+from functools import lru_cache
 from typing import ClassVar
 
-from pythonjsonlogger import jsonlogger  # type: ignore
+from pythonjsonlogger import jsonlogger  # type: ignore  # Pas de stubs mypy disponibles
 
 
 class SensitiveDataFilter(logging.Filter):
@@ -22,9 +23,9 @@ class SensitiveDataFilter(logging.Filter):
 
 def setup_logger(log_level: str) -> logging.Logger:
     """Configure logger avec format JSON structuré."""
-    logger_instance = logging.getLogger("flight-search-api")
-    logger_instance.setLevel(log_level)
-    logger_instance.handlers = []
+    app_logger = logging.getLogger("app")
+    app_logger.setLevel(log_level)
+    app_logger.handlers = []
 
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(log_level)
@@ -36,6 +37,16 @@ def setup_logger(log_level: str) -> logging.Logger:
 
     handler.setFormatter(formatter)
     handler.addFilter(SensitiveDataFilter())
-    logger_instance.addHandler(handler)
+    app_logger.addHandler(handler)
 
-    return logger_instance
+    return app_logger
+
+
+@lru_cache
+def get_logger() -> logging.Logger:
+    """Retourne instance Logger cached configurée avec Settings."""
+    # Import local pour éviter circular import (config → logger → config)
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    return setup_logger(settings.LOG_LEVEL)

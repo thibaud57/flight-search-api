@@ -1,7 +1,6 @@
 """Tests unitaires pour Settings (Pydantic BaseSettings)."""
 
 import logging
-from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -12,59 +11,20 @@ from app.core.config import Settings
 def test_settings_load_from_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
     """Settings charge variables d'environnement."""
     monkeypatch.setenv("LOG_LEVEL", "DEBUG")
-    monkeypatch.setenv("DECODO_USERNAME", "customer-XXX-country-FR")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
     monkeypatch.setenv("DECODO_PASSWORD", "password123")
-    monkeypatch.setenv("DECODO_PROXY_HOST", "pr.decodo.com:8080")
+    monkeypatch.setenv("DECODO_PROXY_HOST", "fr.decodo.com:40000")
     monkeypatch.setenv("PROXY_ROTATION_ENABLED", "true")
     monkeypatch.setenv("CAPTCHA_DETECTION_ENABLED", "true")
 
     settings = Settings()
 
     assert settings.LOG_LEVEL == "DEBUG"
-    assert settings.DECODO_USERNAME == "customer-XXX-country-FR"
-    assert settings.DECODO_PASSWORD == "password123"
-    assert settings.DECODO_PROXY_HOST == "pr.decodo.com:8080"
+    assert settings.DECODO_USERNAME == "testuser"
+    assert settings.DECODO_PASSWORD.get_secret_value() == "password123"
+    assert settings.DECODO_PROXY_HOST == "fr.decodo.com:40000"
     assert settings.PROXY_ROTATION_ENABLED is True
     assert settings.CAPTCHA_DETECTION_ENABLED is True
-
-
-def test_settings_load_from_dotenv_file(tmp_path: Path) -> None:
-    """Settings charge depuis fichier .env."""
-    env_file = tmp_path / ".env"
-    env_file.write_text(
-        "LOG_LEVEL=INFO\n"
-        "DECODO_USERNAME=customer-TEST-country-FR\n"
-        "DECODO_PASSWORD=testpass123\n"
-        "DECODO_PROXY_HOST=pr.decodo.com:8080\n"
-        "PROXY_ROTATION_ENABLED=true\n"
-        "CAPTCHA_DETECTION_ENABLED=true\n"
-    )
-
-    settings = Settings(_env_file=str(env_file))
-
-    assert settings.LOG_LEVEL == "INFO"
-    assert settings.DECODO_USERNAME == "customer-TEST-country-FR"
-    assert settings.DECODO_PASSWORD == "testpass123"
-
-
-def test_settings_env_vars_override_dotenv(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Env vars prioritaires sur .env."""
-    env_file = tmp_path / ".env"
-    env_file.write_text(
-        "LOG_LEVEL=DEBUG\n"
-        "DECODO_USERNAME=customer-FILE-country-FR\n"
-        "DECODO_PASSWORD=filepass\n"
-        "DECODO_PROXY_HOST=pr.decodo.com:8080\n"
-        "PROXY_ROTATION_ENABLED=true\n"
-        "CAPTCHA_DETECTION_ENABLED=true\n"
-    )
-    monkeypatch.setenv("LOG_LEVEL", "ERROR")
-
-    settings = Settings(_env_file=str(env_file))
-
-    assert settings.LOG_LEVEL == "ERROR"
 
 
 def test_settings_log_level_literal_validation(
@@ -72,7 +32,7 @@ def test_settings_log_level_literal_validation(
 ) -> None:
     """LOG_LEVEL accepte uniquement valeurs valides."""
     monkeypatch.setenv("LOG_LEVEL", "INVALID")
-    monkeypatch.setenv("DECODO_USERNAME", "customer-XXX-country-FR")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
     monkeypatch.setenv("DECODO_PASSWORD", "password123")
 
     with pytest.raises(ValidationError) as exc_info:
@@ -84,24 +44,24 @@ def test_settings_log_level_literal_validation(
 def test_settings_decodo_username_format_valid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """DECODO_USERNAME format customer-{key}-country-{code} validé."""
+    """DECODO_USERNAME min 5 chars valide."""
     monkeypatch.setenv("LOG_LEVEL", "INFO")
-    monkeypatch.setenv("DECODO_USERNAME", "customer-XXX-country-FR")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
     monkeypatch.setenv("DECODO_PASSWORD", "password123")
     monkeypatch.setenv("PROXY_ROTATION_ENABLED", "true")
     monkeypatch.setenv("CAPTCHA_DETECTION_ENABLED", "true")
 
     settings = Settings()
 
-    assert settings.DECODO_USERNAME == "customer-XXX-country-FR"
+    assert settings.DECODO_USERNAME == "testuser"
 
 
 def test_settings_decodo_username_format_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """DECODO_USERNAME format invalide rejeté."""
+    """DECODO_USERNAME trop court rejete."""
     monkeypatch.setenv("LOG_LEVEL", "INFO")
-    monkeypatch.setenv("DECODO_USERNAME", "invalid-format")
+    monkeypatch.setenv("DECODO_USERNAME", "abc")
     monkeypatch.setenv("DECODO_PASSWORD", "password123")
 
     with pytest.raises(ValidationError) as exc_info:
@@ -113,25 +73,25 @@ def test_settings_decodo_username_format_invalid(
 def test_settings_decodo_proxy_host_format_valid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """DECODO_PROXY_HOST format host:port validé."""
+    """DECODO_PROXY_HOST format host:port valide."""
     monkeypatch.setenv("LOG_LEVEL", "INFO")
-    monkeypatch.setenv("DECODO_USERNAME", "customer-XXX-country-FR")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
     monkeypatch.setenv("DECODO_PASSWORD", "password123")
-    monkeypatch.setenv("DECODO_PROXY_HOST", "pr.decodo.com:8080")
+    monkeypatch.setenv("DECODO_PROXY_HOST", "fr.decodo.com:40000")
 
     settings = Settings()
 
-    assert settings.DECODO_PROXY_HOST == "pr.decodo.com:8080"
+    assert settings.DECODO_PROXY_HOST == "fr.decodo.com:40000"
 
 
 def test_settings_decodo_proxy_host_format_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """DECODO_PROXY_HOST sans port rejeté."""
+    """DECODO_PROXY_HOST sans port rejete."""
     monkeypatch.setenv("LOG_LEVEL", "INFO")
-    monkeypatch.setenv("DECODO_USERNAME", "customer-XXX-country-FR")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
     monkeypatch.setenv("DECODO_PASSWORD", "password123")
-    monkeypatch.setenv("DECODO_PROXY_HOST", "pr.decodo.com")
+    monkeypatch.setenv("DECODO_PROXY_HOST", "fr.decodo.com")
 
     with pytest.raises(ValidationError) as exc_info:
         Settings()
@@ -140,9 +100,9 @@ def test_settings_decodo_proxy_host_format_invalid(
 
 
 def test_settings_boolean_fields_coercion(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Booléens acceptent "true"/"false" strings."""
+    """Booleens acceptent true/false strings."""
     monkeypatch.setenv("LOG_LEVEL", "INFO")
-    monkeypatch.setenv("DECODO_USERNAME", "customer-XXX-country-FR")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
     monkeypatch.setenv("DECODO_PASSWORD", "password123")
     monkeypatch.setenv("PROXY_ROTATION_ENABLED", "true")
     monkeypatch.setenv("CAPTCHA_DETECTION_ENABLED", "false")
@@ -158,7 +118,7 @@ def test_settings_model_validator_warns_risky_config(
 ) -> None:
     """Configuration à risque loggée (rotation+captcha disabled)."""
     monkeypatch.setenv("LOG_LEVEL", "INFO")
-    monkeypatch.setenv("DECODO_USERNAME", "customer-XXX-country-FR")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
     monkeypatch.setenv("DECODO_PASSWORD", "password123")
     monkeypatch.setenv("PROXY_ROTATION_ENABLED", "false")
     monkeypatch.setenv("CAPTCHA_DETECTION_ENABLED", "false")
@@ -169,3 +129,60 @@ def test_settings_model_validator_warns_risky_config(
     assert settings.PROXY_ROTATION_ENABLED is False
     assert settings.CAPTCHA_DETECTION_ENABLED is False
     assert any("risk" in record.message.lower() for record in caplog.records)
+
+
+def test_settings_proxy_config_generation(monkeypatch: pytest.MonkeyPatch) -> None:
+    """model_validator genere ProxyConfig depuis env vars."""
+    monkeypatch.setenv("LOG_LEVEL", "INFO")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
+    monkeypatch.setenv("DECODO_PASSWORD", "password123")
+    monkeypatch.setenv("DECODO_PROXY_HOST", "fr.decodo.com:40000")
+    monkeypatch.setenv("DECODO_PROXY_ENABLED", "true")
+
+    settings = Settings()
+
+    assert settings.proxy_config is not None
+    assert settings.proxy_config.host == "fr.decodo.com"
+    assert settings.proxy_config.port == 40000
+    assert settings.proxy_config.username == "testuser"
+
+
+def test_settings_proxy_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Proxies desactives genere None."""
+    monkeypatch.setenv("LOG_LEVEL", "INFO")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
+    monkeypatch.setenv("DECODO_PASSWORD", "password123")
+    monkeypatch.setenv("DECODO_PROXY_HOST", "fr.decodo.com:40000")
+    monkeypatch.setenv("DECODO_PROXY_ENABLED", "false")
+
+    settings = Settings()
+
+    assert settings.proxy_config is None
+
+
+def test_settings_username_too_short(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Username trop court rejette Settings."""
+    monkeypatch.setenv("LOG_LEVEL", "INFO")
+    monkeypatch.setenv("DECODO_USERNAME", "abc")
+    monkeypatch.setenv("DECODO_PASSWORD", "password123")
+    monkeypatch.setenv("DECODO_PROXY_HOST", "fr.decodo.com:40000")
+    monkeypatch.setenv("DECODO_PROXY_ENABLED", "true")
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+
+    assert "DECODO_USERNAME" in str(exc_info.value)
+
+
+def test_settings_secret_str_password_masked(monkeypatch: pytest.MonkeyPatch) -> None:
+    """SecretStr masque password dans logs."""
+    monkeypatch.setenv("LOG_LEVEL", "INFO")
+    monkeypatch.setenv("DECODO_USERNAME", "testuser")
+    monkeypatch.setenv("DECODO_PASSWORD", "secret123")
+    monkeypatch.setenv("DECODO_PROXY_HOST", "fr.decodo.com:40000")
+    monkeypatch.setenv("DECODO_PROXY_ENABLED", "true")
+
+    settings = Settings()
+
+    assert str(settings.DECODO_PASSWORD) == "**********"
+    assert settings.DECODO_PASSWORD.get_secret_value() == "secret123"

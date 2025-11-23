@@ -63,12 +63,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Creer utilisateur non-root pour securite
 RUN adduser --disabled-password --gecos "" --uid 1000 appuser
 
-# Changer vers utilisateur non-root
-USER appuser
-
 # Definir WORKDIR et copier depuis builder avec permissions correctes
 WORKDIR /app
 COPY --from=builder --chown=appuser:appuser /app /app
+
+# Copier cache Playwright depuis builder
+COPY --from=builder --chown=appuser:appuser /root/.cache/ms-playwright /home/appuser/.cache/ms-playwright
+
+# Changer vers utilisateur non-root
+USER appuser
 
 # Variables environnement runtime
 ENV PATH="/app/.venv/bin:$PATH"

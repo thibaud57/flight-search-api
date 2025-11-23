@@ -6,8 +6,26 @@ import logging
 from datetime import datetime
 
 import pytest
+from pythonjsonlogger import jsonlogger
 
 from app.core.logger import setup_logger
+
+
+@pytest.fixture
+def logger_with_json_stream():
+    """Logger avec handler JSON + StringIO pour capture output."""
+    logger = setup_logger("INFO")
+    stream = io.StringIO()
+    handler = logging.StreamHandler(stream)
+    formatter = jsonlogger.JsonFormatter(
+        "%(asctime)s %(name)s %(levelname)s %(message)s"
+    )
+    handler.setFormatter(formatter)
+    logger.handlers = [handler]
+
+    yield logger, stream
+
+    logger.handlers.clear()
 
 
 def test_setup_logger_returns_logger_instance() -> None:
@@ -17,18 +35,9 @@ def test_setup_logger_returns_logger_instance() -> None:
     assert isinstance(logger, logging.Logger)
 
 
-def test_logger_output_is_valid_json(caplog: pytest.LogCaptureFixture) -> None:
+def test_logger_output_is_valid_json(logger_with_json_stream) -> None:
     """Log émis est JSON parsable."""
-    logger = setup_logger("INFO")
-    stream = io.StringIO()
-    handler = logging.StreamHandler(stream)
-    from pythonjsonlogger import jsonlogger
-
-    formatter = jsonlogger.JsonFormatter(
-        "%(asctime)s %(name)s %(levelname)s %(message)s"
-    )
-    handler.setFormatter(formatter)
-    logger.handlers = [handler]
+    logger, stream = logger_with_json_stream
 
     logger.info("test message")
     output = stream.getvalue()
@@ -40,18 +49,9 @@ def test_logger_output_is_valid_json(caplog: pytest.LogCaptureFixture) -> None:
         pytest.fail(f"Output is not valid JSON: {e}")
 
 
-def test_logger_json_contains_standard_fields() -> None:
+def test_logger_json_contains_standard_fields(logger_with_json_stream) -> None:
     """Log JSON contient champs standards."""
-    logger = setup_logger("INFO")
-    stream = io.StringIO()
-    handler = logging.StreamHandler(stream)
-    from pythonjsonlogger import jsonlogger
-
-    formatter = jsonlogger.JsonFormatter(
-        "%(asctime)s %(name)s %(levelname)s %(message)s"
-    )
-    handler.setFormatter(formatter)
-    logger.handlers = [handler]
+    logger, stream = logger_with_json_stream
 
     logger.info("test")
     output = stream.getvalue()
@@ -88,18 +88,9 @@ def test_logger_respects_log_level_info(caplog: pytest.LogCaptureFixture) -> Non
     assert len(debug_records) == 0
 
 
-def test_logger_supports_extra_fields() -> None:
+def test_logger_supports_extra_fields(logger_with_json_stream) -> None:
     """Extra fields ajoutés au JSON log."""
-    logger = setup_logger("INFO")
-    stream = io.StringIO()
-    handler = logging.StreamHandler(stream)
-    from pythonjsonlogger import jsonlogger
-
-    formatter = jsonlogger.JsonFormatter(
-        "%(asctime)s %(name)s %(levelname)s %(message)s"
-    )
-    handler.setFormatter(formatter)
-    logger.handlers = [handler]
+    logger, stream = logger_with_json_stream
 
     logger.info("test", extra={"search_id": "abc123"})
     output = stream.getvalue()
@@ -108,21 +99,12 @@ def test_logger_supports_extra_fields() -> None:
     assert parsed["search_id"] == "abc123"
 
 
-def test_logger_does_not_log_secrets() -> None:
+def test_logger_does_not_log_secrets(logger_with_json_stream) -> None:
     """Secrets masqués dans logs."""
-    logger = setup_logger("INFO")
-    stream = io.StringIO()
-    handler = logging.StreamHandler(stream)
-    from pythonjsonlogger import jsonlogger
-
     from app.core.logger import SensitiveDataFilter
 
-    formatter = jsonlogger.JsonFormatter(
-        "%(asctime)s %(name)s %(levelname)s %(message)s"
-    )
-    handler.setFormatter(formatter)
-    handler.addFilter(SensitiveDataFilter())
-    logger.handlers = [handler]
+    logger, stream = logger_with_json_stream
+    logger.handlers[0].addFilter(SensitiveDataFilter())
 
     logger.info("test", extra={"password": "secret123"})
     output = stream.getvalue()
@@ -136,8 +118,6 @@ def test_logger_timestamp_is_iso8601() -> None:
     logger = setup_logger("INFO")
     stream = io.StringIO()
     handler = logging.StreamHandler(stream)
-    from pythonjsonlogger import jsonlogger
-
     formatter = jsonlogger.JsonFormatter(
         "%(asctime)s %(name)s %(levelname)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S"
     )
@@ -153,3 +133,5 @@ def test_logger_timestamp_is_iso8601() -> None:
         datetime.fromisoformat(asctime)
     except ValueError as e:
         pytest.fail(f"asctime is not ISO 8601 format: {e}")
+
+    logger.handlers.clear()
