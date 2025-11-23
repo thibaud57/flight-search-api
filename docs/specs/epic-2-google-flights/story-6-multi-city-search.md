@@ -48,7 +48,7 @@ technologies: ["Python", "itertools", "asyncio", "FastAPI", "Pydantic v2"]
 
 ## 1. CombinationGenerator
 
-**Rôle** : Générer toutes les combinaisons dates possibles depuis une liste de segments FlightSegment, en utilisant itertools.product pour produit cartésien (ordre segments fixe, dates varient).
+**Rôle** : Générer toutes les combinaisons dates possibles depuis une liste de DateRange via produit cartésien (ordre segments fixe, dates varient).
 
 **Interface** :
 ```python
@@ -57,7 +57,7 @@ class CombinationGenerator:
 
     def generate_combinations(
         self,
-        segments: list[FlightSegment]
+        date_ranges: list[DateRange]
     ) -> list[DateCombination]:
         """
         Génère produit cartésien dates pour N segments (ordre fixe).
@@ -71,7 +71,7 @@ class CombinationGenerator:
 
 | Champ | Type | Description | Contraintes |
 |-------|------|-------------|-------------|
-| `segments` | `list[FlightSegment]` | Liste segments itinéraire (ex: [Paris→Tokyo, Tokyo→NYC]) | min_length=2, max_length=5 (validé SearchRequest Story 3) |
+| `date_ranges` | `list[DateRange]` | Liste plages dates par segment (ex: [7j, 6j] pour 2 segments) | min_length=2, max_length=5 (validé SearchRequest.segments_date_ranges) |
 | **Retour** | `list[DateCombination]` | Liste combinaisons dates | Length = produit cartésien jours (range1 × range2 × ... × rangeN) |
 
 **Modèle DateCombination** :
@@ -91,7 +91,7 @@ class DateCombination(BaseModel):
 - **Génération nominale** :
   1. Extraire date_range de chaque segment
   2. Générer liste dates pour chaque segment (start à end inclusif)
-  3. Calculer produit cartésien toutes listes dates avec `itertools.product(*all_dates)`
+  3. Calculer produit cartésien de toutes les listes de dates pour obtenir toutes combinaisons possibles
   4. Retourner liste de DateCombination avec chaque combinaison dates
 
 - **Algorithme produit cartésien** :
@@ -161,48 +161,54 @@ class SearchService:
 
 **Comportement Orchestration** :
 
-**Étape 1 : Génération Combinaisons**
-1. Appeler `combination_generator.generate_combinations(request.segments)`
-2. Recevoir liste de DateCombination (ex: 210 combinaisons pour 3 segments × [7, 6, 5] jours)
-3. Logger INFO : nombre total combinaisons à crawler
+Le service orchestre la recherche complète en coordonnant plusieurs composants et en gérant les erreurs de manière gracieuse.
 
-**Étape 2 : Construction URLs Google Flights**
-Pour chaque DateCombination :
-1. Construire URL multi-city Google Flights avec paramètre `multi_city_json`
-2. Format JSON segments : `[{"departure_id":"CDG","arrival_id":"NRT","date":"2025-06-01"}, ...]`
-3. Mapper FlightSegment → multi_city_json :
-   - `segment.from_city` → `departure_id` (support multi-aéroports "Paris,Francfort" transformé en "CDG,FRA")
-   - `segment.to_city` → `arrival_id`
-   - `date_combination.segment_dates[i]` → `date` (date spécifique pour ce segment dans cette combinaison)
-4. URL-encoder JSON et ajouter paramètres localisation `hl=fr&curr=EUR`
-5. Exemple URL : `https://www.google.com/travel/flights?flight_type=3&multi_city_json=[{"departure_id":"CDG","arrival_id":"NRT","date":"2025-06-01"},{"departure_id":"NRT","arrival_id":"JFK","date":"2025-06-15"}]&hl=fr&curr=EUR`
+**Génération des combinaisons de dates** :
+- Le générateur produit l'ensemble exhaustif des combinaisons de dates possibles selon les plages fournies (produit cartésien)
+- Le nombre total de combinaisons est calculé et loggé pour observabilité
+- Exemple : 3 segments avec [7, 6, 5] jours génèrent 210 combinaisons distinctes
 
-**Étape 3 : Crawling Parallèle**
-1. Appeler `crawler_service.crawl_google_flights(url)` pour chaque combinaison
-2. Stratégie parallélisation : `asyncio.gather()` avec limite concurrence (ex: 5-10 requêtes simultanées max pour éviter rate limiting)
-3. Gérer erreurs crawl :
-   - CrawlerService tente automatiquement 3 fois (retry logic Story 7 via @retry decorator)
-   - Si échec persistant (exception finale après max retries) → Logger WARNING, skip combinaison
-   - Continuer autres combinaisons (gestion erreurs gracieuse, pas d'exception bloquante)
-4. Logger INFO : Nombre crawls réussis vs échecs
+**Construction des URLs de recherche (approche template base64)** :
+- Au lieu de construire le JSON multi-city from scratch, le système utilise une URL template fournie par l'utilisateur
+- Pour chaque combinaison de dates, le paramètre `tfs=` encodé en base64 est décodé, les dates sont remplacées, puis le paramètre est ré-encodé
+- Cette approche préserve tous les filtres configurés par l'utilisateur (classe cabine, compagnies, bagages) déjà présents dans le template
+- Le format URL natif de Google Flights est réutilisé sans nécessiter de reconstruction manuelle du JSON multi_city
 
-**Étape 4 : Parsing Vols**
-Pour chaque HTML crawlé avec succès :
-1. Appeler `flight_parser.parse(html)` (retourne `list[GoogleFlightDTO]` = N options de vol)
-2. Sélectionner meilleure option : `best = flights[0]` (Google retourne options triées par prix)
-3. Créer résultat : `CombinationResult(date_combination=combo, best_flight=best)`
-4. Gérer erreurs parsing : Si ParsingError → Logger WARNING, skip combinaison
-5. Logger INFO : Nombre combinaisons parsées avec succès
+| Étape transformation URL | Description | Avantage |
+|--------------------------|-------------|----------|
+| Décodage base64 | Extraction du paramètre `tfs=` depuis l'URL template | Accès aux données structurées encodées |
+| Remplacement dates | Identification et substitution des dates ISO existantes par les nouvelles dates de la combinaison | Conserve structure JSON intacte |
+| Encodage base64 | Re-encodage du paramètre modifié | Format compatible Google Flights |
+| Reconstruction URL | Insertion du nouveau `tfs=` dans l'URL complète | URL finale prête à crawler |
 
-**Étape 5 : Ranking Top 10**
-1. Trier tous les `CombinationResult` par `best_flight.price` croissant
-2. Sélectionner top 10 résultats (ou moins si <10 combinaisons réussies)
-3. Logger INFO : Prix min/max trouvés
+**Exemple transformation** :
+- Template : `https://www.google.com/travel/flights?tfs=ABC123...` (dates originales 2025-06-01, 2025-06-15)
+- Combinaison : `["2025-06-05", "2025-06-20"]`
+- Résultat : `https://www.google.com/travel/flights?tfs=XYZ789...` (dates substituées)
 
-**Étape 6 : Construction SearchResponse**
-1. Transformer top 10 CombinationResult en FlightResult (format SearchResponse Story 3)
-2. Calculer SearchStats : total_results, search_time_ms, segments_count
-3. Retourner SearchResponse
+**Crawling parallèle avec gestion d'erreurs** :
+- Le crawler est invoqué pour chaque URL générée avec parallélisation asynchrone
+- La concurrence est limitée (5-10 requêtes simultanées) pour éviter le rate limiting
+- Les erreurs sont gérées de manière gracieuse : retry automatique (Story 7), logging des échecs, continuation des autres combinaisons
+- Aucune exception bloquante n'est levée, permettant de retourner des résultats partiels même en cas d'échecs multiples
+- Les statistiques de succès/échecs sont loggées pour observabilité
+
+**Parsing et sélection du meilleur vol** :
+- Chaque HTML crawlé avec succès est parsé pour extraire la liste complète des vols disponibles
+- Le vol optimal est sélectionné (premier vol retourné, car Google Flights trie par prix par défaut)
+- Un résultat intermédiaire est créé associant la combinaison de dates au vol sélectionné
+- Les erreurs de parsing sont loggées mais ne bloquent pas le traitement des autres combinaisons
+- Le nombre de parsings réussis est tracé pour monitoring
+
+**Ranking et sélection Top 10** :
+- Tous les résultats intermédiaires sont triés par prix croissant du vol sélectionné
+- Les 10 meilleurs résultats sont conservés (ou moins si moins de 10 combinaisons ont réussi)
+- Les prix minimum et maximum du top 10 sont loggés pour analyse
+
+**Construction de la réponse finale** :
+- Les résultats sélectionnés sont transformés au format SearchResponse standardisé
+- Les métadonnées de recherche sont calculées (nombre résultats, temps exécution, nombre segments)
+- Une réponse structurée complète est retournée avec résultats triés et statistiques
 
 **Edge cases** :
 - **Aucun crawl réussi** : Retourner SearchResponse vide avec search_stats.total_results=0
@@ -259,24 +265,73 @@ Pour chaque HTML crawlé avec succès :
 
 ## 4. Modèles Pydantic
 
-### FlightSegment et SearchRequest (Référence Story 3)
+### SearchRequest (Architecture modifiée - template URL)
 
-**Défini dans** : `docs/specs/epic-1-api-foundation/story-3-search-endpoint.md`
+**Changement architectural majeur** : Au lieu de définir l'itinéraire via `list[FlightSegment]` (from_city, to_city par segment), l'utilisateur fournit une **URL template Google Flights** avec l'itinéraire et filtres déjà configurés.
 
-**Champs réutilisés** :
-- `FlightSegment` : from_city, to_city, date_range (max 15 jours/segment)
-- `SearchRequest.segments` : list[FlightSegment] (min 2, max 5, max 1000 combinaisons)
+**Interface actuelle** :
+```python
+class SearchRequest(BaseModel):
+    """Requête recherche vols multi-city avec URL template Google Flights."""
 
-**Validations réutilisées** :
-- `field_validator('segments')` : 2 ≤ len ≤ 5
-- `model_validator` : Explosion combinatoire ≤ 1000
-- `model_validator` sur FlightSegment : date_range max 15 jours
+    template_url: Annotated[str, "URL Google Flights template (itinéraire et filtres fixés)"]
+    segments_date_ranges: Annotated[list[DateRange], "Plages dates par segment (2-5 segments)"]
+```
+
+**Champs** :
+
+| Champ | Type | Description | Contraintes |
+|-------|------|-------------|-------------|
+| `template_url` | `str` | URL Google Flights complète avec paramètre `tfs=` encodé base64 | Format `https://www.google.com/travel/flights?tfs=...`, contient itinéraire fixe (Paris→Tokyo→NYC) et filtres (classe cabine, compagnies, bagages) |
+| `segments_date_ranges` | `list[DateRange]` | Plages de dates à tester pour chaque segment de l'itinéraire | min 2 segments, max 5 segments, max 1000 combinaisons totales (explosion combinatoire) |
+
+**Validations** :
+- `field_validator('template_url')` : Vérifier URL starts with "https://www.google.com/travel/flights" et contient "tfs=" paramètre
+- `field_validator('segments_date_ranges')` : Vérifier 2 ≤ len ≤ 5 (cohérence MVP multi-city)
+- `model_validator` : Calculer produit cartésien dates segments, vérifier ≤ 1000 combinaisons totales
+
+**Workflow utilisateur** :
+1. User configure itinéraire sur Google Flights UI (Paris→Tokyo→NYC, classe Business, bagages, etc.)
+2. User copie URL complète depuis barre navigation (contient paramètre `tfs=` avec données encodées base64)
+3. User fournit URL template + plages dates par segment via API
+4. Backend remplace dates dans `tfs` encodé et génère URLs finales pour crawler
+
+**Justification architecture** :
+- ✅ **Plus flexible** : User peut pré-configurer filtres avancés (classe cabine, compagnies autorisées, bagages) via UI Google Flights intuitive
+- ✅ **Moins fragile** : Pas besoin maintenir mapping city→airport codes (Paris → CDG/ORY/BVA?) ni construire JSON multi_city from scratch
+- ⚠️ **UX complexité** : User doit générer template URL manuellement (pas aussi intuitif que formulaire from/to cities)
 
 ---
 
-### DateCombination (Nouveau Modèle Story 6)
+### DateRange (Nouveau modèle réutilisable)
 
-**Rôle** : Modèle représentant une combinaison dates pour itinéraire multi-city (ordre segments fixe, dates spécifiques par segment).
+**Rôle** : Modèle séparé pour définir plage de dates d'un segment (réutilisable pour autres features futures : aller-retour simple, dates flexibles).
+
+**Interface** :
+```python
+class DateRange(BaseModel):
+    """Plage de dates pour recherche vols."""
+
+    start: str
+    end: str
+```
+
+**Champs** :
+
+| Champ | Type | Description | Contraintes |
+|-------|------|-------------|-------------|
+| `start` | `str` | Date début période (format ISO 8601 YYYY-MM-DD) | Validation format ISO + ≥ aujourd'hui |
+| `end` | `str` | Date fin période (format ISO 8601 YYYY-MM-DD) | Validation format ISO + ≥ start |
+
+**Validations** :
+- `field_validator('start', 'end')` : Vérifier format ISO 8601 strict (YYYY-MM-DD)
+- `model_validator` : Vérifier `end >= start` et `start >= today` (cohérence temporelle)
+
+---
+
+### DateCombination (Modèle intermédiaire)
+
+**Rôle** : Modèle représentant une combinaison dates pour itinéraire multi-city fixe (ordre segments fixe, dates spécifiques par segment).
 
 **Interface** :
 ```python
@@ -290,7 +345,7 @@ class DateCombination(BaseModel):
 
 | Champ | Type | Description | Contraintes |
 |-------|------|-------------|-------------|
-| `segment_dates` | `list[str]` | Dates départ chaque segment (format YYYY-MM-DD) | Length = len(segments request), chaque date ISO 8601 valide |
+| `segment_dates` | `list[str]` | Dates départ chaque segment (format YYYY-MM-DD) | Length = len(segments_date_ranges request), chaque date ISO 8601 valide |
 
 **Validations Pydantic** :
 
@@ -299,11 +354,11 @@ class DateCombination(BaseModel):
 
 **Comportement** :
 - Modèle généré automatiquement par CombinationGenerator
-- Utilisé pour construction URLs Google Flights multi_city_json
+- Utilisé pour génération URLs Google Flights (remplacement dates dans template tfs)
 
 ---
 
-### CombinationResult (Nouveau Modèle Story 6)
+### CombinationResult (Modèle intermédiaire)
 
 **Rôle** : Modèle intermédiaire pour stocker résultat crawl + parsing d'une combinaison avant ranking.
 
@@ -330,7 +385,7 @@ class CombinationResult(BaseModel):
 
 **Comportement** :
 - Modèle créé par SearchService après parsing avec `best_flight=flights[0]`
-- Utilisé pour ranking (tri par `best_flight.price`) avant transformation en FlightResult
+- Utilisé pour ranking (tri par `best_flight.price`) avant transformation en FlightCombinationResult
 
 ---
 
@@ -400,26 +455,24 @@ class CombinationResult(BaseModel):
 
 ## Exemples JSON
 
-**Exemple 1 : SearchRequest multi-city (2 segments)**
+**Exemple 1 : SearchRequest multi-city (2 segments) - Architecture template URL**
 
 ```json
 {
-  "segments": [
-    {
-      "from_city": "Paris",
-      "to_city": "Tokyo",
-      "date_range": {"start": "2025-06-01", "end": "2025-06-07"}
-    },
-    {
-      "from_city": "Tokyo",
-      "to_city": "New York",
-      "date_range": {"start": "2025-06-15", "end": "2025-06-20"}
-    }
+  "template_url": "https://www.google.com/travel/flights?tfs=CBwQAhoeagcIARIDUEFSEgoyMDI1LTA2LTAxcgcIARIDTlJUGh5qBwgBEgNOUlQSCjIwMjUtMDYtMTVyBwgBEgNKRktwAYIBCwj___________8BQAFIAZgBAQ",
+  "segments_date_ranges": [
+    {"start": "2025-06-01", "end": "2025-06-07"},
+    {"start": "2025-06-15", "end": "2025-06-20"}
   ]
 }
 ```
 
 **Combinaisons générées** : 7 dates × 6 dates = 42 combinaisons totales
+
+**Notes** :
+- `template_url` : URL complète Google Flights avec itinéraire Paris→Tokyo→NYC encodé dans paramètre `tfs` base64
+- User obtient cette URL en configurant itinéraire + filtres sur UI Google Flights puis copie depuis barre navigation
+- `segments_date_ranges` : Plages dates à tester pour chaque segment de l'itinéraire fixe
 
 ---
 
@@ -457,36 +510,54 @@ class CombinationResult(BaseModel):
 
 ---
 
-**Exemple 4 : SearchResponse Top 10 (succès)**
+**Exemple 4 : SearchResponse Top 10 (succès) - Structure FlightCombinationResult**
 
 ```json
 {
   "results": [
     {
-      "price": 1250.0,
-      "airline": "Mixed",
-      "departure_date": "2025-06-01",
-      "segments": [
-        {"from": "Paris", "to": "Tokyo", "date": "2025-06-01"},
-        {"from": "Tokyo", "to": "New York", "date": "2025-06-15"}
+      "segment_dates": ["2025-06-01", "2025-06-15"],
+      "flights": [
+        {
+          "price": 1270.0,
+          "airline": "ANA",
+          "departure_time": "10:30",
+          "arrival_time": "14:45",
+          "duration": "13 h 40 min",
+          "stops": 1,
+          "departure_airport": "Paris",
+          "arrival_airport": "Tokyo"
+        }
       ]
     },
     {
-      "price": 1300.0,
-      "airline": "Mixed",
-      "departure_date": "2025-06-03",
-      "segments": [
-        {"from": "Paris", "to": "Tokyo", "date": "2025-06-03"},
-        {"from": "Tokyo", "to": "New York", "date": "2025-06-17"}
+      "segment_dates": ["2025-06-03", "2025-06-17"],
+      "flights": [
+        {
+          "price": 1320.0,
+          "airline": "Air France",
+          "departure_time": "11:00",
+          "arrival_time": "15:20",
+          "duration": "14 h 20 min",
+          "stops": 0,
+          "departure_airport": "Paris",
+          "arrival_airport": "Tokyo"
+        }
       ]
     },
     {
-      "price": 1450.0,
-      "airline": "Mixed",
-      "departure_date": "2025-06-05",
-      "segments": [
-        {"from": "Paris", "to": "Tokyo", "date": "2025-06-05"},
-        {"from": "Tokyo", "to": "New York", "date": "2025-06-20"}
+      "segment_dates": ["2025-06-05", "2025-06-20"],
+      "flights": [
+        {
+          "price": 1450.0,
+          "airline": "Lufthansa",
+          "departure_time": "09:15",
+          "arrival_time": "13:30",
+          "duration": "12 h 15 min",
+          "stops": 2,
+          "departure_airport": "Paris",
+          "arrival_airport": "Tokyo"
+        }
       ]
     }
   ],
@@ -498,7 +569,11 @@ class CombinationResult(BaseModel):
 }
 ```
 
-**Note** : Array `results` contient top 10 (ici seulement 3 montrés pour lisibilité). En production : exactement 10 FlightResult sauf si <10 combinaisons réussies.
+**Notes** :
+- `results` : Array de FlightCombinationResult (top 10, ici 3 montrés pour lisibilité)
+- `segment_dates` : Dates testées pour cette combinaison (ordre segments fixe)
+- `flights` : Liste vols pour cette combinaison (limitation actuelle : segment 1 uniquement, Google Flights multi-city retourne prix total mais détails par segment limités)
+- Tri par `flights[0].price` croissant (ranking basé sur premier vol de chaque combinaison)
 
 ---
 
@@ -579,7 +654,7 @@ class CombinationResult(BaseModel):
 
 12. **Dependency Injection services** : SearchService reçoit CombinationGenerator, CrawlerService, FlightParser via constructeur (testable, mockable)
 
-13. **Pydantic v2 modèles** : DateCombination et CombinationResult héritent BaseModel avec `ConfigDict(extra="forbid")`, CombinationResult simplifié avec `best_flight: GoogleFlightDTO`
+13. **Pydantic v2 modèles** : DateCombination et CombinationResult héritent BaseModel avec validation stricte des champs (rejet champs inconnus), CombinationResult simplifié avec `best_flight: GoogleFlightDTO`
 
 14. **Réutilisation Story 3 modèles** : SearchRequest, FlightSegment, SearchResponse, FlightResult référencés sans redéfinition (imports depuis `app/models/request.py`, `response.py`)
 
@@ -587,7 +662,7 @@ class CombinationResult(BaseModel):
 
 16. **Logging structuré JSON complet** : Tous logs incluent contexte métier : combinations_generated, crawls_success, crawls_failed, parsing_success, top_price_min, top_price_max, execution_time
 
-17. **itertools.product usage** : CombinationGenerator utilise `itertools.product(*all_dates)` pour produit cartésien (pas de nested loops manuels)
+17. **Produit cartésien dates** : CombinationGenerator implémente génération exhaustive de toutes combinaisons possibles via produit cartésien des plages de dates (pas de nested loops manuels)
 
 18. **Mapping FlightSegment → multi_city_json** : Transformation correcte from_city → departure_id, to_city → arrival_id, date_combination.segment_dates[i] → date (vérifié format JSON Google Flights)
 

@@ -369,9 +369,21 @@
 
 📝 **Output** : Story 7 specs complètes (5 story points)
 
+### 4.9 Story 8: Network Capture pour Multi-City Complet
+- [x] Specs : CrawlerService network capture (activation capture_network_requests)
+- [x] Specs : NetworkResponseFilter (filtrage API responses Google Flights)
+- [x] Specs : FlightParser JSON parsing (extraction tous segments depuis API)
+- [x] Specs : FlightCombinationResult modifié (total_price au niveau racine, flights sans price)
+- [x] Contexte business : Données complètes 3 segments, architecture prix corrigée
+- [x] Tests : Tests unitaires NetworkResponseFilter + FlightParser + CrawlerService + intégration (à spécifier)
+- [x] Ajouter à `docs/specs/epic-3-production-ready/story-8-network-capture.md`
+- [x] Commit : `docs(specs): add story 8 specifications`
+
+📝 **Output** : Story 8 specs complètes (8 story points)
+
 ---
 
-### 4.9 Mise à jour CHANGELOG et version
+### 4.10 Mise à jour CHANGELOG et version
 - [x] Ajouter entrée v0.4.0-specs dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.4.0"`
 - [x] Commit : `chore: bump version to 0.4.0 and update changelog`
@@ -542,9 +554,21 @@
 
 📝 **Output** : Story 7 complétée (5 story points)
 
+### 5.10 Story 8: Network Capture pour Multi-City Complet
+
+**Branche** : `feature/story-8-network-capture`
+
+- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-8-network-capture.md
+- [ ] **Validation manuelle** : Vérifier capture network events, parsing JSON 3 segments, total_price au niveau racine
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(crawler): add network capture for complete multi-city data`
+- [ ] **PR** : feature/story-8 → develop
+
+📝 **Output** : Story 8 complétée (8 story points)
+
 ---
 
-### 5.10 Validation Epic 3 et mise à jour CHANGELOG
+### 5.11 Validation Epic 3 et mise à jour CHANGELOG
 
 **🔍 Validation qualité** :
 
@@ -554,7 +578,7 @@
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit si refactor** : `chore(epic-3): refactor for standards compliance`
 
-📝 **Output** : Epic 3 validé - story 7 conforme aux standards
+📝 **Output** : Epic 3 validé - stories 7-8 conformes aux standards
 
 **📝 Mise à jour version** :
 
@@ -568,7 +592,7 @@
 
 ---
 
-### 5.11 Validation complète MVP et CHANGELOG
+### 5.12 Validation complète MVP et CHANGELOG
 
 **🔍 Validation qualité automatique** :
 
@@ -974,7 +998,8 @@ flight-search-api/
 │   │   │   ├── story-5-proxies.md
 │   │   │   └── story-6-multi-city-search.md
 │   │   └── epic-3-production-ready/
-│   │       └── story-7-retry.md
+│   │       ├── story-7-retry.md
+│   │       └── story-8-network-capture.md
 │   ├── ARCHITECTURE.md
 │   ├── CHANGELOG.md
 │   ├── SPECS.md        # Index specs (liens vers stories)

@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from app.models.request import DateCombination, FlightSegment
+from app.models.request import DateCombination, DateRange
 from app.services.combination_generator import CombinationGenerator
 
 
@@ -15,118 +15,78 @@ def combination_generator() -> CombinationGenerator:
 
 
 @pytest.fixture
-def two_segments() -> list[FlightSegment]:
+def two_segments() -> list[DateRange]:
     """2 segments avec 7 et 6 jours."""
     tomorrow = date.today() + timedelta(days=1)
     return [
-        FlightSegment(
-            from_city="Paris",
-            to_city="Tokyo",
-            date_range={
-                "start": tomorrow.isoformat(),
-                "end": (tomorrow + timedelta(days=6)).isoformat(),
-            },
+        DateRange(
+            start=tomorrow.isoformat(),
+            end=(tomorrow + timedelta(days=6)).isoformat(),
         ),
-        FlightSegment(
-            from_city="Tokyo",
-            to_city="New York",
-            date_range={
-                "start": (tomorrow + timedelta(days=14)).isoformat(),
-                "end": (tomorrow + timedelta(days=19)).isoformat(),
-            },
+        DateRange(
+            start=(tomorrow + timedelta(days=14)).isoformat(),
+            end=(tomorrow + timedelta(days=19)).isoformat(),
         ),
     ]
 
 
 @pytest.fixture
-def three_segments() -> list[FlightSegment]:
+def three_segments() -> list[DateRange]:
     """3 segments avec 7, 6, 5 jours."""
     tomorrow = date.today() + timedelta(days=1)
     return [
-        FlightSegment(
-            from_city="Paris",
-            to_city="Tokyo",
-            date_range={
-                "start": tomorrow.isoformat(),
-                "end": (tomorrow + timedelta(days=6)).isoformat(),
-            },
+        DateRange(
+            start=tomorrow.isoformat(),
+            end=(tomorrow + timedelta(days=6)).isoformat(),
         ),
-        FlightSegment(
-            from_city="Tokyo",
-            to_city="Singapore",
-            date_range={
-                "start": (tomorrow + timedelta(days=14)).isoformat(),
-                "end": (tomorrow + timedelta(days=19)).isoformat(),
-            },
+        DateRange(
+            start=(tomorrow + timedelta(days=14)).isoformat(),
+            end=(tomorrow + timedelta(days=19)).isoformat(),
         ),
-        FlightSegment(
-            from_city="Singapore",
-            to_city="New York",
-            date_range={
-                "start": (tomorrow + timedelta(days=30)).isoformat(),
-                "end": (tomorrow + timedelta(days=34)).isoformat(),
-            },
+        DateRange(
+            start=(tomorrow + timedelta(days=30)).isoformat(),
+            end=(tomorrow + timedelta(days=34)).isoformat(),
         ),
     ]
 
 
 def test_generate_combinations_two_segments(combination_generator, two_segments):
-    """Test 1: Genere produit cartesien pour 2 segments (7x6=42)."""
+    """Genere produit cartesien pour 2 segments (7x6=42)."""
     combinations = combination_generator.generate_combinations(two_segments)
 
     assert len(combinations) == 42
 
 
 def test_generate_combinations_three_segments(combination_generator, three_segments):
-    """Test 2: Genere produit cartesien pour 3 segments (7x6x5=210)."""
+    """Genere produit cartesien pour 3 segments (7x6x5=210)."""
     combinations = combination_generator.generate_combinations(three_segments)
 
     assert len(combinations) == 210
 
 
 def test_generate_combinations_five_segments_asymmetric(combination_generator):
-    """Test 3: Genere combinaisons asymetriques (15x2x2x2x2=240)."""
+    """Genere combinaisons asymetriques (15x2x2x2x2=240)."""
     tomorrow = date.today() + timedelta(days=1)
     segments = [
-        FlightSegment(
-            from_city="AA",
-            to_city="BB",
-            date_range={
-                "start": tomorrow.isoformat(),
-                "end": (tomorrow + timedelta(days=14)).isoformat(),
-            },
+        DateRange(
+            start=tomorrow.isoformat(),
+            end=(tomorrow + timedelta(days=14)).isoformat(),
         ),
-        FlightSegment(
-            from_city="BB",
-            to_city="CC",
-            date_range={
-                "start": (tomorrow + timedelta(days=20)).isoformat(),
-                "end": (tomorrow + timedelta(days=21)).isoformat(),
-            },
+        DateRange(
+            start=(tomorrow + timedelta(days=20)).isoformat(),
+            end=(tomorrow + timedelta(days=21)).isoformat(),
         ),
-        FlightSegment(
-            from_city="CC",
-            to_city="DD",
-            date_range={
-                "start": (tomorrow + timedelta(days=25)).isoformat(),
-                "end": (tomorrow + timedelta(days=26)).isoformat(),
-            },
+        DateRange(
+            start=(tomorrow + timedelta(days=25)).isoformat(),
+            end=(tomorrow + timedelta(days=26)).isoformat(),
         ),
-        FlightSegment(
-            from_city="DD",
-            to_city="EE",
-            date_range={
-                "start": (tomorrow + timedelta(days=30)).isoformat(),
-                "end": (tomorrow + timedelta(days=31)).isoformat(),
-            },
+        DateRange(
+            start=(tomorrow + timedelta(days=30)).isoformat(),
+            end=(tomorrow + timedelta(days=31)).isoformat(),
         ),
-        FlightSegment(
-            from_city="EE",
-            to_city="FF",
-            date_range={
-                "start": (tomorrow + timedelta(days=35)).isoformat(),
-                "end": (tomorrow + timedelta(days=36)).isoformat(),
-            },
+        DateRange(
+            start=(tomorrow + timedelta(days=35)).isoformat(),
+            end=(tomorrow + timedelta(days=36)).isoformat(),
         ),
     ]
 
@@ -138,7 +98,7 @@ def test_generate_combinations_five_segments_asymmetric(combination_generator):
 def test_generate_combinations_segment_dates_format(
     combination_generator, two_segments
 ):
-    """Test 4: Dates generees format ISO 8601."""
+    """Dates generees format ISO 8601."""
     combinations = combination_generator.generate_combinations(two_segments)
 
     for combo in combinations:
@@ -147,13 +107,13 @@ def test_generate_combinations_segment_dates_format(
 
 
 def test_generate_combinations_dates_within_ranges(combination_generator, two_segments):
-    """Test 5: Dates generees dans plages segments."""
+    """Dates generees dans plages segments."""
     combinations = combination_generator.generate_combinations(two_segments)
 
-    seg1_start = date.fromisoformat(two_segments[0].date_range.start)
-    seg1_end = date.fromisoformat(two_segments[0].date_range.end)
-    seg2_start = date.fromisoformat(two_segments[1].date_range.start)
-    seg2_end = date.fromisoformat(two_segments[1].date_range.end)
+    seg1_start = date.fromisoformat(two_segments[0].start)
+    seg1_end = date.fromisoformat(two_segments[0].end)
+    seg2_start = date.fromisoformat(two_segments[1].start)
+    seg2_end = date.fromisoformat(two_segments[1].end)
 
     for combo in combinations:
         d1 = date.fromisoformat(combo.segment_dates[0])
@@ -163,24 +123,16 @@ def test_generate_combinations_dates_within_ranges(combination_generator, two_se
 
 
 def test_generate_combinations_date_range_single_day(combination_generator):
-    """Test 6: Segment avec 2 jours genere 2 dates."""
+    """Segment avec 2 jours genere 2 dates."""
     tomorrow = date.today() + timedelta(days=1)
     segments = [
-        FlightSegment(
-            from_city="AA",
-            to_city="BB",
-            date_range={
-                "start": tomorrow.isoformat(),
-                "end": (tomorrow + timedelta(days=1)).isoformat(),
-            },
+        DateRange(
+            start=tomorrow.isoformat(),
+            end=(tomorrow + timedelta(days=1)).isoformat(),
         ),
-        FlightSegment(
-            from_city="BB",
-            to_city="CC",
-            date_range={
-                "start": (tomorrow + timedelta(days=10)).isoformat(),
-                "end": (tomorrow + timedelta(days=11)).isoformat(),
-            },
+        DateRange(
+            start=(tomorrow + timedelta(days=10)).isoformat(),
+            end=(tomorrow + timedelta(days=11)).isoformat(),
         ),
     ]
 
@@ -190,31 +142,23 @@ def test_generate_combinations_date_range_single_day(combination_generator):
 
 
 def test_date_combination_model_valid_fields():
-    """Test 7: Modele DateCombination valide."""
+    """Modele DateCombination valide."""
     combo = DateCombination(segment_dates=["2025-06-01", "2025-06-15"])
 
     assert combo.segment_dates == ["2025-06-01", "2025-06-15"]
 
 
 def test_combinations_unique_dates(combination_generator):
-    """Test 8: Toutes combinaisons sont uniques."""
+    """Toutes combinaisons sont uniques."""
     tomorrow = date.today() + timedelta(days=1)
     segments = [
-        FlightSegment(
-            from_city="AA",
-            to_city="BB",
-            date_range={
-                "start": tomorrow.isoformat(),
-                "end": (tomorrow + timedelta(days=2)).isoformat(),
-            },
+        DateRange(
+            start=tomorrow.isoformat(),
+            end=(tomorrow + timedelta(days=2)).isoformat(),
         ),
-        FlightSegment(
-            from_city="BB",
-            to_city="CC",
-            date_range={
-                "start": (tomorrow + timedelta(days=10)).isoformat(),
-                "end": (tomorrow + timedelta(days=12)).isoformat(),
-            },
+        DateRange(
+            start=(tomorrow + timedelta(days=10)).isoformat(),
+            end=(tomorrow + timedelta(days=12)).isoformat(),
         ),
     ]
 
@@ -226,24 +170,16 @@ def test_combinations_unique_dates(combination_generator):
 
 
 def test_combinations_dates_ordered_chronologically(combination_generator):
-    """Test 9: Dates generees ordre chronologique par segment."""
+    """Dates generees ordre chronologique par segment."""
     tomorrow = date.today() + timedelta(days=1)
     segments = [
-        FlightSegment(
-            from_city="AA",
-            to_city="BB",
-            date_range={
-                "start": tomorrow.isoformat(),
-                "end": (tomorrow + timedelta(days=6)).isoformat(),
-            },
+        DateRange(
+            start=tomorrow.isoformat(),
+            end=(tomorrow + timedelta(days=6)).isoformat(),
         ),
-        FlightSegment(
-            from_city="BB",
-            to_city="CC",
-            date_range={
-                "start": (tomorrow + timedelta(days=10)).isoformat(),
-                "end": (tomorrow + timedelta(days=10)).isoformat(),
-            },
+        DateRange(
+            start=(tomorrow + timedelta(days=10)).isoformat(),
+            end=(tomorrow + timedelta(days=10)).isoformat(),
         ),
     ]
 
@@ -255,7 +191,7 @@ def test_combinations_dates_ordered_chronologically(combination_generator):
 
 
 def test_generate_combinations_logging(combination_generator, three_segments, caplog):
-    """Test 10: Logging INFO avec statistiques generation."""
+    """Logging INFO avec statistiques generation."""
     import logging
 
     with caplog.at_level(logging.INFO):

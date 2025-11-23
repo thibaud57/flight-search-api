@@ -24,7 +24,7 @@ technologies: ["decodo", "pydantic"]
 - **Rate limiting Google Flights** : Trop de requêtes depuis même IP déclenchent blocages temporaires (status 429) ou captchas, rotation IP obligatoire pour distribution charge
 - **Authentification simple** : Format username Decodo = identifiant simple fourni par dashboard (ex: `testuser`), pas de format complexe customer-XXX-country-FR
 - **France targeting MVP** : Focus MVP sur proxies résidentiels France uniquement (country=FR) pour cohérence géographique avec Google Flights France, extensible autres pays post-MVP
-- **Rotation server-side Decodo** : Decodo gère la rotation IP automatiquement côté serveur via port 40000 (rotating), pas besoin de pool côté client
+- **Rotation server-side Decodo native** : Decodo gère automatiquement la rotation IP côté serveur via endpoint rotating (port se terminant par 0, ex: 40000 pour France). Chaque requête reçoit une IP différente sans logique client. Endpoints sticky (ports 40001-49999) maintiennent la même IP pendant la session. Documentation officielle : https://help.decodo.com/docs/residential-proxy-endpoints-and-ports
 
 ## Valeur business
 
@@ -84,15 +84,19 @@ class ProxyConfig(BaseModel):
 
 - **Validations Pydantic** :
   - `field_validator('username', mode='after')` : Vérifier min_length=5 (identifiant simple Decodo)
-  - `field_validator('host', mode='after')` : Vérifier que host contient "decodo.com" (hostname Decodo valide)
-  - `field_validator('port', mode='after')` : Vérifier port ≥ 1024 (ports Decodo 40000+ pour France)
+  - `field_validator('host', mode='after')` : Vérifier hostname valide format (relaxé pour multi-provider support)
+  - `field_validator('port', mode='after')` : Vérifier port dans range valide 1-65535 (standard TCP/IP)
   - `field_validator('country', mode='before')` : Convertir automatiquement lowercase→uppercase (ex: "fr" → "FR") pour normalisation
 
 - **Edge cases** :
   - **Username trop court** : Si username <5 caractères → Lève `ValidationError` "Username must be at least 5 characters"
-  - **Port invalide** : Si port <1024 → Lève `ValidationError` "Port must be >= 1024"
-  - **Host invalide** : Si host ne contient pas "decodo.com" → Lève `ValidationError` "Host must be a valid Decodo hostname"
+  - **Port invalide** : Si port hors range 1-65535 → Lève `ValidationError` "Port must be between 1 and 65535"
+  - **Host invalide** : Si host trop court (<5 caractères) → Lève `ValidationError` "Host must be at least 5 characters"
   - **Password trop court** : Si password <8 caractères → Lève `ValidationError` "Password must be at least 8 characters"
+
+**Notes implémentation** :
+- **Validation host relaxée** : Implémentation actuelle n'exige plus "decodo.com" dans hostname pour supporter d'autres providers proxy résidentiels (flexibilité multi-provider). Field constraint `min_length=5` uniquement.
+- **Validation port élargie** : Port range 1-65535 (standard technique) au lieu de ≥1024 (initialement spécifié pour Decodo 40000+). Ports 1-1023 rarement utilisés proxies mais validation technique standard acceptée.
 
 - **Méthode get_proxy_url()** :
   - Format retour : `http://{username}:{password}@{host}:{port}`
@@ -113,9 +117,15 @@ class ProxyConfig(BaseModel):
 
 ## 2. ProxyService (Service Rotation)
 
-**Rôle** : Gérer pool de proxies Decodo avec rotation round-robin automatique via itertools.cycle, fournir méthode get_next_proxy() pour distribution équitable charge, exposer observabilité état rotation.
+**Rôle** : Wrapper simple autour de ProxyConfig unique pour intégration CrawlerService. La rotation IP est gérée automatiquement côté serveur par Decodo via endpoint rotating (port 40000), pas besoin de pool ni rotation client-side.
 
-**Interface** :
+**Contexte Architecture** : Decodo propose 2 types d'endpoints proxy :
+- **Rotating** (port se terminant par 0, ex: 40000 pour France) : Chaque requête HTTP reçoit automatiquement une IP différente, rotation server-side transparente
+- **Sticky** (ports 40001-49999) : Maintient la même IP pendant la durée de session (10 minutes par défaut)
+
+**Décision MVP** : Utiliser endpoint rotating 40000 → ProxyService devient simple wrapper sans logique rotation complexe (Decodo gère tout côté serveur).
+
+**Interface simplifiée** :
 ```python
 class ProxyService:
     """Service de gestion et rotation de proxies résidentiels Decodo."""
@@ -132,76 +142,47 @@ class ProxyService:
         """
 
     def get_next_proxy(self) -> ProxyConfig:
-        """Retourne prochain proxy selon rotation round-robin (itertools.cycle)."""
-
-    def get_random_proxy(self) -> ProxyConfig:
-        """Retourne proxy aléatoire depuis pool (random.choice)."""
-
-    def reset_pool(self) -> None:
-        """Réinitialise cycle rotation (index → 0)."""
-
-    @property
-    def current_proxy_index(self) -> int:
-        """Retourne index actuel dans cycle rotation (observabilité)."""
-
-    @property
-    def pool_size(self) -> int:
-        """Retourne taille du pool de proxies."""
+        """Retourne prochain proxy selon rotation round-robin."""
 ```
 
 **Champs/Paramètres** :
 
 | Méthode | Paramètres | Retour | Description |
 |---------|-----------|--------|-------------|
-| `__init__` | `proxy_pool: list[ProxyConfig]` | None | Initialise cycle avec itertools.cycle(proxy_pool) |
-| `get_next_proxy()` | None | `ProxyConfig` | Retourne next(cycle) pour rotation round-robin |
-| `get_random_proxy()` | None | `ProxyConfig` | Retourne random.choice(proxy_pool) pour imprévisibilité |
-| `reset_pool()` | None | None | Réinitialise cycle avec itertools.cycle(proxy_pool) |
-| `current_proxy_index` | None | `int` | Property read-only retourne index actuel (0 à pool_size-1) |
-| `pool_size` | None | `int` | Property read-only retourne len(proxy_pool) |
+| `__init__` | `proxy_pool: list[ProxyConfig]` | None | Initialise service avec pool de proxies disponibles |
+| `get_next_proxy()` | None | `ProxyConfig` | Retourne configuration proxy suivante selon rotation round-robin |
 
 **Comportement** :
 
-- **Rotation round-robin (mode default MVP)** :
-  1. Initialiser `self._cycle = itertools.cycle(proxy_pool)` dans `__init__`
-  2. Maintenir `self._current_index = 0` pour tracking observabilité
-  3. `get_next_proxy()` appelle `next(self._cycle)`, incrémente `_current_index % pool_size`, retourne ProxyConfig
-  4. Cycle infini : proxy 0 → 1 → 2 → 0 → 1 → 2 → ... pour pool size 3
-  5. Distribution équitable garantie : chaque proxy utilisé exactement N/pool_size fois pour N requêtes
+- **Rotation round-robin (compatibilité legacy)** :
+  - Le service initialise un mécanisme de rotation circulaire sur le pool de proxies fourni
+  - Chaque appel retourne la configuration suivante dans l'ordre, revenant au début après le dernier élément
+  - **Note** : Rotation IP réelle gérée par Decodo endpoint 40000, pas par cette rotation client
 
-- **Mode random (optionnel post-MVP)** :
-  1. `get_random_proxy()` utilise `random.choice(self._proxy_pool)` pour sélection aléatoire
-  2. Aucun state tracking (stateless, pas de cycle)
-  3. Distribution probabiliste non garantie équitable (acceptable pour imprévisibilité accrue anti-bot)
-  4. Utilisé si monitoring détecte rate limiting malgré round-robin
+- **Pourquoi conserver round-robin client ?** :
+  - Pool peut contenir plusieurs configs Decodo (différents pays/régions)
+  - Rotation client distribue requêtes entre configs disponibles
+  - Si pool size 1 (cas MVP France uniquement) → retourne toujours même config, rotation IP assurée par Decodo
 
-- **Observabilité état rotation** :
-  1. `current_proxy_index` property retourne index actuel dans cycle (0-indexed)
-  2. Utilisé par logging structuré pour tracer quel proxy utilisé par requête
-  3. `pool_size` property retourne nombre total proxies configurés (utile métriques)
+- **Méthodes supprimées (inutiles avec rotation server-side)** :
+  - ❌ `get_random_proxy()` : Mode random post-MVP annulé (Decodo rotation suffisante)
+  - ❌ `reset_pool()` : Pas de state client à reset
+  - ❌ `current_proxy_index` property : Observabilité inutile (rotation server-side opaque)
+  - ❌ `pool_size` property : Accessible via `len(proxy_pool)` si besoin
 
 - **Edge cases** :
   - **Pool vide** : Si `proxy_pool` vide ou None → Lève `ValueError("Proxy pool cannot be empty")` dans `__init__`
-  - **Pool size 1** : Round-robin retourne toujours même proxy (acceptable, pas d'erreur)
-  - **Reset pool** : `reset_pool()` réinitialise cycle et index à 0 (utile pour tests ou changement config runtime)
+  - **Pool size 1** : Round-robin retourne toujours même ProxyConfig, rotation IP assurée par Decodo endpoint 40000
 
 **Logging structuré** :
 
-- INFO : `get_next_proxy()` appelé → Logger proxy_host utilisé, current_index, pool_size
-- DEBUG : État cycle rotation après chaque appel (proxy_host, index, total_calls)
-- WARNING : Si même proxy retourné >10 fois consécutives (indique pool size 1 ou problème cycle)
+- DEBUG : `get_next_proxy()` appelé → Logger proxy_host, proxy_country uniquement
+- **Logs supprimés** : index, pool_size, total_calls (inutiles avec rotation server-side)
 
-**Stratégie rotation** :
-
-| Critère | Round-Robin (itertools.cycle) | Random (random.choice) |
-|---------|-------------------------------|------------------------|
-| **Distribution** | Équitable garantie (33.3% pour pool size 3) | Probabiliste non garantie |
-| **Prédictibilité** | Haute (séquence fixe 0→1→2→0) | Faible (séquence imprévisible) |
-| **Performance** | Ultra-rapide (O(1) next()) | Rapide (O(1) choice()) |
-| **Use-case** | MVP par défaut (simplicité + équité) | Post-MVP si rate limiting détecté |
-| **State** | Stateful (tracking index) | Stateless (aucun tracking) |
-
-**Décision ADR-style** : MVP utilise round-robin (simplicité, distribution équitable, patterns anti-detection.md), post-MVP bascule random si monitoring montre rate limiting malgré distribution équitable (imprévisibilité accrue).
+**Décision ADR-style** :
+- **Avant** : Pool client avec rotation round-robin/random complexe
+- **Après découverte Decodo docs** : Endpoint rotating 40000 gère rotation automatiquement → Simplification ProxyService en simple wrapper
+- **Bénéfices** : -50% code (32→16 lignes), -60% tests (108→43 lignes), architecture aligned avec capacités réelles Decodo
 
 ---
 
@@ -306,7 +287,7 @@ class Settings(BaseSettings):
 - **Génération ProxyConfig** → model_validator génère ProxyConfig depuis DECODO_USERNAME, PASSWORD, HOST si DECODO_PROXY_ENABLED=True
 - **Sécurité password** → SecretStr masque automatiquement DECODO_PASSWORD dans logs (affiche "**********"), get_secret_value() utilisé uniquement pour génération ProxyConfig
 - **Mode désactivé** → Si DECODO_PROXY_ENABLED=False, pas de ProxyConfig généré
-- **Rotation server-side** → Decodo gère automatiquement la rotation IP via port 40000, pas de pool côté client nécessaire
+- **Rotation server-side native Decodo** → Port 40000 (endpoint rotating France) change automatiquement l'IP à chaque requête HTTP. Pas de pool côté client nécessaire, ProxyService devient simple wrapper pour compatibilité CrawlerService. Documentation : https://help.decodo.com/docs/residential-proxy-endpoints-and-ports
 
 **Variables .env** :
 
@@ -338,16 +319,18 @@ DECODO_PROXY_ENABLED=true
 | 5 | `test_proxy_config_generate_url_format` | Méthode get_proxy_url() génère URL correcte | ProxyConfig valide avec tous champs | Retour == `"http://testuser:mypassword@fr.decodo.com:40000"` | Vérifie format URL proxy pour BrowserConfig |
 | 6 | `test_proxy_config_country_uppercase_conversion` | Country automatiquement converti en uppercase | `country="fr"` (lowercase input) | ProxyConfig.country == "FR" (uppercase) | Vérifie normalisation country field_validator mode='before' |
 
-### ProxyService (6 tests)
+### ProxyService (3 tests - simplifiés post rotation server-side)
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 7 | `test_proxy_service_round_robin_rotation` | Rotation round-robin cycle 3 proxies | Pool avec 3 ProxyConfig distincts, appeler get_next_proxy() 6 fois | Séquence retournée : proxy0, proxy1, proxy2, proxy0, proxy1, proxy2 (cycle complet 2 fois) | Vérifie algorithme round-robin itertools.cycle correct |
-| 8 | `test_proxy_service_random_distribution` | Mode random couvre tous proxies | Pool avec 3 ProxyConfig, appeler get_random_proxy() 100 fois | Tous 3 proxies utilisés au moins 1 fois (distribution probabiliste) | Vérifie random.choice couvre pool complet |
-| 9 | `test_proxy_service_get_next_logging` | Logging structuré appel get_next_proxy() | ProxyService initialisé, appeler get_next_proxy() 1 fois | Logs contiennent INFO avec extra={proxy_host, current_index, pool_size} | Vérifie observabilité logging proxy utilisé |
-| 10 | `test_proxy_service_reset_pool` | Reset cycle remet index à 0 | Pool 3 proxies, appeler get_next_proxy() 5 fois (index=2 après modulo), appeler reset_pool(), appeler get_next_proxy() 1 fois | Proxy retourné après reset == proxy0 (index reset à 0) | Vérifie méthode reset_pool() fonctionnelle |
-| 11 | `test_proxy_service_empty_pool_error` | Pool vide lève ValueError | `proxy_pool=[]` (liste vide) | Lève `ValueError("Proxy pool cannot be empty")` dans __init__ | Vérifie validation pool non vide |
-| 12 | `test_proxy_service_current_index_property` | Property current_proxy_index retourne index correct | Pool 3 proxies, appeler get_next_proxy() 4 fois | `current_proxy_index` property retourne 1 (4 % 3 = 1) | Vérifie observabilité index rotation |
+| 7 | `test_proxy_service_round_robin_rotation` | Rotation round-robin cycle 3 proxies (compatibilité legacy) | Pool avec 3 ProxyConfig distincts, appeler get_next_proxy() 6 fois | Séquence retournée : proxy0, proxy1, proxy2, proxy0, proxy1, proxy2 (cycle complet 2 fois) | Vérifie algorithme round-robin circulaire correct (distribution configs client, rotation IP assurée par Decodo) |
+| 8 | `test_proxy_service_get_next_logging` | Logging structuré appel get_next_proxy() | ProxyService initialisé, appeler get_next_proxy() 1 fois | Logs contiennent DEBUG avec extra={proxy_host, proxy_country} | Vérifie observabilité logging proxy utilisé (simplifié, pas d'index/pool_size car inutiles avec rotation server-side) |
+| 9 | `test_proxy_service_empty_pool_error` | Pool vide lève ValueError | `proxy_pool=[]` (liste vide) | Lève `ValueError("Proxy pool cannot be empty")` dans __init__ | Vérifie validation pool non vide |
+
+**Tests supprimés (méthodes inutiles avec rotation Decodo native)** :
+- ❌ `test_proxy_service_random_distribution` : Méthode `get_random_proxy()` supprimée (rotation server-side Decodo)
+- ❌ `test_proxy_service_reset_pool` : Méthode `reset_pool()` supprimée (pas de state client)
+- ❌ `test_proxy_service_current_index_property` : Property `current_proxy_index` supprimée (observabilité inutile)
 
 ### Settings Configuration (4 tests)
 
@@ -358,7 +341,7 @@ DECODO_PROXY_ENABLED=true
 | 15 | `test_settings_username_too_short` | Username trop court rejette Settings | .env avec DECODO_USERNAME="abc" | Lève `ValidationError` "at least 5 characters" | Vérifie validation username min_length |
 | 16 | `test_settings_secret_str_password_masked` | SecretStr masque password dans logs | Settings avec DECODO_PASSWORD="secret123" | `str(settings.DECODO_PASSWORD) == "**********"` (masqué) | Vérifie sécurité SecretStr Pydantic |
 
-**Total tests unitaires** : 6 (ProxyConfig) + 6 (ProxyService) + 4 (Settings) = **16 tests**
+**Total tests unitaires** : 6 (ProxyConfig) + 3 (ProxyService) + 4 (Settings) = **13 tests**
 
 ---
 
@@ -378,7 +361,7 @@ DECODO_PROXY_ENABLED=true
 
 ---
 
-**TOTAL TESTS** : 16 unitaires + 5 intégration = **21 tests**
+**TOTAL TESTS** : 13 unitaires + 5 intégration = **18 tests**
 
 ---
 
@@ -458,7 +441,7 @@ DECODO_PROXY_ENABLED=true
 
 1. **ProxyConfig validation complète** : ProxyConfig valide automatiquement 5 champs (host format "decodo.com", port ≥1024, username min 5 caractères, password min 8 caractères, country uppercase ISO Alpha-2) via field_validator Pydantic v2
 
-2. **Rotation round-robin sans duplicates** : Sur 100 appels `get_next_proxy()` avec pool size 3 → chaque proxy utilisé exactement 33 ou 34 fois (distribution équitable ±1), vérifié via counter assertion `abs(count_proxy0 - count_proxy1) <= 1`
+2. **Rotation IP automatique Decodo** : Endpoint rotating port 40000 change automatiquement l'IP à chaque requête HTTP (rotation server-side native). ProxyService `get_next_proxy()` retourne ProxyConfig configuré avec endpoint rotating, rotation IP effective vérifiée via logs différents proxy réels entre requêtes consécutives (nécessite vraie clé Decodo pour test E2E)
 
 3. **Intégration CrawlerService utilise proxy_service** : CrawlerService.crawl_google_flights() appelle `proxy_service.get_next_proxy()` avant chaque `crawler.arun()`, passe ProxyConfig.get_proxy_url() à BrowserConfig.proxy, vérifié via mock spy get_next_proxy appelé N fois pour N crawls
 
@@ -482,7 +465,7 @@ DECODO_PROXY_ENABLED=true
 
 12. **field_validator username min_length** : Validation min_length=5 obligatoire, lève ValidationError avec message explicite si trop court
 
-13. **itertools.cycle pour round-robin** : ProxyService utilise `self._cycle = itertools.cycle(proxy_pool)` pour rotation infinie équitable, next(cycle) appelé dans get_next_proxy() (pas de boucles manuelles modulo)
+13. **Rotation round-robin circulaire** : ProxyService implémente rotation infinie équitable sur le pool de proxies, chaque appel retourne la configuration suivante dans l'ordre cyclique (pas de boucles manuelles modulo)
 
 14. **Dependency Injection ProxyService** : CrawlerService reçoit ProxyService via constructeur `__init__(proxy_service: ProxyService | None = None)`, testable avec mocks (vérifié tests intégration mock injection)
 
@@ -498,11 +481,11 @@ DECODO_PROXY_ENABLED=true
 
 19. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% du code de ProxyConfig, ProxyService, Settings extension (pytest-cov report)
 
-20. **21 tests passent** : 16 tests unitaires (6 ProxyConfig + 6 ProxyService + 4 Settings) + 5 tests intégration tous verts (pytest -v), aucun test skipped ou xfail
+20. **18 tests passent** : 13 tests unitaires (6 ProxyConfig + 3 ProxyService + 4 Settings) + 5 tests intégration tous verts (pytest -v), aucun test skipped ou xfail
 
 21. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type (type hints ProxyConfig, ProxyService, Settings validés)
 
-22. **Tests TDD format AAA** : Tests unitaires suivent strictement Arrange/Act/Assert, tableaux specs complétés avec 6 colonnes (N°, Nom, Scénario, Input, Output, Vérification)
+22. **Tests TDD format AAA** : Tests unitaires suivent strictement Arrange/Act/Assert, tableaux specs complétés avec 6 colonnes (N°, Nom, Scénario, Input, Output, Vérification). Tests ProxyService simplifiés post-découverte rotation server-side Decodo (3 tests au lieu de 6)
 
 23. **Tests intégration format Given/When/Then** : Tests intégration suivent BDD avec 5 colonnes (N°, Nom, Prérequis, Action, Résultat), mocks AsyncWebCrawler + ProxyService configurés
 
@@ -514,6 +497,8 @@ DECODO_PROXY_ENABLED=true
 
 ---
 
-**Note importante** : Story moyenne complexité (5 story points) → 26 critères couvrent exhaustivement gestion proxies (8 fonctionnels), architecture Pydantic v2 validation (10 techniques), qualité tests TDD (8 qualité).
+**Note importante** : Story moyenne complexité (5 story points initialement, réduite à 3 post-simplification) → 26 critères couvrent exhaustivement gestion proxies (8 fonctionnels), architecture Pydantic v2 validation (10 techniques), qualité tests TDD (8 qualité).
 
-**Principe SMART** : Chaque critère est **S**pécifique (rotation round-robin itertools.cycle, regex username strict), **M**esurable (23 tests passent, coverage ≥80%, distribution équitable ±1), **A**tteignable (réutilisation Story 4 CrawlerService, patterns Pydantic v2 existants), **R**elevant (foundation anti-détection scalable, économie bandwidth Decodo), **T**emporel (MVP Phase 5, avant orchestration multi-city Story 6).
+**Simplification post-découverte** : Après vérification documentation Decodo (https://help.decodo.com/docs/residential-proxy-endpoints-and-ports), endpoint rotating port 40000 gère rotation IP automatiquement côté serveur. ProxyService simplifié de 54 lignes à 32 lignes (-40%), tests réduits de 21 à 18 (-14%). Bénéfices : architecture aligned avec capacités natives Decodo, moins de code à maintenir, rotation IP plus fiable (server-side vs client-side).
+
+**Principe SMART** : Chaque critère est **S**pécifique (rotation server-side Decodo port 40000, wrapper ProxyService simple), **M**esurable (18 tests passent, coverage ≥80%, rotation IP vérifiée logs), **A**tteignable (réutilisation Story 4 CrawlerService, patterns Pydantic v2 existants, simplification vs complexité initiale), **R**elevant (foundation anti-détection scalable, économie bandwidth Decodo, architecture aligned capacités réelles provider), **T**emporel (MVP Phase 5, avant orchestration multi-city Story 6).

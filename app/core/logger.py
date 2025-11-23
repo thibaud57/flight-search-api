@@ -5,7 +5,7 @@ import sys
 from functools import lru_cache
 from typing import ClassVar
 
-from pythonjsonlogger import jsonlogger  # type: ignore
+from pythonjsonlogger import jsonlogger  # type: ignore  # Pas de stubs mypy disponibles
 
 
 class SensitiveDataFilter(logging.Filter):

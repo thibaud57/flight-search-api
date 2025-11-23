@@ -6,28 +6,21 @@ from fastapi.testclient import TestClient
 
 
 def test_end_to_end_search_request_valid(client_with_mock_search: TestClient) -> None:
-    """Test integration 1: Request valide retourne 200 avec SearchResponse."""
+    """Request valide retourne 200 avec SearchResponse."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
-        "segments": [
+        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "segments_date_ranges": [
             {
-                "from_city": "Paris",
-                "to_city": "Tokyo",
-                "date_range": {
-                    "start": tomorrow.isoformat(),
-                    "end": (tomorrow + timedelta(days=6)).isoformat(),
-                },
+                "start": tomorrow.isoformat(),
+                "end": (tomorrow + timedelta(days=6)).isoformat(),
             },
             {
-                "from_city": "Tokyo",
-                "to_city": "New York",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=14)).isoformat(),
-                    "end": (tomorrow + timedelta(days=19)).isoformat(),
-                },
+                "start": (tomorrow + timedelta(days=14)).isoformat(),
+                "end": (tomorrow + timedelta(days=19)).isoformat(),
             },
-        ]
+        ],
     }
 
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
@@ -41,7 +34,10 @@ def test_end_to_end_search_request_valid(client_with_mock_search: TestClient) ->
     assert len(data["results"]) == 10
 
     for i in range(len(data["results"]) - 1):
-        assert data["results"][i]["price"] <= data["results"][i + 1]["price"]
+        assert (
+            data["results"][i]["flights"][0]["price"]
+            <= data["results"][i + 1]["flights"][0]["price"]
+        )
 
     assert data["search_stats"]["total_results"] == 10
     assert data["search_stats"]["segments_count"] == 2
@@ -51,8 +47,11 @@ def test_end_to_end_search_request_valid(client_with_mock_search: TestClient) ->
 def test_end_to_end_validation_error_empty_segments(
     client_with_mock_search: TestClient,
 ) -> None:
-    """Test integration 2: Segments vide retourne 422."""
-    request_data = {"segments": []}
+    """Segments vide retourne 422."""
+    request_data = {
+        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "segments_date_ranges": [],
+    }
 
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
@@ -65,28 +64,21 @@ def test_end_to_end_validation_error_empty_segments(
 def test_end_to_end_validation_error_invalid_dates(
     client_with_mock_search: TestClient,
 ) -> None:
-    """Test integration 3: Dates invalides retourne 422."""
+    """Dates invalides retourne 422."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
-        "segments": [
+        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "segments_date_ranges": [
             {
-                "from_city": "Paris",
-                "to_city": "Tokyo",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=10)).isoformat(),
-                    "end": tomorrow.isoformat(),
-                },
+                "start": (tomorrow + timedelta(days=10)).isoformat(),
+                "end": tomorrow.isoformat(),
             },
             {
-                "from_city": "Tokyo",
-                "to_city": "New York",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=14)).isoformat(),
-                    "end": (tomorrow + timedelta(days=19)).isoformat(),
-                },
+                "start": (tomorrow + timedelta(days=14)).isoformat(),
+                "end": (tomorrow + timedelta(days=19)).isoformat(),
             },
-        ]
+        ],
     }
 
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
@@ -100,28 +92,21 @@ def test_end_to_end_validation_error_invalid_dates(
 def test_end_to_end_search_request_exact_dates(
     client_with_mock_search: TestClient,
 ) -> None:
-    """Test integration 4: Request avec dates exactes (start=end) retourne 200."""
+    """Request avec dates exactes (start=end) retourne 200."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
-        "segments": [
+        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "segments_date_ranges": [
             {
-                "from_city": "Paris",
-                "to_city": "Rio",
-                "date_range": {
-                    "start": tomorrow.isoformat(),
-                    "end": tomorrow.isoformat(),
-                },
+                "start": tomorrow.isoformat(),
+                "end": tomorrow.isoformat(),
             },
             {
-                "from_city": "Rio",
-                "to_city": "Paris",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=6)).isoformat(),
-                    "end": (tomorrow + timedelta(days=6)).isoformat(),
-                },
+                "start": (tomorrow + timedelta(days=6)).isoformat(),
+                "end": (tomorrow + timedelta(days=6)).isoformat(),
             },
-        ]
+        ],
     }
 
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
@@ -137,21 +122,18 @@ def test_end_to_end_search_request_exact_dates(
 def test_end_to_end_validation_error_too_many_segments(
     client_with_mock_search: TestClient,
 ) -> None:
-    """Test integration 5: Plus de 5 segments retourne 422."""
+    """Plus de 5 segments retourne 422."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
-        "segments": [
+        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "segments_date_ranges": [
             {
-                "from_city": f"City{i}",
-                "to_city": f"City{i + 1}",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=i * 10)).isoformat(),
-                    "end": (tomorrow + timedelta(days=i * 10 + 2)).isoformat(),
-                },
+                "start": (tomorrow + timedelta(days=i * 10)).isoformat(),
+                "end": (tomorrow + timedelta(days=i * 10 + 2)).isoformat(),
             }
             for i in range(6)
-        ]
+        ],
     }
 
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
@@ -165,7 +147,7 @@ def test_end_to_end_validation_error_too_many_segments(
 def test_end_to_end_openapi_schema_includes_endpoint(
     client_with_mock_search: TestClient,
 ) -> None:
-    """Test integration 6: OpenAPI schema contient endpoint search-flights."""
+    """OpenAPI schema contient endpoint search-flights."""
     response = client_with_mock_search.get("/openapi.json")
 
     assert response.status_code == 200

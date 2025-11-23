@@ -1,11 +1,10 @@
 """Utilitaires du projet."""
 
 from app.utils.browser_fingerprint import (
-    BrowserFingerprintError,
     build_browser_config_from_fingerprint,
-    capture_browser_headers,
-    capture_google_cookies,
-    generate_fresh_browser_config,
+    get_base_browser_config,
+    get_static_headers,
+    get_stealth_browser_args,
 )
 from app.utils.google_flights_url import (
     GoogleFlightsUrlError,
@@ -14,10 +13,9 @@ from app.utils.google_flights_url import (
 
 __all__ = [
     "GoogleFlightsUrlError",
-    "generate_google_flights_url",
-    "BrowserFingerprintError",
-    "capture_browser_headers",
-    "capture_google_cookies",
     "build_browser_config_from_fingerprint",
-    "generate_fresh_browser_config",
+    "generate_google_flights_url",
+    "get_base_browser_config",
+    "get_static_headers",
+    "get_stealth_browser_args",
 ]

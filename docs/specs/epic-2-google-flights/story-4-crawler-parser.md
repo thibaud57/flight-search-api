@@ -49,23 +49,50 @@ technologies: ["crawl4ai", "playwright", "pydantic"]
 
 ## 1. CrawlerService
 
-**Rôle** : Orchestrer le crawling Google Flights avec Crawl4AI en mode POC (dev local), gérer stealth mode et détection captchas (proxies ajoutés Story 5, retry logic ajouté Story 7).
+**Rôle** : Orchestrer le crawling Google Flights avec Crawl4AI, gérer session capture, browser fingerprinting, stealth mode, proxy rotation (Story 5) et détection captchas.
 
 **Interface** :
 ```python
+@dataclass
+class CrawlResult:
+    """Resultat d'un crawl."""
+
+    success: bool
+    html: str
+    status_code: int | None = None
+
+
 class CrawlerService:
-    """Service de crawling Google Flights avec stealth mode (POC dev local)."""
+    """Service de crawling Google Flights avec stealth mode et proxy rotation."""
+
+    def __init__(self, proxy_service: ProxyService | None = None):
+        """Initialise service avec ProxyService optionnel (Story 5)."""
+
+    async def get_google_session(
+        self,
+        url: str = "https://www.google.com/travel/flights",
+        *,
+        use_proxy: bool = True,
+    ) -> None:
+        """
+        Capture session Google (headers + cookies) via Crawl4AI avec persistence.
+
+        Capte cookies Google légitimes et accepte automatiquement popup RGPD.
+        Les cookies sont réutilisés dans crawl_google_flights().
+        """
 
     async def crawl_google_flights(
         self,
-        url: str
+        url: str,
+        *,
+        use_proxy: bool = True
     ) -> CrawlResult:
         """
-        Crawl une URL Google Flights en mode POC (dev local) avec captcha detection.
+        Crawl une URL Google Flights avec proxy rotation et browser fingerprinting.
 
         Raises:
             CaptchaDetectedError: Si captcha détecté
-            NetworkError: Si erreur réseau
+            NetworkError: Si erreur réseau ou timeout
         """
 ```
 
@@ -74,42 +101,120 @@ class CrawlerService:
 | Champ | Type | Description | Contraintes |
 |-------|------|-------------|-------------|
 | `url` | `str` | URL Google Flights complète avec paramètres query | Format `https://www.google.com/travel/flights?...` |
+| `use_proxy` | `bool` | Activer proxy rotation (Story 5) | Default `True`, requiert ProxyService injecté |
 
 **Comportement** :
 
-- **Crawl nominal** :
-  1. Initialise AsyncWebCrawler avec BrowserConfig (stealth mode activé, pas de proxy en POC)
-  2. Exécute `crawler.arun(url)` avec timeout 10s
-  3. Vérifie status code 200 et absence de captcha dans HTML
-  4. Retourne CrawlResult avec `html`, `cleaned_html`, `success=True`
+### Méthode get_google_session()
+
+**Nouvelle méthode (non spécifiée POC initial)** : Capture session Google avant crawls pour améliorer taux succès.
+
+- **Session capture nominale** :
+  1. Obtient proxy depuis ProxyService si `use_proxy=True`
+  2. Construit BrowserConfig avec base configuration (headers Chrome, stealth args)
+  3. Initialise AsyncWebCrawler avec hooks Playwright
+  4. Configure hooks :
+     - `after_goto` : Auto-click popup RGPD "Tout accepter" (wait_for_selector 1s)
+     - `before_return_html` : Capture cookies via `context.cookies()`
+  5. Execute `crawler.arun()` sur URL Google Flights (timeout 50s)
+  6. Stocke cookies capturés pour réutilisation future
+  7. Logger cookies_captured count
+
+- **Edge cases** :
+  - **Popup RGPD absent** : Timeout wait_for_selector 1s → Log WARNING, continue sans click
+  - **Timeout session capture** : 50s global timeout → Lève `NetworkError`
+  - **Status 403/429** : Lève `NetworkError` avec status_code
+
+### Méthode crawl_google_flights()
+
+- **Crawl nominal avec fingerprinting** :
+  1. Obtient proxy depuis ProxyService si `use_proxy=True` (rotation automatique)
+  2. Construit BrowserConfig avec fingerprint complet :
+     - Headers statiques Chrome 142 (27 headers incluant Client Hints sec-ch-ua)
+     - Cookies capturés depuis get_google_session()
+     - Proxy config si activé
+     - Viewport 1920×1080
+  3. Initialise AsyncWebCrawler avec BrowserConfig
+  4. Configure CrawlerRunConfig :
+     - `wait_for="css:.pIav2d"` (attendre cartes vols)
+     - `page_timeout` : Configurable via Settings (30s)
+     - `delay_before_return_html` : Configurable via Settings (2s)
+  5. Exécute `crawler.arun(url)` avec timeout global 50s
+  6. Vérifie status code 200 et absence de captcha dans HTML
+  7. Retourne CrawlResult avec `success=True`, `html`, `status_code`
 
 - **Edge cases** :
   - **Captcha détecté** : Si HTML contient patterns reCAPTCHA/hCaptcha → Lève `CaptchaDetectedError` avec URL et type captcha
   - **Status code 403/429** : Rate limiting Google → Lève `NetworkError` avec status code
-  - **Timeout réseau** : Si `arun()` timeout après 10s → Lève `NetworkError`
+  - **Timeout réseau** : Si `arun()` timeout après 50s → Lève `NetworkError` avec status_code=None
+  - **Proxy désactivé** : Si `use_proxy=False` ou ProxyService=None → BrowserConfig sans proxy (mode direct)
 
 - **Erreurs levées** :
-  - `CaptchaDetectedError` : Hérité de `Exception`, contient `url`, `captcha_type` (recaptcha_v2/v3/hcaptcha)
+  - `CaptchaDetectedError` : Hérité de `Exception`, contient `url`, `captcha_type` (recaptcha/hcaptcha)
   - `NetworkError` : Hérité de `Exception`, contient `url`, `status_code`
 
 - **Logging structuré** :
-  - INFO : Début crawl avec URL (mode POC dev local)
-  - WARNING : Captcha détecté
-  - ERROR : Erreur réseau ou crawl échoué
-  - DEBUG : HTML size, temps réponse, status code
+  - INFO : Début crawl avec URL, proxy_host, proxy_country
+  - INFO : Crawl successful avec status_code, html_size, response_time_ms, proxy_host
+  - WARNING : Captcha detected avec captcha_type
+  - ERROR : Crawl failed avec status_code, proxy_host
+
+### Browser Fingerprinting (utils/browser_fingerprint.py)
+
+**Nouveau module (non spécifié POC initial)** : Anti-détection avancé.
+
+- **Headers statiques Chrome 142** :
+  - 27 headers HTTP éprouvés incluant :
+    - Client Hints complets : `sec-ch-ua`, `sec-ch-ua-mobile`, `sec-ch-ua-platform`
+    - Accept headers : `text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8`
+    - User-Agent : Chrome 142.0.6367.62 Windows NT 10.0
+    - Referer, Origin, Accept-Language, Accept-Encoding
+
+- **Stealth args Chromium** :
+  - `--disable-blink-features=AutomationControlled` (masque automation)
+  - `--disable-webrtc` (évite IP leak)
+  - `--disable-dev-shm-usage` (stabilité Docker)
+  - `--no-sandbox` (si nécessaire environnement)
+
+- **Viewport** : 1920×1080 (résolution courante desktop)
+
+### Hooks Playwright
+
+**Nouveaux hooks (non spécifiés POC initial)** :
+
+| Hook | Trigger | Rôle | Implémentation |
+|------|---------|------|----------------|
+| `_after_goto_hook` | Après navigation page | Auto-click popup RGPD | Attente sélecteur 1s → Click button acceptation |
+| `_extract_cookies_hook` | Avant return HTML | Capture cookies session | Extraction via contexte navigateur → Stockage interne |
+
+**Justification hooks** :
+- Popup RGPD bloque scraping si non accepté → Auto-click améliore taux succès
+- Cookies Google légitimes réduisent détection bot → Session persistence
+
+### Timeouts Configurables
+
+**Nouveaux settings (non spécifiés POC initial)** :
+
+| Setting | Default | Description | Changement vs POC |
+|---------|---------|-------------|-------------------|
+| `crawl_global_timeout_s` | 50s | Timeout total asyncio.wait_for | POC = 10s fixe |
+| `crawl_page_timeout_ms` | 30000ms | Timeout page load Playwright | POC = non configuré |
+| `crawl_delay_s` | 2s | Délai avant return HTML | POC = non configuré |
+
+**Justification** : Timeouts POC 10s trop court pour pages lourdes Google Flights (HTML ~200-500KB + JS loading)
 
 ---
 
 ## 2. FlightParser
 
-**Rôle** : Extraire les données structurées de vols depuis le HTML Google Flights via JsonCssExtractionStrategy (sans LLM), valider avec Pydantic, et retourner une liste de modèles Flight.
+**Rôle** : Extraire les données structurées de vols depuis le HTML Google Flights via JsonCssExtractionStrategy + parsing aria-label avec regex (sans LLM), valider avec Pydantic, et retourner une liste de modèles GoogleFlightDTO.
 
 **Interface** :
 ```python
 class FlightParser:
-    """Parser de vols Google Flights via JsonCssExtractionStrategy."""
+    """Parser de vols Google Flights avec JsonCssExtractionStrategy + aria-label."""
 
-    def parse(self, html: str) -> list[Flight]:
+    def parse(self, html: str) -> list[GoogleFlightDTO]:
         """
         Extrait les vols depuis HTML Google Flights.
 
@@ -119,78 +224,112 @@ class FlightParser:
         """
 ```
 
-**Configuration Extraction CSS** :
+**Stratégie d'extraction (aria-label + regex)** :
 
-La stratégie JsonCssExtractionStrategy doit extraire les champs suivants depuis le HTML Google Flights :
+**Approche actuelle** : Au lieu d'extraire 8 champs CSS séparés, l'extraction se fait en 2 étapes :
 
-| Champ | Description | Type extraction | Contrainte |
-|-------|-------------|-----------------|------------|
-| `price` | Prix du vol en euros | Texte | Élément avec classe prix, extraire valeur numérique |
-| `airline` | Nom de la compagnie aérienne | Texte | Élément compagnie, texte brut |
-| `departure_time` | Heure de départ | Attribut datetime | Balise `<time>` départ, attribut `datetime` ISO 8601 |
-| `arrival_time` | Heure d'arrivée | Attribut datetime | Balise `<time>` arrivée, attribut `datetime` ISO 8601 |
-| `duration` | Durée du vol | Texte | Élément durée, format "Xh Ymin" |
-| `stops` | Nombre d'escales | Texte | Élément escales, parser "Non-stop" ou "X stop(s)" |
-| `departure_airport` | Code aéroport départ | Texte | Premier élément aéroport dans route |
-| `arrival_airport` | Code aéroport arrivée | Texte | Dernier élément aéroport dans route |
+1. **Étape 1 - JsonCssExtractionStrategy** : Extraction d'un seul champ `aria-label` par carte de vol
+   - Sélecteur base : `li.pIav2d` (conteneur de chaque vol)
+   - Champ extrait : attribut `aria-label` du `div[aria-label]` enfant
 
-**Sélecteur de base** : Cibler les cartes de vols individuelles (conteneur principal répété pour chaque vol)
+2. **Étape 2 - Regex patterns** : Parsing de l'aria-label avec 8 regex pour extraire les champs
 
-**Note** : Les sélecteurs CSS exacts devront être déterminés lors de l'implémentation Phase 5 en inspectant le HTML réel de Google Flights (structure non documentée, peut varier).
+**Configuration JsonCssExtractionStrategy** :
+
+| Propriété | Valeur | Description |
+|-----------|--------|-------------|
+| `name` | "Google Flights Results" | Nom du schéma d'extraction |
+| `baseSelector` | `li.pIav2d` | Sélecteur CSS des cartes vols individuelles |
+| **Field 1** | | **Extraction aria-label** |
+| `name` | "aria_label" | Nom du champ extrait |
+| `selector` | `div[aria-label]` | Sélecteur CSS de l'élément contenant aria-label |
+| `type` | "attribute" | Type d'extraction (attribut HTML) |
+| `attribute` | "aria-label" | Nom de l'attribut HTML à extraire |
+
+**Regex patterns pour parsing aria-label** :
+
+| Champ | Pattern regex | Exemple match | Notes |
+|-------|--------------|---------------|-------|
+| `price` | `(\d+(?:\s?\d+)*)\s*euros` | "1270 euros" → 1270.0 | Gère espaces dans nombres (1 270 euros) |
+| `airline` | `avec\s+([^.,]+)` | "avec ANA" → "ANA" | Extrait compagnie après "avec" |
+| `departure_time` | `Départ.*?(\d{1,2}:\d{2})` | "Départ... 10:30" → "10:30" | Format HH:MM |
+| `arrival_time` | `arrivée.*?(\d{1,2}:\d{2})` | "arrivée... 14:45" → "14:45" | Format HH:MM |
+| `duration` | `Durée totale\s*:\s*(.+?)(?:\.|$)` | "Durée totale : 13 h 40 min" → "13 h 40 min" | Texte libre après "Durée totale" |
+| `stops` | `(\d+)\s*escales?` | "1 escale" → 1 | Parsing "Vol direct" → 0 (cas spécial) |
+| `departure_airport` | `Départ de ([^à]+) à` | "Départ de Paris à" → "Paris" | Nom aéroport complet |
+| `arrival_airport` | `arrivée à ([^à]+) à` | "arrivée à Tokyo à" → "Tokyo" | Nom aéroport complet |
+
+**Exemple aria-label réel Google Flights** :
+
+```
+"À partir de 1270 euros. Départ de Paris à 10:30, arrivée à Tokyo à 14:45.
+Durée totale : 13 h 40 min. 1 escale avec ANA."
+```
+
+**Parsing flow complet** :
+
+1. JsonCssExtractionStrategy extrait `aria_label` pour chaque carte vol
+2. Pour chaque aria-label :
+   - Appliquer 8 regex patterns pour extraire champs
+   - Si champs obligatoires manquants (price, airline, departure_time, arrival_time) → Skip vol
+   - Construire GoogleFlightDTO avec champs extraits
+   - Valider automatiquement via Pydantic
+3. Retourner liste GoogleFlightDTO validés
 
 **Champs/Paramètres** :
 
 | Champ | Type | Description | Contraintes |
 |-------|------|-------------|-------------|
 | `html` | `str` | HTML brut Google Flights | Non vide, min_length > 1000 caractères |
-| **Retour** | `List[Flight]` | Liste vols extraits et validés | Minimum 1 vol, maximum 50 vols |
+| **Retour** | `list[GoogleFlightDTO]` | Liste vols extraits et validés | Minimum 1 vol, maximum 50 vols |
 
 **Comportement** :
 
 - **Extraction nominale** :
-  1. Instancie JsonCssExtractionStrategy avec schema CSS ci-dessus
-  2. Applique stratégie sur HTML avec `extraction_strategy.extract(html)`
-  3. Transforme chaque élément extrait en modèle Flight via Pydantic
-  4. Valide automatiquement champs obligatoires (price, airline, departure_time, arrival_time)
-  5. Retourne liste de Flight validés
+  1. Instancie JsonCssExtractionStrategy avec FLIGHT_SCHEMA ci-dessus
+  2. Applique stratégie sur HTML : `extraction_strategy.extract(url="", html_content=html)`
+  3. Pour chaque résultat brut contenant `aria_label` :
+     - Parse aria_label avec 8 regex patterns
+     - Construit GoogleFlightDTO si champs obligatoires présents
+  4. Retourne liste de GoogleFlightDTO validés
 
 - **Edge cases** :
-  - **Champs manquants** : Si prix/compagnie/horaires absents dans HTML → Skip vol (log WARNING) et continue parsing vols suivants
-  - **Prix invalide** : Si prix contient caractères non numériques (ex: "N/A") → Skip vol
-  - **HTML malformed** : Si baseSelector `.pIav2d` ne matche aucun élément → Lève `ParsingError("No flights found in HTML")`
+  - **Aria-label absent** : Si `aria_label` vide ou None → Skip vol (log WARNING) et continue parsing vols suivants
+  - **Champs manquants** : Si price/airline/departure_time/arrival_time absents dans aria-label → Skip vol (log WARNING)
+  - **Prix invalide** : Si regex prix ne matche pas ou conversion float échoue → Skip vol
+  - **HTML malformed** : Si baseSelector `li.pIav2d` ne matche aucun élément → Lève `ParsingError("No flights found in HTML")`
   - **Liste vide après parsing** : Si aucun vol valide extrait → Lève `ParsingError("Zero valid flights extracted")`
 
-- **Validation Pydantic** :
-  - `price` : `float`, valeur > 0
-  - `airline` : `str`, min_length=2, max_length=100
-  - `departure_time` : `datetime`, format ISO 8601 strict
-  - `arrival_time` : `datetime`, format ISO 8601, après departure_time
-  - `duration` : `str`, format "Xh Ymin" (ex: "10h 30min")
-  - `stops` : `int | None`, valeur ≥0, None si "Non-stop"
+- **Validation Pydantic** : Voir section 3 (GoogleFlightDTO)
 
 - **Erreurs levées** :
   - `ParsingError` : Hérité de `Exception`, contient `html_size`, `flights_found`
   - `ValidationError` : Pydantic standard, contient détails champs invalides
 
+**Justification approche aria-label** :
+- ✅ **Plus robuste** : aria-label = texte stable pour accessibilité, sélecteurs CSS Google changent fréquemment
+- ✅ **Maintenance** : 1 sélecteur base + 8 regex patterns vs 8 sélecteurs CSS fragiles
+- ⚠️ **Limitation** : Dépend format texte français (`euros`, `avec`, `Départ`), pas multilingue (nécessiterait adaptation regex par langue)
+
 ---
 
-## 3. Modèle Flight (Pydantic)
+## 3. Modèle GoogleFlightDTO (Pydantic)
 
 **Rôle** : Représenter un vol extrait avec validation automatique des types et contraintes métier.
 
 **Interface** :
 ```python
-class Flight(BaseModel):
+class GoogleFlightDTO(BaseModel):
     """Modèle Pydantic d'un vol extrait depuis Google Flights."""
 
-    price: float
-    airline: str
-    departure_time: datetime
-    arrival_time: datetime
+    price: Annotated[float, Field(gt=0)]
+    airline: Annotated[str, Field(min_length=2, max_length=100)]
+    departure_time: str
+    arrival_time: str
     duration: str
-    stops: int | None
-    departure_airport: str | None
-    arrival_airport: str | None
+    stops: Annotated[int | None, Field(ge=0)] = None
+    departure_airport: Annotated[str | None, Field(max_length=200)] = None
+    arrival_airport: Annotated[str | None, Field(max_length=200)] = None
 ```
 
 **Validations Pydantic** :
@@ -199,14 +338,17 @@ class Flight(BaseModel):
 |-------|-----------|-------------|
 | `price` | `> 0` | Prix strictement positif (euros) |
 | `airline` | `min_length=2, max_length=100` | Nom compagnie valide |
-| `departure_time` | Format ISO 8601 | Datetime valide |
-| `arrival_time` | Format ISO 8601 + après `departure_time` | Cohérence temporelle |
-| `duration` | Pattern `"Xh Ymin"` | Format durée strict (ex: "10h 30min") |
+| `departure_time` | Format `HH:MM` | Heure locale format simple (ex: "10:30") |
+| `arrival_time` | Format `HH:MM` | Heure locale format simple (ex: "14:45") |
+| `duration` | Texte libre | Format durée variable (ex: "10h 30min", "13 h 40 min") |
 | `stops` | `≥ 0` ou `None` | Nombre escales valide |
-| `departure_airport` | `max_length=10` | Code IATA/ICAO |
-| `arrival_airport` | `max_length=10` | Code IATA/ICAO |
+| `departure_airport` | `max_length=200` | Nom aéroport complet ou code (ex: "Paris Charles de Gaulle" ou "CDG") |
+| `arrival_airport` | `max_length=200` | Nom aéroport complet ou code (ex: "Tokyo Narita" ou "NRT") |
 
-**Validation cross-champs** : La méthode de validation doit vérifier que `arrival_time` est postérieur à `departure_time` (cohérence temporelle du vol).
+**Notes importantes** :
+- **Types modifiés** : `departure_time` et `arrival_time` sont des `str` (format HH:MM) et non `datetime` car Google Flights retourne uniquement les heures locales sans date ni timezone complètes dans l'aria-label
+- **Airport max_length relaxé** : Passé de 10 à 200 caractères pour supporter les noms complets d'aéroports (ex: "Paris Charles de Gaulle") en plus des codes IATA/ICAO
+- **Pas de validation cross-champs** : Impossible de valider `arrival_time > departure_time` car les heures sont au format HH:MM sans date (un vol de 23:00 à 02:00 traverse minuit)
 
 ---
 
@@ -216,34 +358,40 @@ class Flight(BaseModel):
 
 **Format recommandé : AAA (Arrange/Act/Assert)**
 
-### CrawlerService (10 tests)
+### CrawlerService (13 tests)
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 1 | `test_crawl_success_dev_local` | Crawl réussi mode POC dev local | `url="https://google.com/travel/flights?..."` | `result.success == True`, `result.html` non vide, stealth mode actif | Vérifie comportement nominal POC |
-| 2 | `test_crawl_recaptcha_v2_detection` | HTML contient reCAPTCHA v2 | Mock HTML avec `<div class="g-recaptcha">` | Lève `CaptchaDetectedError`, `captcha_type="recaptcha_v2"` | Vérifie détection pattern reCAPTCHA |
-| 3 | `test_crawl_hcaptcha_detection` | HTML contient hCaptcha | Mock HTML avec `<div class="h-captcha">` | Lève `CaptchaDetectedError`, `captcha_type="hcaptcha"` | Vérifie détection pattern hCaptcha |
-| 4 | `test_crawl_network_timeout` | Timeout réseau AsyncWebCrawler | Mock `arun()` timeout après 10s | Lève `NetworkError`, `status_code=None` | Vérifie gestion timeout |
-| 5 | `test_crawl_status_403` | Status code 403 (rate limiting) | Mock response status 403 | Lève `NetworkError`, `status_code=403` | Vérifie levée erreur sur 403 |
-| 6 | `test_crawl_stealth_mode_enabled` | BrowserConfig avec stealth mode actif | `enable_stealth=True` dans config | `result.success == True`, stealth mode loggé | Vérifie activation stealth mode |
-| 7 | `test_crawl_structured_logging` | Logging structuré avec contexte | Crawl avec URL | Logs contiennent `url`, `status_code`, `html_size`, `stealth_mode` | Vérifie qualité logging JSON POC |
+| 1 | `test_get_google_session_success` | Session capture réussie | URL Google Flights | Cookies capturés stockés pour réutilisation, logs INFO cookies_captured | Vérifie méthode get_google_session() |
+| 2 | `test_get_google_session_auto_click_consent` | Auto-click popup RGPD | Mock page avec button "Tout accepter" | Button cliqué automatiquement, sleep 1s, logs INFO | Vérifie hook _after_goto_hook |
+| 3 | `test_get_google_session_no_consent_popup` | Popup RGPD absent | Mock page sans button consent | Timeout 1s, log WARNING, continue sans click, pas d'exception | Vérifie robustesse edge case popup absent |
+| 4 | `test_crawl_success_with_fingerprint` | Crawl réussi avec fingerprinting complet | URL Google Flights | `result.success == True`, `result.html` non vide, BrowserConfig avec 27 headers + cookies | Vérifie comportement nominal avec fingerprint |
+| 5 | `test_crawl_recaptcha_detection` | HTML contient reCAPTCHA | Mock HTML avec pattern `g-recaptcha` | Lève `CaptchaDetectedError`, `captcha_type="recaptcha"` | Vérifie détection pattern reCAPTCHA |
+| 6 | `test_crawl_hcaptcha_detection` | HTML contient hCaptcha | Mock HTML avec pattern `h-captcha` | Lève `CaptchaDetectedError`, `captcha_type="hcaptcha"` | Vérifie détection pattern hCaptcha |
+| 7 | `test_crawl_network_timeout` | Timeout réseau AsyncWebCrawler | Mock `arun()` timeout après 50s | Lève `NetworkError`, `status_code=None` | Vérifie gestion timeout (50s configuré) |
+| 8 | `test_crawl_status_403` | Status code 403 (rate limiting) | Mock response status 403 | Lève `NetworkError`, `status_code=403` | Vérifie levée erreur sur 403 |
+| 9 | `test_crawl_status_429` | Status code 429 (rate limiting) | Mock response status 429 | Lève `NetworkError`, `status_code=429` | Vérifie levée erreur sur 429 |
+| 10 | `test_crawl_with_proxy_rotation` | Crawl avec proxy activé | `use_proxy=True`, ProxyService mocké | `proxy_service.get_next_proxy()` appelé, BrowserConfig avec proxy_config | Vérifie intégration ProxyService (Story 5) |
+| 11 | `test_crawl_without_proxy` | Crawl sans proxy | `use_proxy=False` | BrowserConfig sans proxy_config, logs proxy_host="no_proxy" | Vérifie mode direct sans proxy |
+| 12 | `test_crawl_timeouts_configurable` | Timeouts configurables via Settings | Settings avec custom timeouts | CrawlerRunConfig.page_timeout depuis settings, asyncio.wait_for timeout depuis settings | Vérifie settings.crawler.crawl_*_timeout |
+| 13 | `test_crawl_structured_logging` | Logging structuré avec contexte | Crawl avec URL + proxy | Logs contiennent `url`, `status_code`, `html_size`, `response_time_ms`, `proxy_host`, `proxy_country` | Vérifie qualité logging JSON |
 
 ### FlightParser (10 tests)
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 1 | `test_parse_valid_html_multiple_flights` | HTML valide avec 10 vols | Mock HTML avec 10 `.pIav2d` valides | `len(flights) == 10`, tous Flight valides | Vérifie extraction nominale |
-| 2 | `test_parse_flight_all_fields_present` | Vol avec tous champs renseignés | HTML avec price, airline, times, duration, stops, airports | `flight.price > 0`, tous champs non None | Vérifie mapping complet champs |
-| 3 | `test_parse_missing_price` | Vol sans prix | HTML avec airline mais sans `.FpEdX` | Vol skippé, log WARNING | Vérifie robustesse champ obligatoire manquant |
-| 4 | `test_parse_invalid_price_format` | Prix non numérique | HTML avec price="N/A" | Vol skippé, log WARNING | Vérifie validation format prix |
-| 5 | `test_parse_missing_airline` | Vol sans compagnie | HTML avec price mais sans `.sSHqwe` | Vol skippé, log WARNING | Vérifie robustesse champ obligatoire manquant |
-| 6 | `test_parse_invalid_datetime_format` | Horaire invalide | HTML avec `datetime="invalid"` | Lève `ValidationError` Pydantic | Vérifie validation datetime strict |
-| 7 | `test_parse_arrival_before_departure` | arrival_time < departure_time | HTML avec horaires incohérents | Lève `ValidationError` via `field_validator` | Vérifie validation cohérence temporelle |
-| 8 | `test_parse_no_flights_found` | HTML sans `.pIav2d` | HTML Google Flights vide ou malformed | Lève `ParsingError("No flights found")` | Vérifie gestion HTML invalide |
-| 9 | `test_parse_stops_nonstop` | Vol direct | HTML avec "Non-stop" | `flight.stops == 0` | Vérifie parsing "Non-stop" → int 0 |
-| 10 | `test_parse_stops_multiple` | Vol avec escales | HTML avec "2 stops" | `flight.stops == 2` | Vérifie extraction nombre escales |
+| 1 | `test_parse_valid_html_multiple_flights` | HTML valide avec 10 vols aria-label | Mock HTML avec 10 `li.pIav2d` contenant aria-label valides | `len(flights) == 10`, tous GoogleFlightDTO valides | Vérifie extraction nominale aria-label |
+| 2 | `test_parse_aria_label_all_fields_present` | Aria-label avec tous champs | Aria-label complet : "À partir de 1270 euros... avec ANA..." | `flight.price == 1270.0`, tous champs extraits (airline, times, duration, stops, airports) | Vérifie parsing regex complet |
+| 3 | `test_parse_price_with_spaces` | Prix avec espaces | Aria-label avec "1 270 euros" (espace séparateur) | `flight.price == 1270.0` (espace supprimé) | Vérifie regex price gère espaces |
+| 4 | `test_parse_missing_price` | Aria-label sans prix | Aria-label avec airline mais sans pattern "euros" | Vol skippé, log WARNING, retour None | Vérifie robustesse champ obligatoire manquant |
+| 5 | `test_parse_invalid_price_format` | Prix non numérique | Aria-label avec "N/A euros" (conversion float impossible) | Vol skippé, log WARNING, retour None | Vérifie validation format prix après extraction |
+| 6 | `test_parse_missing_airline` | Aria-label sans compagnie | Aria-label avec price mais sans pattern "avec" | Vol skippé, log WARNING, retour None | Vérifie robustesse champ obligatoire manquant |
+| 7 | `test_parse_missing_departure_time` | Horaires manquants | Aria-label sans pattern "Départ... HH:MM" | Vol skippé (champs obligatoires absents), retour None | Vérifie validation champs obligatoires |
+| 8 | `test_parse_no_flights_found` | HTML sans `li.pIav2d` | HTML Google Flights vide ou malformed (aucun baseSelector match) | Lève `ParsingError("No flights found in HTML")` | Vérifie gestion HTML invalide |
+| 9 | `test_parse_stops_vol_direct` | Vol direct | Aria-label avec "Vol direct" (texte français) | `flight.stops == 0` (cas spécial détecté) | Vérifie parsing "Vol direct" → int 0 |
+| 10 | `test_parse_stops_multiple_escales` | Vol avec escales | Aria-label avec "2 escales" ou "1 escale" | `flight.stops == 2` ou `1` (regex capture nombre) | Vérifie extraction nombre escales depuis regex |
 
-**Total tests unitaires** : 10 + 10 = 20 tests
+**Total tests unitaires** : 13 (CrawlerService) + 10 (FlightParser) = **23 tests**
 
 ---
 
@@ -260,25 +408,27 @@ class Flight(BaseModel):
 
 ---
 
-**TOTAL TESTS** : 17 unitaires + 2 intégration = **19 tests**
+**TOTAL TESTS** : 23 unitaires + 2 intégration = **25 tests**
 
 ---
 
 ## Exemples JSON
 
-**Exemple 1 : Flight extrait et validé**
+**Exemple 1 : GoogleFlightDTO extrait et validé**
 ```json
 {
-  "price": 1250.0,
-  "airline": "Air France",
-  "departure_time": "2025-06-01T10:30:00Z",
-  "arrival_time": "2025-06-01T14:45:00Z",
-  "duration": "10h 15min",
+  "price": 1270.0,
+  "airline": "ANA",
+  "departure_time": "10:30",
+  "arrival_time": "14:45",
+  "duration": "13 h 40 min",
   "stops": 1,
-  "departure_airport": "CDG",
-  "arrival_airport": "NRT"
+  "departure_airport": "Paris",
+  "arrival_airport": "Tokyo"
 }
 ```
+
+**Note** : `departure_time` et `arrival_time` sont des `str` format HH:MM (heures locales sans date), pas `datetime` ISO 8601. Airports sont noms complets (max 200 car) ou codes IATA.
 
 **Exemple 2 : Erreur CaptchaDetectedError**
 ```json

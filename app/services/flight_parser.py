@@ -2,7 +2,6 @@
 
 import logging
 import re
-from datetime import datetime
 from typing import Any
 
 from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
@@ -13,6 +12,14 @@ from app.models.google_flight_dto import GoogleFlightDTO
 
 logger = logging.getLogger(__name__)
 
+PRICE_PATTERN = re.compile(r"(\d+(?:\s?\d+)*)\s*euros")
+AIRLINE_PATTERN = re.compile(r"avec\s+([^.,]+)")
+DEPARTURE_TIME_PATTERN = re.compile(r"Départ.*?(\d{1,2}:\d{2})")
+ARRIVAL_TIME_PATTERN = re.compile(r"arrivée.*?(\d{1,2}:\d{2})")
+DURATION_PATTERN = re.compile(r"Durée totale\s*:\s*(.+?)(?:\.|$)")
+STOPS_PATTERN = re.compile(r"(\d+)\s*escales?")
+DEPARTURE_AIRPORT_PATTERN = re.compile(r"Départ de ([^à]+) à")
+ARRIVAL_AIRPORT_PATTERN = re.compile(r"arrivée à ([^à]+) à")
 FLIGHT_SCHEMA: dict[str, Any] = {
     "name": "Google Flights Results",
     "baseSelector": "li.pIav2d",
@@ -36,17 +43,7 @@ class FlightParser:
 
     def parse(self, html: str) -> list[GoogleFlightDTO]:
         """Extrait les vols depuis HTML Google Flights."""
-        logger.info(
-            "🔍 [PARSER] Starting parse",
-            extra={"html_size": len(html)},
-        )
-
         raw_results = self._strategy.extract(url="", html_content=html)
-
-        logger.info(
-            "📊 [PARSER] CSS extraction completed",
-            extra={"raw_results_count": len(raw_results)},
-        )
 
         if not raw_results:
             logger.warning(
@@ -58,37 +55,30 @@ class FlightParser:
             )
 
         flights: list[GoogleFlightDTO] = []
+        skipped_no_aria_label = 0
+        skipped_parse_failed = 0
 
-        for idx, raw_flight in enumerate(raw_results):
-            logger.debug(
-                f"🔎 [PARSER] Processing flight {idx + 1}/{len(raw_results)}",
-                extra={"raw_flight_keys": list(raw_flight.keys())},
-            )
-
+        for raw_flight in raw_results:
             aria_label = raw_flight.get("aria_label")
             if not aria_label:
-                logger.warning(
-                    f"⚠️  [PARSER] Flight {idx + 1}: No aria_label found",
-                    extra={"raw_flight": raw_flight},
-                )
+                skipped_no_aria_label += 1
                 continue
-
-            logger.info(
-                f"📝 [PARSER] Flight {idx + 1}: aria_label found",
-                extra={"aria_label_preview": aria_label[:200]},
-            )
 
             flight = self._parse_aria_label(aria_label)
             if flight:
-                logger.info(
-                    f"✅ [PARSER] Flight {idx + 1}: Successfully parsed",
-                    extra={"price": flight.price, "airline": flight.airline},
-                )
                 flights.append(flight)
             else:
-                logger.warning(
-                    f"❌ [PARSER] Flight {idx + 1}: Failed to parse aria_label",
-                )
+                skipped_parse_failed += 1
+
+        logger.info(
+            "Parse iteration completed",
+            extra={
+                "total_raw_results": len(raw_results),
+                "skipped_no_aria_label": skipped_no_aria_label,
+                "skipped_parse_failed": skipped_parse_failed,
+                "valid_flights": len(flights),
+            },
+        )
 
         if not flights:
             raise ParsingError(
@@ -97,74 +87,56 @@ class FlightParser:
                 flights_found=0,
             )
 
-        logger.info(
-            "Parsing completed",
-            extra={"html_size": len(html), "flights_found": len(flights)},
-        )
-
         return flights
 
     def _parse_aria_label(self, aria_label: str) -> GoogleFlightDTO | None:
         """Parse un vol depuis aria-label."""
         try:
-            logger.debug(
-                "🔧 [PARSER] Extracting price",
-                extra={"aria_label_preview": aria_label[:100]},
-            )
             price = self._extract_price(aria_label)
-            if price is None:
-                logger.warning("❌ [PARSER] Missing price, skipping flight")
-                return None
-            logger.debug(f"💰 [PARSER] Price extracted: {price}€")
-
             airline = self._extract_airline(aria_label)
-            if not airline:
-                logger.warning("❌ [PARSER] Missing airline, skipping flight")
-                return None
-            logger.debug(f"✈️  [PARSER] Airline extracted: {airline}")
-
-            departure_time = self._extract_departure_time(aria_label)
-            arrival_time = self._extract_arrival_time(aria_label)
-
-            if not departure_time or not arrival_time:
-                logger.warning(
-                    "❌ [PARSER] Missing datetime, skipping flight",
-                    extra={
-                        "departure_time": str(departure_time),
-                        "arrival_time": str(arrival_time),
-                    },
-                )
-                return None
-            logger.debug(
-                f"🕐 [PARSER] Times extracted: {departure_time} → {arrival_time}"
-            )
-
+            departure_time = self._extract_time(aria_label, DEPARTURE_TIME_PATTERN)
+            arrival_time = self._extract_time(aria_label, ARRIVAL_TIME_PATTERN)
             duration = self._extract_duration(aria_label)
             stops = self._extract_stops(aria_label)
-            logger.debug(f"⏱️  [PARSER] Duration: {duration}, Stops: {stops}")
+            departure_airport = self._extract_airport(
+                aria_label, DEPARTURE_AIRPORT_PATTERN
+            )
+            arrival_airport = self._extract_airport(aria_label, ARRIVAL_AIRPORT_PATTERN)
 
-            flight = GoogleFlightDTO(
+            if (
+                price is None
+                or airline is None
+                or departure_time is None
+                or arrival_time is None
+            ):
+                return None
+
+            return GoogleFlightDTO(
                 price=price,
                 airline=airline,
                 departure_time=departure_time,
                 arrival_time=arrival_time,
                 duration=duration or "",
                 stops=stops,
-                departure_airport=None,
-                arrival_airport=None,
+                departure_airport=departure_airport,
+                arrival_airport=arrival_airport,
             )
-            return flight
-
         except ValidationError as e:
-            logger.debug("Validation error, skipping flight", extra={"error": str(e)})
+            logger.warning(
+                "Pydantic validation failed",
+                extra={"error": str(e), "aria_label_preview": aria_label[:100]},
+            )
             return None
         except Exception as e:
-            logger.debug("Parse error, skipping flight", extra={"error": str(e)})
+            logger.warning(
+                "Unexpected parsing error",
+                extra={"error": str(e), "aria_label_preview": aria_label[:100]},
+            )
             return None
 
     def _extract_price(self, text: str) -> float | None:
         """Extrait prix depuis 'À partir de 1270 euros'."""
-        match = re.search(r"(\d+(?:\s?\d+)*)\s*euros", text)
+        match = PRICE_PATTERN.search(text)
         if not match:
             return None
 
@@ -176,90 +148,17 @@ class FlightParser:
 
     def _extract_airline(self, text: str) -> str | None:
         """Extrait compagnie depuis 'avec ANA' ou 'avec Lufthansa, 1 escale'."""
-        match = re.search(r"avec\s+([^.,]+)", text)
+        match = AIRLINE_PATTERN.search(text)
         return match.group(1).strip() if match else None
 
-    def _extract_departure_time(self, text: str) -> datetime | None:
-        """Extrait départ depuis 'à 18:30 le lundi, décembre 15'."""
-        match = re.search(
-            r"Départ.*?à\s+(\d{1,2}:\d{2})\s+le\s+[^,]+,\s+(\w+)\s+(\d{1,2})", text
-        )
-        if not match:
-            return None
-
-        time_str = match.group(1)
-        month_str = match.group(2).strip()
-        day = int(match.group(3))
-
-        month_map = {
-            "janvier": 1,
-            "février": 2,
-            "mars": 3,
-            "avril": 4,
-            "mai": 5,
-            "juin": 6,
-            "juillet": 7,
-            "août": 8,
-            "septembre": 9,
-            "octobre": 10,
-            "novembre": 11,
-            "décembre": 12,
-        }
-
-        month = month_map.get(month_str.lower())
-        if not month:
-            return None
-
-        year = 2025
-        hour, minute = map(int, time_str.split(":"))
-
-        try:
-            return datetime(year, month, day, hour, minute)
-        except ValueError:
-            return None
-
-    def _extract_arrival_time(self, text: str) -> datetime | None:
-        """Extrait arrivée depuis 'arrivée à...à 16:10 le mardi, décembre 16'."""
-        match = re.search(
-            r"arrivée.*?à\s+(\d{1,2}:\d{2})\s+le\s+[^,]+,\s+(\w+)\s+(\d{1,2})", text
-        )
-        if not match:
-            return None
-
-        time_str = match.group(1)
-        month_str = match.group(2).strip()
-        day = int(match.group(3))
-
-        month_map = {
-            "janvier": 1,
-            "février": 2,
-            "mars": 3,
-            "avril": 4,
-            "mai": 5,
-            "juin": 6,
-            "juillet": 7,
-            "août": 8,
-            "septembre": 9,
-            "octobre": 10,
-            "novembre": 11,
-            "décembre": 12,
-        }
-
-        month = month_map.get(month_str.lower())
-        if not month:
-            return None
-
-        year = 2025
-        hour, minute = map(int, time_str.split(":"))
-
-        try:
-            return datetime(year, month, day, hour, minute)
-        except ValueError:
-            return None
+    def _extract_time(self, text: str, pattern: re.Pattern[str]) -> str | None:
+        """Extrait heure depuis aria-label avec pattern donné."""
+        match = pattern.search(text)
+        return match.group(1) if match else None
 
     def _extract_duration(self, text: str) -> str | None:
         """Extrait durée depuis 'Durée totale : 13 h 40 min'."""
-        match = re.search(r"Durée totale\s*:\s*(.+?)(?:\.|$)", text)
+        match = DURATION_PATTERN.search(text)
         return match.group(1).strip() if match else None
 
     def _extract_stops(self, text: str) -> int | None:
@@ -269,5 +168,10 @@ class FlightParser:
         if "vol direct" in text_lower:
             return 0
 
-        match = re.search(r"(\d+)\s*escale", text_lower)
+        match = STOPS_PATTERN.search(text_lower)
         return int(match.group(1)) if match else None
+
+    def _extract_airport(self, text: str, pattern: re.Pattern[str]) -> str | None:
+        """Extrait aéroport depuis aria-label avec pattern donné."""
+        match = pattern.search(text)
+        return match.group(1).strip() if match else None

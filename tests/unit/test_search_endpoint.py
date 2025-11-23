@@ -4,26 +4,19 @@ from datetime import date, timedelta
 
 
 def test_endpoint_accepts_valid_request(client_with_mock_search):
-    """Test 39: Endpoint accepte request valide."""
+    """Endpoint accepte request valide."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
-        "segments": [
+        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "segments_date_ranges": [
             {
-                "from_city": "Paris",
-                "to_city": "Tokyo",
-                "date_range": {
-                    "start": tomorrow.isoformat(),
-                    "end": (tomorrow + timedelta(days=6)).isoformat(),
-                },
+                "start": tomorrow.isoformat(),
+                "end": (tomorrow + timedelta(days=6)).isoformat(),
             },
             {
-                "from_city": "Tokyo",
-                "to_city": "New York",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=14)).isoformat(),
-                    "end": (tomorrow + timedelta(days=19)).isoformat(),
-                },
+                "start": (tomorrow + timedelta(days=14)).isoformat(),
+                "end": (tomorrow + timedelta(days=19)).isoformat(),
             },
         ]
     }
@@ -37,8 +30,8 @@ def test_endpoint_accepts_valid_request(client_with_mock_search):
 
 
 def test_endpoint_validates_request_body(client_with_mock_search):
-    """Test 40: Body invalide rejete."""
-    request_data = {"segments": []}
+    """Body invalide rejete."""
+    request_data = {"template_url": "https://www.google.com/travel/flights?tfs=test", "segments_date_ranges": []}
 
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
@@ -48,26 +41,19 @@ def test_endpoint_validates_request_body(client_with_mock_search):
 
 
 def test_endpoint_returns_10_results(client_with_mock_search):
-    """Test 41: Endpoint retourne 10 resultats."""
+    """Endpoint retourne 10 resultats."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
-        "segments": [
+        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "segments_date_ranges": [
             {
-                "from_city": "Paris",
-                "to_city": "Tokyo",
-                "date_range": {
-                    "start": tomorrow.isoformat(),
-                    "end": (tomorrow + timedelta(days=6)).isoformat(),
-                },
+                "start": tomorrow.isoformat(),
+                "end": (tomorrow + timedelta(days=6)).isoformat(),
             },
             {
-                "from_city": "Tokyo",
-                "to_city": "New York",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=14)).isoformat(),
-                    "end": (tomorrow + timedelta(days=19)).isoformat(),
-                },
+                "start": (tomorrow + timedelta(days=14)).isoformat(),
+                "end": (tomorrow + timedelta(days=19)).isoformat(),
             },
         ]
     }
@@ -80,26 +66,19 @@ def test_endpoint_returns_10_results(client_with_mock_search):
 
 
 def test_endpoint_response_matches_schema(client_with_mock_search):
-    """Test 42: Response conforme SearchResponse schema."""
+    """Response conforme SearchResponse schema."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
-        "segments": [
+        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "segments_date_ranges": [
             {
-                "from_city": "Paris",
-                "to_city": "Tokyo",
-                "date_range": {
-                    "start": tomorrow.isoformat(),
-                    "end": (tomorrow + timedelta(days=6)).isoformat(),
-                },
+                "start": tomorrow.isoformat(),
+                "end": (tomorrow + timedelta(days=6)).isoformat(),
             },
             {
-                "from_city": "Tokyo",
-                "to_city": "New York",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=14)).isoformat(),
-                    "end": (tomorrow + timedelta(days=19)).isoformat(),
-                },
+                "start": (tomorrow + timedelta(days=14)).isoformat(),
+                "end": (tomorrow + timedelta(days=19)).isoformat(),
             },
         ]
     }
@@ -115,10 +94,8 @@ def test_endpoint_response_matches_schema(client_with_mock_search):
     assert len(data["results"]) > 0
 
     first_result = data["results"][0]
-    assert "price" in first_result
-    assert "airline" in first_result
-    assert "departure_date" in first_result
-    assert "segments" in first_result
+    assert "segment_dates" in first_result
+    assert "flights" in first_result
 
     stats = data["search_stats"]
     assert "total_results" in stats
@@ -127,26 +104,19 @@ def test_endpoint_response_matches_schema(client_with_mock_search):
 
 
 def test_endpoint_injects_search_service_dependency(client_with_mock_search):
-    """Test 43: SearchService injecte via Depends()."""
+    """SearchService injecte via Depends()."""
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
-        "segments": [
+        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "segments_date_ranges": [
             {
-                "from_city": "Paris",
-                "to_city": "Tokyo",
-                "date_range": {
-                    "start": tomorrow.isoformat(),
-                    "end": (tomorrow + timedelta(days=6)).isoformat(),
-                },
+                "start": tomorrow.isoformat(),
+                "end": (tomorrow + timedelta(days=6)).isoformat(),
             },
             {
-                "from_city": "Tokyo",
-                "to_city": "New York",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=14)).isoformat(),
-                    "end": (tomorrow + timedelta(days=19)).isoformat(),
-                },
+                "start": (tomorrow + timedelta(days=14)).isoformat(),
+                "end": (tomorrow + timedelta(days=19)).isoformat(),
             },
         ]
     }

@@ -11,39 +11,12 @@ from app.services.crawler_service import CrawlerService
 from app.services.proxy_service import ProxyService
 
 
-@pytest.fixture
-def proxy_pool() -> list[ProxyConfig]:
-    """Pool de 3 proxies distincts."""
-    return [
-        ProxyConfig(
-            host="fr.decodo.com",
-            port=40000,
-            username="proxy0user",
-            password="password0",
-            country="FR",
-        ),
-        ProxyConfig(
-            host="fr.decodo.com",
-            port=40001,
-            username="proxy1user",
-            password="password1",
-            country="FR",
-        ),
-        ProxyConfig(
-            host="fr.decodo.com",
-            port=40002,
-            username="proxy2user",
-            password="password2",
-            country="FR",
-        ),
-    ]
-
-
 @pytest.mark.asyncio
 async def test_integration_crawler_with_proxy_rotation(
-    proxy_pool: list[ProxyConfig], mock_crawl_result: MagicMock
+    proxy_pool: list[ProxyConfig],
+    mock_crawl_result: MagicMock,
 ) -> None:
-    """Test 1: 3 crawls utilisent 3 proxies differents."""
+    """CrawlerService exécute 3 crawls successifs avec ProxyService."""
     proxy_service = ProxyService(proxy_pool)
     crawler_service = CrawlerService(proxy_service=proxy_service)
 
@@ -56,14 +29,15 @@ async def test_integration_crawler_with_proxy_rotation(
 
         for _ in range(3):
             await crawler_service.crawl_google_flights(
-                "https://www.google.com/travel/flights", use_proxy=True
+                "https://www.google.com/travel/flights",
+                use_proxy=True,
             )
 
-    assert proxy_service.current_proxy_index == 0
+        assert mock_crawler.arun.call_count == 3
 
 
 def test_integration_settings_load_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test 2: Settings charge depuis env avec proxy_config valide."""
+    """Settings charge depuis env avec proxy_config valide."""
     monkeypatch.setenv("LOG_LEVEL", "INFO")
     monkeypatch.setenv("DECODO_USERNAME", "testuser")
     monkeypatch.setenv("DECODO_PASSWORD", "password123")
@@ -79,9 +53,10 @@ def test_integration_settings_load_from_env(monkeypatch: pytest.MonkeyPatch) -> 
 
 @pytest.mark.asyncio
 async def test_integration_proxy_service_injected_crawler(
-    proxy_pool: list[ProxyConfig], mock_crawl_result: MagicMock
+    proxy_pool: list[ProxyConfig],
+    mock_crawl_result: MagicMock,
 ) -> None:
-    """Test 3: ProxyService injecte dans CrawlerService."""
+    """get_next_proxy() retourne proxies différents (rotation round-robin)."""
     proxy_service = ProxyService(proxy_pool)
     crawler_service = CrawlerService(proxy_service=proxy_service)
 
@@ -92,12 +67,14 @@ async def test_integration_proxy_service_injected_crawler(
         mock_crawler.__aexit__ = AsyncMock(return_value=None)
         mock_crawler_class.return_value = mock_crawler
 
-        initial_index = proxy_service.current_proxy_index
+        first_proxy = proxy_service.get_next_proxy()
         await crawler_service.crawl_google_flights(
-            "https://www.google.com/travel/flights", use_proxy=True
+            "https://www.google.com/travel/flights",
+            use_proxy=True,
         )
+        second_proxy = proxy_service.get_next_proxy()
 
-        assert proxy_service.current_proxy_index != initial_index
+        assert first_proxy.username != second_proxy.username
 
 
 @pytest.mark.asyncio
@@ -106,7 +83,7 @@ async def test_integration_proxy_rotation_logging_observability(
     mock_crawl_result: MagicMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Test 4: Logs contiennent proxy_host, pas de password."""
+    """Logs ne contiennent pas 'password' (sécurité)."""
     proxy_service = ProxyService(proxy_pool)
     crawler_service = CrawlerService(proxy_service=proxy_service)
 
@@ -122,7 +99,8 @@ async def test_integration_proxy_rotation_logging_observability(
 
         for _ in range(3):
             await crawler_service.crawl_google_flights(
-                "https://www.google.com/travel/flights", use_proxy=True
+                "https://www.google.com/travel/flights",
+                use_proxy=True,
             )
 
     log_text = " ".join(record.message for record in caplog.records)
@@ -133,7 +111,7 @@ async def test_integration_proxy_rotation_logging_observability(
 async def test_integration_proxy_service_disabled_no_injection(
     mock_crawl_result: MagicMock,
 ) -> None:
-    """Test 5: CrawlerService sans proxy si proxy_service=None."""
+    """CrawlerService sans proxy si proxy_service=None."""
     crawler_service = CrawlerService(proxy_service=None)
 
     with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
@@ -144,7 +122,8 @@ async def test_integration_proxy_service_disabled_no_injection(
         mock_crawler_class.return_value = mock_crawler
 
         result = await crawler_service.crawl_google_flights(
-            "https://www.google.com/travel/flights", use_proxy=True
+            "https://www.google.com/travel/flights",
+            use_proxy=True,
         )
 
         assert result.success is True

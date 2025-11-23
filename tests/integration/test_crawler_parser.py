@@ -14,19 +14,14 @@ def valid_google_flights_html():
     """HTML Google Flights avec 10 vols valides."""
     flights_html = ""
     for i in range(10):
+        price = 100 + i * 50
+        airline = f"Airline {i}"
         flights_html += f"""
-        <div class="pIav2d">
-            <span class="FpEdX">€{100 + i * 50}</span>
-            <span class="sSHqwe">Airline {i}</span>
-            <time class="departure" datetime="2025-06-01T{10 + i}:00:00">10:{i:02d}</time>
-            <time class="arrival" datetime="2025-06-01T{14 + i}:00:00">14:{i:02d}</time>
-            <span class="duration">4h 00min</span>
-            <span class="stops">Non-stop</span>
-            <span class="departure-airport">CDG</span>
-            <span class="arrival-airport">NRT</span>
-        </div>
+        <li class="pIav2d">
+            <div aria-label="À partir de {price} euros. Départ de Paris à 10:{i:02d}, arrivée à Tokyo à 14:{i:02d}. Durée totale : 4 h 00 min. Vol direct avec {airline}."></div>
+        </li>
         """
-    return f"<html><body>{flights_html}</body></html>"
+    return f"<html><body><ul>{flights_html}</ul></body></html>"
 
 
 @pytest.fixture
@@ -37,7 +32,7 @@ def empty_google_flights_html():
 
 @pytest.mark.asyncio
 async def test_integration_crawl_and_parse_success(valid_google_flights_html):
-    """Test 1: Crawl URL → Parse HTML → 10 Flight validés."""
+    """Crawl URL → Parse HTML → 10 Flight validés."""
     mock_result = MagicMock()
     mock_result.success = True
     mock_result.html = valid_google_flights_html
@@ -70,7 +65,7 @@ async def test_integration_crawl_and_parse_success(valid_google_flights_html):
 
 @pytest.mark.asyncio
 async def test_integration_crawl_success_parse_zero_flights(empty_google_flights_html):
-    """Test 2: Crawl success mais parsing échoue (aucun vol)."""
+    """Crawl success mais parsing échoue (aucun vol)."""
     mock_result = MagicMock()
     mock_result.success = True
     mock_result.html = empty_google_flights_html

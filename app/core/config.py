@@ -4,12 +4,20 @@ import logging
 from functools import lru_cache
 from typing import Literal, Self
 
-from pydantic import Field, SecretStr, field_validator, model_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.models.proxy import ProxyConfig
 
 logger = logging.getLogger(__name__)
+
+
+class CrawlerTimeouts(BaseModel):
+    """Timeouts crawler (constantes techniques optimisées Google Flights)."""
+
+    crawl_page_timeout_ms: int = 30000
+    crawl_delay_s: float = 5.0
+    crawl_global_timeout_s: float = 50.0
 
 
 class Settings(BaseSettings):
@@ -19,15 +27,20 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
+        extra="ignore",  # Ignore unknown fields from .env
     )
 
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    MAX_CONCURRENCY: int = 10
+
     DECODO_USERNAME: str = Field(..., min_length=5)
     DECODO_PASSWORD: SecretStr
     DECODO_PROXY_HOST: str = "fr.decodo.com:40000"
     DECODO_PROXY_ENABLED: bool = True
     PROXY_ROTATION_ENABLED: bool = True
     CAPTCHA_DETECTION_ENABLED: bool = True
+
+    crawler: CrawlerTimeouts = CrawlerTimeouts()
 
     proxy_config: ProxyConfig | None = None
 
@@ -64,4 +77,4 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """Retourne instance Settings cached (singleton via lru_cache)."""
-    return Settings()  # type: ignore[call-arg]
+    return Settings()  # type: ignore[call-arg]  # Pydantic BaseSettings auto-load .env

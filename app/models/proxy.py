@@ -17,9 +17,9 @@ class ProxyConfig(BaseModel):
     @field_validator("port", mode="after")
     @classmethod
     def validate_port(cls, v: int) -> int:
-        """Valide port >= 1024."""
-        if v < 1024:
-            raise ValueError("Port must be >= 1024")
+        """Valide port dans plage valide 1-65535."""
+        if not (1 <= v <= 65535):
+            raise ValueError("Port must be between 1 and 65535")
         return v
 
     @field_validator("country", mode="before")

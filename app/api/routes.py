@@ -47,7 +47,7 @@ async def search_flights_endpoint(
     logger.info(
         "Flight search started",
         extra={
-            "segments_count": len(request.segments),
+            "segments_count": len(request.segments_date_ranges),
         },
     )
 
@@ -56,7 +56,7 @@ async def search_flights_endpoint(
     logger.info(
         "Flight search completed",
         extra={
-            "segments_count": len(request.segments),
+            "segments_count": len(request.segments_date_ranges),
             "search_time_ms": response.search_stats.search_time_ms,
             "total_results": response.search_stats.total_results,
         },

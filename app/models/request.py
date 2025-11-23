@@ -7,8 +7,19 @@ from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 from app.models.google_flight_dto import GoogleFlightDTO
 
 
+def validate_iso_date(value: str) -> str:
+    """Valide format ISO 8601 (YYYY-MM-DD)."""
+    try:
+        datetime.fromisoformat(value)
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Invalid ISO 8601 date format: {value}") from e
+    return value
+
+
 class DateRange(BaseModel):
     """Plage de dates pour recherche vols."""
+
+    model_config = ConfigDict(extra="forbid")
 
     start: str
     end: str
@@ -17,13 +28,7 @@ class DateRange(BaseModel):
     @classmethod
     def validate_iso_format(cls, v: str) -> str:
         """Valide format ISO 8601 (YYYY-MM-DD)."""
-        try:
-            datetime.fromisoformat(v)
-        except (ValueError, TypeError) as e:
-            raise ValueError(
-                f"Date must be in ISO 8601 format (YYYY-MM-DD): {v}"
-            ) from e
-        return v
+        return validate_iso_date(v)
 
     @model_validator(mode="after")
     def validate_dates_coherent(self) -> Self:
@@ -42,6 +47,8 @@ class DateRange(BaseModel):
 
 class SearchRequest(BaseModel):
     """Requête recherche vols multi-city avec URL template Google Flights."""
+
+    model_config = ConfigDict(extra="forbid")
 
     template_url: Annotated[
         str, "URL Google Flights template (itinéraire et filtres fixés)"
@@ -87,6 +94,26 @@ class SearchRequest(BaseModel):
         return self
 
     @model_validator(mode="after")
+    def validate_segments_chronological_order(self) -> Self:
+        """Valide que les segments sont chronologiques sans chevauchement."""
+        if len(self.segments_date_ranges) < 2:
+            return self
+
+        for i in range(len(self.segments_date_ranges) - 1):
+            current_end = date.fromisoformat(self.segments_date_ranges[i].end)
+            next_start = date.fromisoformat(self.segments_date_ranges[i + 1].start)
+
+            if next_start < current_end:
+                raise ValueError(
+                    f"Segment {i + 2} overlaps with segment {i + 1}: "
+                    f"segment {i + 2} starts on {self.segments_date_ranges[i + 1].start} "
+                    f"but segment {i + 1} ends on {self.segments_date_ranges[i].end}. "
+                    f"Each segment must start on or after the previous segment's end date."
+                )
+
+        return self
+
+    @model_validator(mode="after")
     def validate_explosion_combinatoire(self) -> Self:
         """Valide max 1000 combinaisons totales avec message UX-friendly."""
         days_per_segment = []
@@ -125,12 +152,7 @@ class DateCombination(BaseModel):
         """Valide format ISO 8601 et min 2 dates."""
         if len(v) < 2:
             raise ValueError("At least 2 segment dates required")
-        for d in v:
-            try:
-                datetime.fromisoformat(d)
-            except (ValueError, TypeError) as e:
-                raise ValueError(f"Invalid ISO 8601 date format: {d}") from e
-        return v
+        return [validate_iso_date(d) for d in v]
 
 
 class CombinationResult(BaseModel):

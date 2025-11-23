@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import re
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
@@ -32,7 +33,7 @@ def generate_google_flights_url(template_url: str, new_dates: list[str]) -> str:
 
     try:
         tfs_decoded = base64.urlsafe_b64decode(tfs_encoded + "==")
-    except Exception as e:
+    except (ValueError, TypeError, binascii.Error) as e:
         msg = f"Erreur décodage base64 du paramètre tfs: {e}"
         raise GoogleFlightsUrlError(msg) from e
 
@@ -53,7 +54,14 @@ def generate_google_flights_url(template_url: str, new_dates: list[str]) -> str:
     query_params["tfs"] = [tfs_new_encoded]
     new_query = urlencode(query_params, doseq=True)
     new_url = urlunparse(
-        (parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment)
+        (
+            parsed.scheme,
+            parsed.netloc,
+            parsed.path,
+            parsed.params,
+            new_query,
+            parsed.fragment,
+        )
     )
 
     return new_url
