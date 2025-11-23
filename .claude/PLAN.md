@@ -46,12 +46,13 @@
 
 📝 **Output** : `.claude/CLAUDE.md` (Git), `docs/references/github-actions.md`, `.github/workflows/release.yml`
 
-### 0.3 Mise à jour CHANGELOG et version
+### 0.3 Mise à jour CHANGELOG, version et PLAN.md
 - [x] Ajouter entrée v0.0.0-setup dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.0.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 0.3)
 - [x] Commit : `chore: bump version to 0.0.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop (pas de tag - versions démarrent Phase 1)
 
