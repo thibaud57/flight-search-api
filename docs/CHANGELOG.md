@@ -320,6 +320,83 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [v0.6.0] - 2025-11-23
+
+### Added
+
+**Epic 2 : Google Flights Integration - 18 story points**
+
+- **Story 4 : Crawler + Parser (1 destination)** :
+  - CrawlerService : AsyncWebCrawler avec Crawl4AI 0.7+ et stealth mode
+  - Browser fingerprinting : Headers Chrome 142 statiques + stealth args (`app/utils/browser_fingerprint.py`)
+  - FlightParser : Extraction vols depuis aria-label avec regex patterns
+  - GoogleFlightDTO : Modèle Pydantic avec validations (price > 0, stops ≥ 0)
+  - Exceptions customs : CaptchaDetectedError, NetworkError, ParsingError avec contexte
+  - Captcha detection patterns : reCAPTCHA, hCaptcha, Cloudflare
+  - Tests unitaires : CrawlerService (13 tests), FlightParser (10 tests)
+  - Tests intégration : Crawler + Parser end-to-end (2 tests)
+
+- **Story 5 : Proxies Decodo (anti-détection)** :
+  - ProxyConfig : Modèle Pydantic avec validations (port, country normalization)
+  - ProxyService : Rotation round-robin proxies résidentiels Decodo
+  - Extension Settings : Variables DECODO_USERNAME, DECODO_PASSWORD, DECODO_PROXY_HOST
+  - Integration CrawlerService : Injection ProxyService, headers proxy automatiques
+  - Tests unitaires : ProxyConfig (6 tests), ProxyService (3 tests), Settings (4 tests)
+  - Tests intégration : Proxy rotation + crawler (5 tests)
+
+- **Story 6 : Multi-city Search (CombinationGenerator)** :
+  - CombinationGenerator : Produit cartésien dates multi-segments avec `itertools.product`
+  - SearchService : Orchestration complète (generate → crawl parallèle → parse → rank Top 10)
+  - Concurrence limitée : Semaphore MAX_CONCURRENCY pour éviter rate limits
+  - Models étendus :
+    - SearchRequest : template_url, date_ranges list, validation ≤ 1000 combinaisons
+    - DateCombination : Snapshot dates générées pour 1 recherche
+    - CombinationResult : Association URL + DateCombination
+    - FlightCombinationResult : Total price au niveau racine, liste flights sans price individuel
+    - SearchStats : Statistiques recherche (total_combinations, successful_crawls, etc.)
+  - GoogleFlightsUrlBuilder : Génération URLs via template + remplacement dates (`app/utils/google_flights_url.py`)
+  - Tests unitaires : CombinationGenerator (10 tests), SearchService (14 tests)
+  - Tests intégration : Recherche multi-city end-to-end (5 tests)
+
+### Changed
+
+- Configuration : Extension Settings avec variables Decodo proxies
+- API Routes : Integration SearchService réel (remplace mock Epic 1)
+- Models request/response : Architecture prix corrigée (total_price racine, flights sans price)
+
+### Technical Details
+
+**Architecture services** :
+- 5 services créés : CombinationGenerator, CrawlerService, FlightParser, ProxyService, SearchService
+- 2 modèles ajoutés : GoogleFlightDTO, ProxyConfig
+- 2 utilitaires créés : browser_fingerprint, google_flights_url
+- 1 fichier exceptions : CaptchaDetectedError, NetworkError, ParsingError
+
+**Tests Epic 2** :
+- Tests unitaires : 46 tests (CombinationGenerator, CrawlerService, FlightParser, ProxyService, SearchService)
+- Tests intégration : 12 tests (crawler+parser, proxies, search end-to-end)
+- Coverage : ≥ 80% sur tous les services Epic 2
+
+**Quality checks** :
+- Ruff lint : ✅ All checks passed
+- Ruff format : ✅ 43 files already formatted
+- Mypy : ✅ Success: no issues found in 22 source files
+- Standards CLAUDE.md : ✅ 100% conforme (type hints PEP 695, Pydantic v2, docstrings pragmatiques, pas de commentaires inline)
+
+### Notes
+
+**Phase** : Implémentation TDD Epic 2
+**Objectif** : Intégration Google Flights complète avec crawling, proxies Decodo, et recherches multi-city
+
+**Branche mergées** :
+- `feature/story-4-crawler-parser` (PR #41, 21/11/2025)
+- `feature/story-5-proxies` (PR #42, 21/11/2025)
+- `feature/story-6-multi-city-search` (PR #43, 23/11/2025)
+
+**Prochaine étape** : Phase 7 - Epic 3 Production Ready (Story 7-8 : Retry + Network Capture) → Release v0.7.0
+
+---
+
 # Ressources
 
 ## Documentation Officielle
