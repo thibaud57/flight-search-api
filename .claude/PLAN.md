@@ -697,7 +697,7 @@
 
 ---
 
-### 6.2 CHANGELOG consolidé v1.0.0, version et PLAN.md
+### 6.2 CHANGELOG consolidé v1.0.0, version
 - [ ] Vérifier entrées v0.5.0, v0.6.0, v0.7.0 complètes dans CHANGELOG.md
 - [ ] Créer section v1.0.0 avec résumé features MVP complètes
 - [ ] Enrichir SPECS.md section Statistiques avec timeline releases
@@ -839,7 +839,7 @@
 
 ---
 
-### 7A.4 Mise à jour CHANGELOG, version et PLAN.md
+### 7A.4 Mise à jour CHANGELOG, version
 - [ ] Ajouter entrée v0.8.0-specs dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="0.8.0"`
 - [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 7A)
@@ -894,7 +894,7 @@
 
 - [ ] Ajouter entrée v1.1.0 dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="1.1.0"`
-- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour Epic 4)
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section phase 7B.2)
 - [ ] Commit : `chore: bump version to 1.1.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
