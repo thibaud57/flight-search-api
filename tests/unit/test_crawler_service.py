@@ -372,3 +372,227 @@ async def test_crawl_timeouts_configurable(mock_crawl_result):
         assert mock_crawler.arun.called
         call_kwargs = mock_crawler.arun.call_args.kwargs
         assert "wait_for" in call_kwargs or call_kwargs is not None
+
+
+@pytest.mark.asyncio
+async def test_crawl_retry_success_no_retry(crawler_service, mock_crawl_result):
+    """Crawl reussi premiere tentative aucun retry."""
+    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
+        mock_crawler = AsyncMock()
+        mock_crawler.arun.return_value = mock_crawl_result
+        mock_crawler.__aenter__ = AsyncMock(return_value=mock_crawler)
+        mock_crawler.__aexit__ = AsyncMock(return_value=None)
+        mock_crawler_class.return_value = mock_crawler
+
+        result = await crawler_service.crawl_google_flights(
+            "https://www.google.com/travel/flights"
+        )
+
+        assert result.success is True
+        assert mock_crawler.arun.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_crawl_retry_on_500_error(crawler_service):
+    """Retry automatique sur status 500."""
+    call_count = 0
+
+    async def mock_arun_side_effect(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        mock_result = MagicMock()
+        if call_count == 1:
+            mock_result.success = False
+            mock_result.status_code = 500
+            mock_result.html = ""
+        else:
+            mock_result.success = True
+            mock_result.status_code = 200
+            mock_result.html = "<html>Success</html>"
+        return mock_result
+
+    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
+        mock_crawler = AsyncMock()
+        mock_crawler.arun.side_effect = mock_arun_side_effect
+        mock_crawler.__aenter__ = AsyncMock(return_value=mock_crawler)
+        mock_crawler.__aexit__ = AsyncMock(return_value=None)
+        mock_crawler_class.return_value = mock_crawler
+
+        with patch("time.sleep"):
+            result = await crawler_service.crawl_google_flights(
+                "https://www.google.com/travel/flights"
+            )
+
+        assert result.success is True
+        assert call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_crawl_retry_on_timeout(crawler_service):
+    """Retry automatique sur timeout reseau."""
+    call_count = 0
+
+    async def mock_arun_side_effect(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise TimeoutError("Network timeout")
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.status_code = 200
+        mock_result.html = "<html>Success</html>"
+        return mock_result
+
+    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
+        mock_crawler = AsyncMock()
+        mock_crawler.arun.side_effect = mock_arun_side_effect
+        mock_crawler.__aenter__ = AsyncMock(return_value=mock_crawler)
+        mock_crawler.__aexit__ = AsyncMock(return_value=None)
+        mock_crawler_class.return_value = mock_crawler
+
+        with patch("time.sleep"):
+            result = await crawler_service.crawl_google_flights(
+                "https://www.google.com/travel/flights"
+            )
+
+        assert result.success is True
+        assert call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_crawl_retry_max_retries_network_error(crawler_service):
+    """Max retries atteint NetworkError finale."""
+    call_count = 0
+
+    async def mock_arun_side_effect(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        raise TimeoutError("Network timeout")
+
+    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
+        mock_crawler = AsyncMock()
+        mock_crawler.arun.side_effect = mock_arun_side_effect
+        mock_crawler.__aenter__ = AsyncMock(return_value=mock_crawler)
+        mock_crawler.__aexit__ = AsyncMock(return_value=None)
+        mock_crawler_class.return_value = mock_crawler
+
+        with patch("time.sleep"), pytest.raises(NetworkError) as exc_info:
+            await crawler_service.crawl_google_flights(
+                "https://www.google.com/travel/flights"
+            )
+
+        assert call_count == 3
+        assert exc_info.value.attempts == 3
+
+
+@pytest.mark.asyncio
+async def test_crawl_retry_no_retry_on_404(crawler_service):
+    """Pas de retry sur 404 Not Found."""
+    call_count = 0
+
+    async def mock_arun_side_effect(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        mock_result = MagicMock()
+        mock_result.success = False
+        mock_result.status_code = 404
+        mock_result.html = ""
+        return mock_result
+
+    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
+        mock_crawler = AsyncMock()
+        mock_crawler.arun.side_effect = mock_arun_side_effect
+        mock_crawler.__aenter__ = AsyncMock(return_value=mock_crawler)
+        mock_crawler.__aexit__ = AsyncMock(return_value=None)
+        mock_crawler_class.return_value = mock_crawler
+
+        await crawler_service.crawl_google_flights(
+            "https://www.google.com/travel/flights"
+        )
+
+        assert call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_crawl_retry_before_sleep_logging(crawler_service, caplog):
+    """Logging before_sleep callback chaque retry."""
+    import logging
+
+    caplog.set_level(logging.WARNING)
+    call_count = 0
+
+    async def mock_arun_side_effect(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        mock_result = MagicMock()
+        if call_count <= 2:
+            mock_result.success = True
+            mock_result.html = '<div class="g-recaptcha">Captcha</div>'
+            mock_result.status_code = 200
+        else:
+            mock_result.success = True
+            mock_result.html = "<html>Success</html>"
+            mock_result.status_code = 200
+        return mock_result
+
+    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
+        mock_crawler = AsyncMock()
+        mock_crawler.arun.side_effect = mock_arun_side_effect
+        mock_crawler.__aenter__ = AsyncMock(return_value=mock_crawler)
+        mock_crawler.__aexit__ = AsyncMock(return_value=None)
+        mock_crawler_class.return_value = mock_crawler
+
+        with patch("time.sleep"):
+            result = await crawler_service.crawl_google_flights(
+                "https://www.google.com/travel/flights"
+            )
+
+        assert result.success is True
+        warning_logs = [r for r in caplog.records if r.levelname == "WARNING"]
+        assert len(warning_logs) >= 2
+
+
+@pytest.mark.asyncio
+async def test_crawl_retry_with_proxy_rotation(mock_crawl_result, proxy_service):
+    """Rotation proxy a chaque retry."""
+    crawler_service = CrawlerService(proxy_service=proxy_service)
+    call_count = 0
+    proxy_calls = []
+
+    original_get_next_proxy = proxy_service.get_next_proxy
+
+    def track_proxy_calls():
+        proxy = original_get_next_proxy()
+        proxy_calls.append(proxy)
+        return proxy
+
+    proxy_service.get_next_proxy = track_proxy_calls
+
+    async def mock_arun_side_effect(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        mock_result = MagicMock()
+        if call_count == 1:
+            mock_result.success = True
+            mock_result.html = '<div class="g-recaptcha">Captcha</div>'
+            mock_result.status_code = 200
+        else:
+            mock_result.success = True
+            mock_result.html = "<html>Success</html>"
+            mock_result.status_code = 200
+        return mock_result
+
+    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
+        mock_crawler = AsyncMock()
+        mock_crawler.arun.side_effect = mock_arun_side_effect
+        mock_crawler.__aenter__ = AsyncMock(return_value=mock_crawler)
+        mock_crawler.__aexit__ = AsyncMock(return_value=None)
+        mock_crawler_class.return_value = mock_crawler
+
+        with patch("time.sleep"):
+            result = await crawler_service.crawl_google_flights(
+                "https://www.google.com/travel/flights", use_proxy=True
+            )
+
+        assert result.success is True
+        assert len(proxy_calls) >= 2
