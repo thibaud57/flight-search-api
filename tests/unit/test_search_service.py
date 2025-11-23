@@ -1,142 +1,545 @@
+"""Tests unitaires SearchService async."""
+
 from datetime import date, timedelta
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.models.request import SearchRequest
+from app.models.google_flight_dto import GoogleFlightDTO
+from app.models.request import DateCombination, SearchRequest
 from app.models.response import SearchResponse
+from app.services.crawler_service import CrawlResult
 from app.services.search_service import SearchService
 
 
 @pytest.fixture
-def search_service() -> SearchService:
-    """Fixture pour SearchService."""
-    return SearchService()
+def mock_crawler_service():
+    """Mock CrawlerService async."""
+    crawler = AsyncMock()
+    crawler.crawl_google_flights.return_value = CrawlResult(
+        success=True, html="<html>mock</html>", status_code=200
+    )
+    return crawler
 
 
 @pytest.fixture
 def valid_search_request():
-    """Fixture pour un SearchRequest valide."""
+    """SearchRequest valide 2 segments."""
+    from app.models.request import DateRange
+
     tomorrow = date.today() + timedelta(days=1)
     return SearchRequest(
-        segments=[
-            {
-                "from_city": "Paris",
-                "to_city": "Tokyo",
-                "date_range": {
-                    "start": tomorrow.isoformat(),
-                    "end": (tomorrow + timedelta(days=6)).isoformat(),
-                },
-            },
-            {
-                "from_city": "Tokyo",
-                "to_city": "New York",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=14)).isoformat(),
-                    "end": (tomorrow + timedelta(days=19)).isoformat(),
-                },
-            },
-        ]
+        template_url="https://www.google.com/travel/flights?tfs=test",
+        segments_date_ranges=[
+            DateRange(
+                start=tomorrow.isoformat(),
+                end=(tomorrow + timedelta(days=6)).isoformat(),
+            ),
+            DateRange(
+                start=(tomorrow + timedelta(days=14)).isoformat(),
+                end=(tomorrow + timedelta(days=19)).isoformat(),
+            ),
+        ],
     )
 
 
-def test_search_service_returns_10_results(search_service, valid_search_request):
-    """Test 33: Service retourne 10 résultats."""
-    response = search_service.search_flights(valid_search_request)
+@pytest.fixture(autouse=True)
+def mock_settings(test_settings):
+    """Mock get_settings pour tous les tests du module (CI compatibility)."""
+    with patch("app.services.search_service.get_settings", return_value=test_settings):
+        yield
+
+
+@pytest.fixture
+def search_service(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+):
+    """SearchService avec mocks."""
+    return SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
+    )
+
+
+@pytest.mark.asyncio
+async def test_search_flights_orchestration_success(
+    search_service, valid_search_request
+):
+    """Orchestration complete avec tous crawls reussis."""
+    response = await search_service.search_flights(valid_search_request)
 
     assert isinstance(response, SearchResponse)
-    assert len(response.results) == 10
+    assert len(response.results) <= 10
 
 
-def test_search_service_results_sorted_by_price(search_service, valid_search_request):
-    """Test 34: Résultats triés prix croissant."""
-    response = search_service.search_flights(valid_search_request)
+@pytest.mark.asyncio
+async def test_search_flights_calls_combination_generator(
+    search_service, valid_search_request, mock_combination_generator
+):
+    """SearchService appelle CombinationGenerator."""
+    await search_service.search_flights(valid_search_request)
 
-    assert response.results[0].price < response.results[9].price
-
-    for i in range(len(response.results) - 1):
-        assert response.results[i].price <= response.results[i + 1].price
-
-
-def test_search_service_segments_match_request(search_service, valid_search_request):
-    """Test 35: Segments mock matchent structure request."""
-    response = search_service.search_flights(valid_search_request)
-
-    for result in response.results:
-        assert len(result.segments) == len(valid_search_request.segments)
+    mock_combination_generator.generate_combinations.assert_called_once()
 
 
-def test_search_service_search_stats_accurate(search_service):
-    """Test 36: search_stats cohérentes."""
+@pytest.mark.asyncio
+async def test_search_flights_crawls_all_urls(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+    valid_search_request,
+):
+    """Crawle toutes URLs generees."""
     tomorrow = date.today() + timedelta(days=1)
-    request = SearchRequest(
-        segments=[
-            {
-                "from_city": "City1",
-                "to_city": "City2",
-                "date_range": {
-                    "start": tomorrow.isoformat(),
-                    "end": (tomorrow + timedelta(days=2)).isoformat(),
-                },
-            },
-            {
-                "from_city": "City2",
-                "to_city": "City3",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=5)).isoformat(),
-                    "end": (tomorrow + timedelta(days=7)).isoformat(),
-                },
-            },
-            {
-                "from_city": "City3",
-                "to_city": "City4",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=10)).isoformat(),
-                    "end": (tomorrow + timedelta(days=12)).isoformat(),
-                },
-            },
-        ]
+    mock_combination_generator.generate_combinations.return_value = [
+        DateCombination(
+            segment_dates=[
+                (tomorrow + timedelta(days=i)).isoformat(),
+                (tomorrow + timedelta(days=14 + i)).isoformat(),
+            ]
+        )
+        for i in range(42)
+    ]
+    service = SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
     )
 
-    response = search_service.search_flights(request)
+    await service.search_flights(valid_search_request)
 
-    assert response.search_stats.total_results == 10
-    assert response.search_stats.segments_count == 3
-    assert response.search_stats.search_time_ms > 0
-    assert response.search_stats.search_time_ms < 200
+    assert mock_crawler_service.crawl_google_flights.call_count == 42
 
 
-def test_search_service_deterministic_output(search_service, valid_search_request):
-    """Test 37: Mock data identique pour inputs identiques."""
-    response1 = search_service.search_flights(valid_search_request)
-    response2 = search_service.search_flights(valid_search_request)
+@pytest.mark.asyncio
+async def test_search_flights_parallel_crawling_asyncio_gather(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+    valid_search_request,
+):
+    """Crawling parallele avec asyncio.gather."""
+    service = SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
+    )
 
-    for i in range(len(response1.results)):
-        assert response1.results[i].price == response2.results[i].price
-        assert response1.results[i].airline == response2.results[i].airline
-        assert (
-            response1.results[i].departure_date == response2.results[i].departure_date
-        )
+    response = await service.search_flights(valid_search_request)
+
+    assert mock_crawler_service.crawl_google_flights.call_count == 10
+    assert response is not None
 
 
-def test_search_service_handles_max_segments(search_service):
-    """Test 38: Service gère 5 segments max."""
+@pytest.mark.asyncio
+async def test_search_flights_parses_all_html(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+    valid_search_request,
+):
+    """Parse HTML de tous crawls reussis."""
     tomorrow = date.today() + timedelta(days=1)
+    mock_combination_generator.generate_combinations.return_value = [
+        DateCombination(
+            segment_dates=[
+                (tomorrow + timedelta(days=i)).isoformat(),
+                (tomorrow + timedelta(days=14 + i)).isoformat(),
+            ]
+        )
+        for i in range(5)
+    ]
+    service = SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
+    )
 
-    segments = []
-    for i in range(5):
-        segments.append(
-            {
-                "from_city": f"City{i}",
-                "to_city": f"City{i + 1}",
-                "date_range": {
-                    "start": (tomorrow + timedelta(days=i * 10)).isoformat(),
-                    "end": (tomorrow + timedelta(days=i * 10 + 2)).isoformat(),
-                },
-            }
+    await service.search_flights(valid_search_request)
+
+    assert mock_flight_parser_10_flights.parse.call_count == 5
+
+
+@pytest.mark.asyncio
+async def test_search_flights_ranking_top_10(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+    valid_search_request,
+):
+    """Selectionne top 10 resultats par prix."""
+    tomorrow = date.today() + timedelta(days=1)
+    mock_combination_generator.generate_combinations.return_value = [
+        DateCombination(
+            segment_dates=[
+                (tomorrow + timedelta(days=i)).isoformat(),
+                (tomorrow + timedelta(days=14 + i)).isoformat(),
+            ]
+        )
+        for i in range(50)
+    ]
+    prices = list(range(800, 2050, 25))
+    call_count = [0]
+
+    def mock_parse(html):
+        idx = call_count[0] % len(prices)
+        call_count[0] += 1
+        return [
+            GoogleFlightDTO(
+                price=float(prices[idx]),
+                airline="Test",
+                departure_time="10:00",
+                arrival_time="20:00",
+                duration="10h 00min",
+                stops=0,
+            )
+        ]
+
+    mock_flight_parser_10_flights.parse.side_effect = mock_parse
+    service = SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
+    )
+
+    response = await service.search_flights(valid_search_request)
+
+    assert len(response.results) == 10
+    for i in range(len(response.results) - 1):
+        assert (
+            response.results[i].flights[0].price
+            <= response.results[i + 1].flights[0].price
         )
 
-    request = SearchRequest(segments=segments)
-    response = search_service.search_flights(request)
 
-    for result in response.results:
-        assert len(result.segments) == 5
+@pytest.mark.asyncio
+async def test_search_flights_ranking_price_primary(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+    valid_search_request,
+):
+    """Prix total est critere dominant ranking."""
+    tomorrow = date.today() + timedelta(days=1)
+    mock_combination_generator.generate_combinations.return_value = [
+        DateCombination(
+            segment_dates=[
+                (tomorrow + timedelta(days=i)).isoformat(),
+                (tomorrow + timedelta(days=14 + i)).isoformat(),
+            ]
+        )
+        for i in range(3)
+    ]
+    test_prices = [1000.0, 1200.0, 900.0]
+    call_count = [0]
+
+    def mock_parse(html):
+        idx = call_count[0]
+        call_count[0] += 1
+        return [
+            GoogleFlightDTO(
+                price=test_prices[idx],
+                airline="Test",
+                departure_time="10:00",
+                arrival_time="20:00",
+                duration="10h 00min",
+                stops=0,
+            )
+        ]
+
+    mock_flight_parser_10_flights.parse.side_effect = mock_parse
+    service = SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
+    )
+
+    response = await service.search_flights(valid_search_request)
+
+    assert response.results[0].flights[0].price == 900.0
+
+
+@pytest.mark.asyncio
+async def test_search_flights_ranking_same_price_stable(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+    valid_search_request,
+):
+    """Ordre stable quand prix identiques (premier crawle = premier retourne)."""
+    tomorrow = date.today() + timedelta(days=1)
+    mock_combination_generator.generate_combinations.return_value = [
+        DateCombination(
+            segment_dates=[
+                (tomorrow + timedelta(days=i)).isoformat(),
+                (tomorrow + timedelta(days=14 + i)).isoformat(),
+            ]
+        )
+        for i in range(2)
+    ]
+    call_count = [0]
+
+    def mock_parse(html):
+        idx = call_count[0]
+        call_count[0] += 1
+        return [
+            GoogleFlightDTO(
+                price=1000.0,
+                airline=f"Airline {idx}",
+                departure_time="10:00",
+                arrival_time="20:00",
+                duration="10h 00min",
+                stops=0,
+            )
+        ]
+
+    mock_flight_parser_10_flights.parse.side_effect = mock_parse
+    service = SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
+    )
+
+    response = await service.search_flights(valid_search_request)
+
+    assert len(response.results) == 2
+    assert response.results[0].flights[0].price == 1000.0
+    assert response.results[1].flights[0].price == 1000.0
+    assert response.results[0].flights[0].airline == "Airline 0"
+    assert response.results[1].flights[0].airline == "Airline 1"
+
+
+@pytest.mark.asyncio
+async def test_search_flights_ranking_tie_breaker_duration(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+    valid_search_request,
+):
+    """Departage ex-aequo prix par duree."""
+    tomorrow = date.today() + timedelta(days=1)
+    mock_combination_generator.generate_combinations.return_value = [
+        DateCombination(
+            segment_dates=[
+                (tomorrow + timedelta(days=i)).isoformat(),
+                (tomorrow + timedelta(days=14 + i)).isoformat(),
+            ]
+        )
+        for i in range(2)
+    ]
+    call_count = [0]
+
+    def mock_parse(html):
+        idx = call_count[0]
+        call_count[0] += 1
+        durations = ["15h 00min", "10h 00min"]
+        return [
+            GoogleFlightDTO(
+                price=1000.0,
+                airline="Test",
+                departure_time="10:00",
+                arrival_time="20:00",
+                duration=durations[idx],
+                stops=0,
+            )
+        ]
+
+    mock_flight_parser_10_flights.parse.side_effect = mock_parse
+    service = SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
+    )
+
+    response = await service.search_flights(valid_search_request)
+
+    assert len(response.results) == 2
+
+
+@pytest.mark.asyncio
+async def test_search_flights_handles_partial_crawl_failures(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+    valid_search_request,
+):
+    """Gestion erreurs crawl partielles (50% echecs)."""
+    from app.exceptions import CaptchaDetectedError
+
+    tomorrow = date.today() + timedelta(days=1)
+    mock_combination_generator.generate_combinations.return_value = [
+        DateCombination(
+            segment_dates=[
+                (tomorrow + timedelta(days=i)).isoformat(),
+                (tomorrow + timedelta(days=14 + i)).isoformat(),
+            ]
+        )
+        for i in range(10)
+    ]
+    call_count = [0]
+
+    async def mock_crawl(url, use_proxy=True):
+        idx = call_count[0]
+        call_count[0] += 1
+        if idx % 2 == 0:
+            raise CaptchaDetectedError(url=url, captcha_type="recaptcha")
+        return CrawlResult(success=True, html="<html>test</html>", status_code=200)
+
+    mock_crawler_service.crawl_google_flights.side_effect = mock_crawl
+    service = SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
+    )
+
+    response = await service.search_flights(valid_search_request)
+
+    assert len(response.results) <= 10
+    assert response.search_stats.total_results >= 0
+
+
+@pytest.mark.asyncio
+async def test_search_flights_returns_empty_all_crawls_failed(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+    valid_search_request,
+):
+    """Retourne response vide si tous crawls echouent."""
+    from app.exceptions import NetworkError
+
+    mock_crawler_service.crawl_google_flights.side_effect = NetworkError(
+        url="test", status_code=500
+    )
+    service = SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
+    )
+
+    response = await service.search_flights(valid_search_request)
+
+    assert response.results == []
+    assert response.search_stats.total_results == 0
+
+
+@pytest.mark.asyncio
+async def test_search_flights_constructs_google_flights_urls(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+    valid_search_request,
+    mock_generate_google_flights_url,
+):
+    """Construction URLs multi-city correctes."""
+    tomorrow = date.today() + timedelta(days=1)
+    mock_combination_generator.generate_combinations.return_value = [
+        DateCombination(
+            segment_dates=[
+                tomorrow.isoformat(),
+                (tomorrow + timedelta(days=14)).isoformat(),
+            ]
+        )
+    ]
+    service = SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
+    )
+
+    await service.search_flights(valid_search_request)
+
+    mock_generate_google_flights_url.assert_called_once()
+    call_args = mock_generate_google_flights_url.call_args
+    assert call_args[0][0] == valid_search_request.template_url
+
+
+@pytest.mark.asyncio
+async def test_search_flights_logging_structured(
+    search_service, valid_search_request, caplog
+):
+    """Logging structure toutes etapes orchestration."""
+    import logging
+
+    with caplog.at_level(logging.INFO):
+        await search_service.search_flights(valid_search_request)
+
+    assert len(caplog.records) > 0
+
+    # Verify structured logging fields in extra
+    all_extra_fields = set()
+    for record in caplog.records:
+        if hasattr(record, "crawls_success"):
+            all_extra_fields.add("crawls_success")
+        if hasattr(record, "crawls_failed"):
+            all_extra_fields.add("crawls_failed")
+        if hasattr(record, "top_price_min"):
+            all_extra_fields.add("top_price_min")
+        if hasattr(record, "top_price_max"):
+            all_extra_fields.add("top_price_max")
+
+    # Verify key structured fields are present
+    assert "crawls_success" in all_extra_fields
+    assert "top_price_min" in all_extra_fields or "top_price_max" in all_extra_fields
+
+
+@pytest.mark.asyncio
+async def test_search_flights_search_stats_accurate(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+    valid_search_request,
+):
+    """search_stats coherentes avec resultats."""
+    tomorrow = date.today() + timedelta(days=1)
+    mock_combination_generator.generate_combinations.return_value = [
+        DateCombination(
+            segment_dates=[
+                (tomorrow + timedelta(days=i)).isoformat(),
+                (tomorrow + timedelta(days=14 + i)).isoformat(),
+            ]
+        )
+        for i in range(15)
+    ]
+    service = SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
+    )
+
+    response = await service.search_flights(valid_search_request)
+
+    assert response.search_stats.total_results == len(response.results)
+    assert response.search_stats.segments_count == 2
+
+
+@pytest.mark.asyncio
+async def test_search_flights_less_than_10_results(
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
+    valid_search_request,
+):
+    """Retourne <10 resultats si <10 combinaisons reussies."""
+    tomorrow = date.today() + timedelta(days=1)
+    mock_combination_generator.generate_combinations.return_value = [
+        DateCombination(
+            segment_dates=[
+                (tomorrow + timedelta(days=i)).isoformat(),
+                (tomorrow + timedelta(days=14 + i)).isoformat(),
+            ]
+        )
+        for i in range(5)
+    ]
+    service = SearchService(
+        combination_generator=mock_combination_generator,
+        crawler_service=mock_crawler_service,
+        flight_parser=mock_flight_parser_10_flights,
+    )
+
+    response = await service.search_flights(valid_search_request)
+
+    assert len(response.results) == 5

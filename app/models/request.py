@@ -1,11 +1,25 @@
+import math
 from datetime import date, datetime
-from typing import Annotated
+from typing import Annotated, Self
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+
+from app.models.google_flight_dto import GoogleFlightDTO
+
+
+def validate_iso_date(value: str) -> str:
+    """Valide format ISO 8601 (YYYY-MM-DD)."""
+    try:
+        datetime.fromisoformat(value)
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Invalid ISO 8601 date format: {value}") from e
+    return value
 
 
 class DateRange(BaseModel):
     """Plage de dates pour recherche vols."""
+
+    model_config = ConfigDict(extra="forbid")
 
     start: str
     end: str
@@ -14,16 +28,10 @@ class DateRange(BaseModel):
     @classmethod
     def validate_iso_format(cls, v: str) -> str:
         """Valide format ISO 8601 (YYYY-MM-DD)."""
-        try:
-            datetime.fromisoformat(v)
-        except (ValueError, TypeError) as e:
-            raise ValueError(
-                f"Date must be in ISO 8601 format (YYYY-MM-DD): {v}"
-            ) from e
-        return v
+        return validate_iso_date(v)
 
     @model_validator(mode="after")
-    def validate_dates_coherent(self) -> "DateRange":
+    def validate_dates_coherent(self) -> Self:
         """Valide que end >= start et start >= aujourd'hui."""
         start_date = date.fromisoformat(self.start)
         end_date = date.fromisoformat(self.end)
@@ -37,45 +45,31 @@ class DateRange(BaseModel):
         return self
 
 
-class FlightSegment(BaseModel):
-    """Segment de vol dans itinéraire multi-city."""
-
-    from_city: Annotated[str, "Ville(s) départ (ex: 'Paris' ou 'Paris,Francfort')"]
-    to_city: Annotated[str, "Ville(s) arrivée (ex: 'Tokyo' ou 'Tokyo,Osaka')"]
-    date_range: DateRange
-
-    @field_validator("from_city", "to_city", mode="after")
-    @classmethod
-    def validate_city_length(cls, v: str) -> str:
-        """Valide min 2 caractères après trim."""
-        trimmed = v.strip()
-        if len(trimmed) < 2:
-            raise ValueError("City name must be at least 2 characters")
-        return trimmed
-
-    @model_validator(mode="after")
-    def validate_date_range_max_days(self) -> "FlightSegment":
-        """Valide max 15 jours par segment."""
-        start_date = date.fromisoformat(self.date_range.start)
-        end_date = date.fromisoformat(self.date_range.end)
-        days_diff = (end_date - start_date).days
-
-        if days_diff > 15:
-            raise ValueError(
-                f"Date range too large: {days_diff} days. Max 15 days per segment."
-            )
-
-        return self
-
-
 class SearchRequest(BaseModel):
-    """Requête de recherche vols multi-city (itinéraire segments fixe, dates flexibles)."""
+    """Requête recherche vols multi-city avec URL template Google Flights."""
 
-    segments: Annotated[list[FlightSegment], "Liste segments itinéraire (2-5 segments)"]
+    model_config = ConfigDict(extra="forbid")
 
-    @field_validator("segments", mode="after")
+    template_url: Annotated[
+        str, "URL Google Flights template (itinéraire et filtres fixés)"
+    ]
+    segments_date_ranges: Annotated[
+        list[DateRange], "Plages dates par segment (2-5 segments)"
+    ]
+
+    @field_validator("template_url", mode="after")
     @classmethod
-    def validate_segments_count(cls, v: list[FlightSegment]) -> list[FlightSegment]:
+    def validate_template_url(cls, v: str) -> str:
+        """Valide URL Google Flights avec paramètre tfs."""
+        if not v.startswith("https://www.google.com/travel/flights"):
+            raise ValueError("URL must be a valid Google Flights URL")
+        if "tfs=" not in v:
+            raise ValueError("URL template must contain 'tfs=' parameter")
+        return v
+
+    @field_validator("segments_date_ranges", mode="after")
+    @classmethod
+    def validate_segments_count(cls, v: list[DateRange]) -> list[DateRange]:
         """Valide 2 à 5 segments."""
         if len(v) < 2:
             raise ValueError("At least 2 segments required for multi-city search")
@@ -84,19 +78,53 @@ class SearchRequest(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def validate_explosion_combinatoire(self) -> "SearchRequest":
+    def validate_date_ranges_max_days(self) -> Self:
+        """Valide max 15 jours par segment."""
+        for idx, date_range in enumerate(self.segments_date_ranges):
+            start_date = date.fromisoformat(date_range.start)
+            end_date = date.fromisoformat(date_range.end)
+            days_diff = (end_date - start_date).days
+
+            if days_diff > 15:
+                raise ValueError(
+                    f"Segment {idx + 1} date range too large: {days_diff} days. "
+                    f"Max 15 days per segment."
+                )
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_segments_chronological_order(self) -> Self:
+        """Valide que les segments sont chronologiques sans chevauchement."""
+        if len(self.segments_date_ranges) < 2:
+            return self
+
+        for i in range(len(self.segments_date_ranges) - 1):
+            current_end = date.fromisoformat(self.segments_date_ranges[i].end)
+            next_start = date.fromisoformat(self.segments_date_ranges[i + 1].start)
+
+            if next_start < current_end:
+                raise ValueError(
+                    f"Segment {i + 2} overlaps with segment {i + 1}: "
+                    f"segment {i + 2} starts on {self.segments_date_ranges[i + 1].start} "
+                    f"but segment {i + 1} ends on {self.segments_date_ranges[i].end}. "
+                    f"Each segment must start on or after the previous segment's end date."
+                )
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_explosion_combinatoire(self) -> Self:
         """Valide max 1000 combinaisons totales avec message UX-friendly."""
         days_per_segment = []
 
-        for segment in self.segments:
-            start_date = date.fromisoformat(segment.date_range.start)
-            end_date = date.fromisoformat(segment.date_range.end)
+        for date_range in self.segments_date_ranges:
+            start_date = date.fromisoformat(date_range.start)
+            end_date = date.fromisoformat(date_range.end)
             days_diff = (end_date - start_date).days + 1
             days_per_segment.append(days_diff)
 
-        total_combinations = 1
-        for days in days_per_segment:
-            total_combinations *= days
+        total_combinations = math.prod(days_per_segment)
 
         if total_combinations > 1000:
             max_days_index = days_per_segment.index(max(days_per_segment))
@@ -109,3 +137,28 @@ class SearchRequest(BaseModel):
             )
 
         return self
+
+
+class DateCombination(BaseModel):
+    """Combinaison dates pour itineraire multi-city fixe."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    segment_dates: list[str]
+
+    @field_validator("segment_dates", mode="after")
+    @classmethod
+    def validate_segment_dates(cls, v: list[str]) -> list[str]:
+        """Valide format ISO 8601 et min 2 dates."""
+        if len(v) < 2:
+            raise ValueError("At least 2 segment dates required")
+        return [validate_iso_date(d) for d in v]
+
+
+class CombinationResult(BaseModel):
+    """Resultat intermediaire pour une combinaison dates."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    date_combination: DateCombination
+    best_flight: GoogleFlightDTO

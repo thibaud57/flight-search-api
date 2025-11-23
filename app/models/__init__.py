@@ -1,8 +1,8 @@
 from app.models.google_flight_dto import GoogleFlightDTO
 from app.models.proxy import ProxyConfig
-from app.models.request import DateRange, FlightSegment, SearchRequest
+from app.models.request import DateRange, SearchRequest
 from app.models.response import (
-    FlightResult,
+    FlightCombinationResult,
     HealthResponse,
     SearchResponse,
     SearchStats,
@@ -10,8 +10,7 @@ from app.models.response import (
 
 __all__ = [
     "DateRange",
-    "FlightResult",
-    "FlightSegment",
+    "FlightCombinationResult",
     "GoogleFlightDTO",
     "HealthResponse",
     "ProxyConfig",

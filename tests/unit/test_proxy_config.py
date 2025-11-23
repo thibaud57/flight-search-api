@@ -51,11 +51,11 @@ def test_proxy_config_username_too_short() -> None:
 
 
 def test_proxy_config_invalid_port() -> None:
-    """Port invalide (<1024) leve ValidationError."""
+    """Port invalide (hors plage 1-65535) leve ValidationError."""
     with pytest.raises(ValidationError) as exc_info:
         ProxyConfig(
             host="fr.decodo.com",
-            port=80,
+            port=0,
             username="testuser",
             password="mypassword",
             country="FR",

@@ -395,9 +395,13 @@ uv run pytest tests/
 **Lancer l'application** :
 ```bash
 # Mode développement (hot-reload)
-fastapi dev app/main.py
+uv run fastapi dev app/main.py
 
 # Mode production
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Alternative venv activé
+fastapi dev app/main.py
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
