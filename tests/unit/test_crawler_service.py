@@ -9,9 +9,10 @@ from app.services.crawler_service import CrawlerService
 
 
 @pytest.fixture
-def crawler_service():
-    """Instance CrawlerService."""
-    return CrawlerService()
+def crawler_service(test_settings):
+    """Instance CrawlerService avec Settings mocké pour CI."""
+    with patch("app.services.crawler_service.get_settings", return_value=test_settings):
+        yield CrawlerService()
 
 
 @pytest.mark.asyncio

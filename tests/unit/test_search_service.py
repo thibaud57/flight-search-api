@@ -1,7 +1,7 @@
 """Tests unitaires SearchService async."""
 
 from datetime import date, timedelta
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -45,14 +45,18 @@ def valid_search_request():
 
 @pytest.fixture
 def search_service(
-    mock_combination_generator, mock_crawler_service, mock_flight_parser_10_flights
+    test_settings,
+    mock_combination_generator,
+    mock_crawler_service,
+    mock_flight_parser_10_flights,
 ):
-    """SearchService avec mocks."""
-    return SearchService(
-        combination_generator=mock_combination_generator,
-        crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
-    )
+    """SearchService avec mocks et Settings mocké pour CI."""
+    with patch("app.services.search_service.get_settings", return_value=test_settings):
+        yield SearchService(
+            combination_generator=mock_combination_generator,
+            crawler_service=mock_crawler_service,
+            flight_parser=mock_flight_parser_10_flights,
+        )
 
 
 @pytest.mark.asyncio
