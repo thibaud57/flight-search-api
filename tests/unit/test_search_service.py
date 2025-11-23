@@ -1,14 +1,13 @@
 """Tests unitaires SearchService async."""
 
 from datetime import date, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
 from app.models.google_flight_dto import GoogleFlightDTO
 from app.models.request import DateCombination, SearchRequest
 from app.models.response import SearchResponse
-from app.services.combination_generator import CombinationGenerator
 from app.services.crawler_service import CrawlResult
 from app.services.search_service import SearchService
 

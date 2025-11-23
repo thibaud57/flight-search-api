@@ -349,9 +349,6 @@ async def test_crawl_status_429(crawler_service):
 @pytest.mark.asyncio
 async def test_crawl_timeouts_configurable(mock_crawl_result):
     """Timeouts configurables via Settings."""
-    from app.core.config import get_settings
-
-    settings = get_settings()
     crawler_service = CrawlerService()
 
     with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
