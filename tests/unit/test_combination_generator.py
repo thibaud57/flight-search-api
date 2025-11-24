@@ -1,5 +1,6 @@
 """Tests unitaires CombinationGenerator."""
 
+import logging
 from datetime import date
 
 import pytest
@@ -172,8 +173,6 @@ def test_combinations_dates_ordered_chronologically(combination_generator):
 
 def test_generate_combinations_logging(combination_generator, three_segments, caplog):
     """Logging INFO avec statistiques generation."""
-    import logging
-
     with caplog.at_level(logging.INFO):
         combination_generator.generate_combinations(three_segments)
 

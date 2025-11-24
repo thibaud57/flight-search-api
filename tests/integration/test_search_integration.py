@@ -4,12 +4,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.exceptions import CaptchaDetectedError
 from app.models.google_flight_dto import GoogleFlightDTO
 from app.models.request import SearchRequest
 from app.services.combination_generator import CombinationGenerator
 from app.services.crawler_service import CrawlResult
 from app.services.search_service import SearchService
-from tests.fixtures.helpers import TEMPLATE_URL
+from tests.fixtures.helpers import GOOGLE_FLIGHTS_MOCKED_URL, TEMPLATE_URL
 
 
 @pytest.mark.asyncio
@@ -27,7 +28,7 @@ async def test_integration_search_two_segments_success(
     with patch(
         "app.services.search_service.generate_google_flights_url"
     ) as mock_url_gen:
-        mock_url_gen.return_value = "https://www.google.com/travel/flights?tfs=mocked"
+        mock_url_gen.return_value = GOOGLE_FLIGHTS_MOCKED_URL
         response = await service.search_flights(request)
 
         assert len(response.results) == 10
@@ -63,7 +64,7 @@ async def test_integration_search_five_segments_asymmetric(
     with patch(
         "app.services.search_service.generate_google_flights_url"
     ) as mock_url_gen:
-        mock_url_gen.return_value = "https://www.google.com/travel/flights?tfs=mocked"
+        mock_url_gen.return_value = GOOGLE_FLIGHTS_MOCKED_URL
         response = await service.search_flights(request)
 
         assert len(response.results) == 10
@@ -75,8 +76,6 @@ async def test_integration_search_with_captcha_partial_failures(
     flight_parser_mock_10_flights_factory, search_request_factory
 ):
     """40% echecs captcha."""
-    from app.exceptions import CaptchaDetectedError
-
     request = search_request_factory(days_segment1=9, days_segment2=7)
     call_count = [0]
     mock_crawler = AsyncMock()
@@ -98,7 +97,7 @@ async def test_integration_search_with_captcha_partial_failures(
     with patch(
         "app.services.search_service.generate_google_flights_url"
     ) as mock_url_gen:
-        mock_url_gen.return_value = "https://www.google.com/travel/flights?tfs=mocked"
+        mock_url_gen.return_value = GOOGLE_FLIGHTS_MOCKED_URL
         response = await service.search_flights(request)
 
         assert len(response.results) <= 10
@@ -139,7 +138,7 @@ async def test_integration_search_dates_ranking(
     with patch(
         "app.services.search_service.generate_google_flights_url"
     ) as mock_url_gen:
-        mock_url_gen.return_value = "https://www.google.com/travel/flights?tfs=mocked"
+        mock_url_gen.return_value = GOOGLE_FLIGHTS_MOCKED_URL
         response = await service.search_flights(request)
 
         assert len(response.results) == 10

@@ -4,9 +4,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.models.proxy import ProxyConfig
 from app.models.request import DateCombination
+from app.models.response import FlightCombinationResult, SearchResponse, SearchStats
 from app.services.combination_generator import CombinationGenerator
-from tests.fixtures.helpers import get_future_date
+from tests.fixtures.helpers import GOOGLE_FLIGHTS_MOCKED_URL, get_future_date
 
 
 @pytest.fixture
@@ -57,8 +59,6 @@ def mock_crawl_result():
 @pytest.fixture
 def mock_search_service(flight_dto_factory):
     """Mock SearchService pour tests integration endpoint."""
-    from app.models.response import FlightCombinationResult, SearchResponse, SearchStats
-
     service = MagicMock()
     start_date = get_future_date(1)
 
@@ -101,8 +101,6 @@ def mock_search_service(flight_dto_factory):
 @pytest.fixture
 def mock_proxy_pool():
     """Pool de 3 proxies pour tests."""
-    from app.models.proxy import ProxyConfig
-
     return [
         ProxyConfig(
             host=f"proxy{i}.decodo.com",
@@ -121,5 +119,5 @@ def mock_generate_google_flights_url():
     with patch(
         "app.services.search_service.generate_google_flights_url"
     ) as mock_url_gen:
-        mock_url_gen.return_value = "https://www.google.com/travel/flights?tfs=mocked"
+        mock_url_gen.return_value = GOOGLE_FLIGHTS_MOCKED_URL
         yield mock_url_gen

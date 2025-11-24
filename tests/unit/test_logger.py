@@ -8,7 +8,7 @@ from datetime import datetime
 import pytest
 from pythonjsonlogger import jsonlogger
 
-from app.core.logger import setup_logger
+from app.core.logger import SensitiveDataFilter, setup_logger
 
 
 @pytest.fixture
@@ -101,8 +101,6 @@ def test_logger_supports_extra_fields(logger_with_json_stream) -> None:
 
 def test_logger_does_not_log_secrets(logger_with_json_stream) -> None:
     """Secrets masqués dans logs."""
-    from app.core.logger import SensitiveDataFilter
-
     logger, stream = logger_with_json_stream
     logger.handlers[0].addFilter(SensitiveDataFilter())
 

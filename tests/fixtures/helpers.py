@@ -2,7 +2,15 @@
 
 from datetime import date, timedelta
 
-TEMPLATE_URL = "https://www.google.com/travel/flights?tfs=test"
+from app.models.response import SearchResponse
+
+# URLs Google Flights pour tests
+GOOGLE_FLIGHTS_TEMPLATE_URL = "https://www.google.com/travel/flights?tfs=test"
+GOOGLE_FLIGHTS_BASE_URL = "https://www.google.com/travel/flights"
+GOOGLE_FLIGHTS_MOCKED_URL = "https://www.google.com/travel/flights?tfs=mocked"
+
+# Alias pour compatibilité (deprecated, utiliser GOOGLE_FLIGHTS_TEMPLATE_URL)
+TEMPLATE_URL = GOOGLE_FLIGHTS_TEMPLATE_URL
 
 
 def get_future_date(days_offset: int = 1) -> date:
@@ -26,8 +34,6 @@ def get_date_range(
 
 def assert_search_response_valid(response, min_results=0):
     """Helper assertions pour valider SearchResponse structure."""
-    from app.models.response import SearchResponse
-
     assert isinstance(response, SearchResponse)
     assert len(response.results) >= min_results
     assert response.search_stats.total_results >= min_results

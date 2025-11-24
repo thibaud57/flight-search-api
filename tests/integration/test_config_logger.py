@@ -6,6 +6,7 @@ import logging
 
 import pytest
 from pydantic import ValidationError
+from pythonjsonlogger import jsonlogger
 
 from app.core.config import Settings
 from app.core.logger import setup_logger
@@ -61,8 +62,6 @@ def test_logs_parsable_by_json_parser() -> None:
     logger = setup_logger("INFO")
     stream = io.StringIO()
     handler = logging.StreamHandler(stream)
-    from pythonjsonlogger import jsonlogger
-
     formatter = jsonlogger.JsonFormatter(
         "%(asctime)s %(name)s %(levelname)s %(message)s"
     )

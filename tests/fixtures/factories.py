@@ -7,6 +7,7 @@ import pytest
 
 from app.core.config import Settings
 from app.models.google_flight_dto import GoogleFlightDTO
+from app.models.proxy import ProxyConfig
 from app.models.request import DateRange, SearchRequest
 from app.services.flight_parser import FlightParser
 from tests.fixtures.helpers import TEMPLATE_URL, get_date_range, get_future_date
@@ -163,8 +164,6 @@ def flight_parser_mock_10_flights_factory(flight_parser_mock_factory):
 @pytest.fixture
 def proxy_config_factory():
     """Factory pour créer ProxyConfig avec paramètres configurables."""
-    from app.models.proxy import ProxyConfig
-
     def _create(
         host="fr.decodo.com",
         port=40000,

@@ -1,16 +1,18 @@
 """Tests unitaires SearchService async."""
 
+import logging
 from datetime import date, timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from app.exceptions import CaptchaDetectedError, NetworkError
 from app.models.google_flight_dto import GoogleFlightDTO
 from app.models.request import DateCombination
 from app.models.response import SearchResponse
 from app.services.crawler_service import CrawlResult
 from app.services.search_service import SearchService
-from tests.fixtures.helpers import get_future_date
+from tests.fixtures.helpers import GOOGLE_FLIGHTS_MOCKED_URL, get_future_date
 
 
 @pytest.fixture
@@ -40,7 +42,7 @@ def mock_settings(test_settings):
 def mock_url_generation():
     """Mock generate_google_flights_url pour tous les tests."""
     with patch("app.services.search_service.generate_google_flights_url") as mock_url:
-        mock_url.return_value = "https://www.google.com/travel/flights?tfs=mocked"
+        mock_url.return_value = GOOGLE_FLIGHTS_MOCKED_URL
         yield mock_url
 
 
@@ -361,8 +363,6 @@ async def test_search_flights_handles_partial_crawl_failures(
     valid_search_request,
 ):
     """Gestion erreurs crawl partielles (50% echecs)."""
-    from app.exceptions import CaptchaDetectedError
-
     tomorrow = date.today() + timedelta(days=1)
     mock_combination_generator.generate_combinations.return_value = [
         DateCombination(
@@ -403,8 +403,6 @@ async def test_search_flights_returns_empty_all_crawls_failed(
     valid_search_request,
 ):
     """Retourne response vide si tous crawls echouent."""
-    from app.exceptions import NetworkError
-
     mock_crawler_service.crawl_google_flights.side_effect = NetworkError(
         url="test", status_code=500
     )
@@ -455,8 +453,6 @@ async def test_search_flights_logging_structured(
     search_service, valid_search_request, caplog
 ):
     """Logging structure toutes etapes orchestration."""
-    import logging
-
     with caplog.at_level(logging.INFO):
         await search_service.search_flights(valid_search_request)
 

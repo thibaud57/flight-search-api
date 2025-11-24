@@ -1,5 +1,7 @@
 """Tests unitaires RetryStrategy."""
 
+import contextlib
+import time
 from unittest.mock import patch
 
 import pytest
@@ -11,7 +13,6 @@ from app.services.retry_strategy import RetryStrategy
 
 def test_retry_on_network_error():
     """Retry declenche sur NetworkError."""
-    # Arrange
     call_count = 0
 
     @retry(**RetryStrategy.get_crawler_retry())
@@ -22,18 +23,15 @@ def test_retry_on_network_error():
             raise NetworkError(url="https://example.com", status_code=503)
         return "success"
 
-    # Act
     with patch("asyncio.sleep"):
         result = mock_function()
 
-    # Assert
     assert call_count == 3
     assert result == "success"
 
 
 def test_retry_on_captcha_detected():
     """Retry declenche sur CaptchaDetectedError."""
-    # Arrange
     call_count = 0
 
     @retry(**RetryStrategy.get_crawler_retry())
@@ -46,18 +44,15 @@ def test_retry_on_captcha_detected():
             )
         return "success"
 
-    # Act
     with patch("asyncio.sleep"):
         result = mock_function()
 
-    # Assert
     assert call_count == 2
     assert result == "success"
 
 
 def test_no_retry_on_validation_error():
     """Pas de retry sur ValidationError."""
-    # Arrange
     call_count = 0
 
     @retry(**RetryStrategy.get_crawler_retry())
@@ -66,7 +61,6 @@ def test_no_retry_on_validation_error():
         call_count += 1
         raise ValueError("Validation failed")
 
-    # Act & Assert
     with pytest.raises(ValueError):
         mock_function()
 
@@ -75,7 +69,6 @@ def test_no_retry_on_validation_error():
 
 def test_exponential_backoff_timing():
     """Wait time augmente exponentiellement."""
-    # Arrange
     call_count = 0
     wait_times = []
 
@@ -90,9 +83,6 @@ def test_exponential_backoff_timing():
         call_count += 1
         raise NetworkError(url="https://example.com", status_code=503)
 
-    # Act
-    import time
-
     original_sleep = time.sleep
     time.sleep = capture_sleep
     try:
@@ -102,7 +92,6 @@ def test_exponential_backoff_timing():
     finally:
         time.sleep = original_sleep
 
-    # Assert
     assert call_count == 3
     assert len(wait_times) == 2
     assert 2 <= wait_times[0] <= 8
@@ -111,7 +100,6 @@ def test_exponential_backoff_timing():
 
 def test_max_retries_exceeded():
     """Max retries atteint leve NetworkError finale."""
-    # Arrange
     call_count = 0
 
     @retry(**RetryStrategy.get_crawler_retry())
@@ -120,7 +108,6 @@ def test_max_retries_exceeded():
         call_count += 1
         raise NetworkError(url="https://example.com", status_code=503)
 
-    # Act & Assert
     with patch("tenacity.nap.sleep"), pytest.raises(NetworkError):
         mock_function()
 
@@ -129,7 +116,6 @@ def test_max_retries_exceeded():
 
 def test_jitter_randomness():
     """Jitter ajoute randomness aux wait times."""
-    # Arrange
     wait_times_all = []
 
     def capture_sleep(seconds):
@@ -138,10 +124,6 @@ def test_jitter_randomness():
     @retry(**RetryStrategy.get_crawler_retry())
     def mock_function():
         raise NetworkError(url="https://example.com", status_code=503)
-
-    # Act
-    import contextlib
-    import time
 
     original_sleep = time.sleep
     time.sleep = capture_sleep
@@ -152,7 +134,6 @@ def test_jitter_randomness():
     finally:
         time.sleep = original_sleep
 
-    # Assert
     assert len(wait_times_all) >= 4
     for wait_time in wait_times_all:
         assert 0 <= wait_time <= 60
@@ -160,9 +141,6 @@ def test_jitter_randomness():
 
 def test_before_sleep_callback_logging(caplog):
     """Before_sleep callback appele a chaque retry."""
-    # Arrange
-    import logging
-
     caplog.set_level(logging.WARNING)
     call_count = 0
 
@@ -174,11 +152,9 @@ def test_before_sleep_callback_logging(caplog):
             raise CaptchaDetectedError(url=url, captcha_type="recaptcha_v2")
         return "success"
 
-    # Act
     with patch("tenacity.nap.sleep"):
         mock_function("https://example.com")
 
-    # Assert
     assert call_count == 3
     warning_logs = [
         record for record in caplog.records if record.levelname == "WARNING"
@@ -190,7 +166,6 @@ def test_before_sleep_callback_logging(caplog):
 
 def test_retry_success_after_failures():
     """Succes apres N echecs sans lever exception finale."""
-    # Arrange
     call_count = 0
 
     @retry(**RetryStrategy.get_crawler_retry())
@@ -201,10 +176,8 @@ def test_retry_success_after_failures():
             raise NetworkError(url="https://example.com", status_code=503)
         return "success"
 
-    # Act
     with patch("tenacity.nap.sleep"):
         result = mock_function()
 
-    # Assert
     assert call_count == 3
     assert result == "success"
