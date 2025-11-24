@@ -11,6 +11,9 @@ from tenacity import retry
 from app.exceptions import CaptchaDetectedError, NetworkError
 from app.services.retry_strategy import RetryStrategy
 
+# URL fictive pour tests retry (valeur n'a pas d'importance)
+MOCK_URL = "https://example.com"
+
 
 def test_retry_on_network_error():
     """Retry declenche sur NetworkError."""
@@ -21,7 +24,7 @@ def test_retry_on_network_error():
         nonlocal call_count
         call_count += 1
         if call_count <= 2:
-            raise NetworkError(url="https://example.com", status_code=503)
+            raise NetworkError(url=MOCK_URL, status_code=503)
         return "success"
 
     with patch("asyncio.sleep"):
@@ -41,7 +44,7 @@ def test_retry_on_captcha_detected():
         call_count += 1
         if call_count == 1:
             raise CaptchaDetectedError(
-                url="https://example.com", captcha_type="recaptcha_v2"
+                url=MOCK_URL, captcha_type="recaptcha_v2"
             )
         return "success"
 
@@ -82,7 +85,7 @@ def test_exponential_backoff_timing():
     def mock_function():
         nonlocal call_count
         call_count += 1
-        raise NetworkError(url="https://example.com", status_code=503)
+        raise NetworkError(url=MOCK_URL, status_code=503)
 
     original_sleep = time.sleep
     time.sleep = capture_sleep
@@ -107,7 +110,7 @@ def test_max_retries_exceeded():
     def mock_function():
         nonlocal call_count
         call_count += 1
-        raise NetworkError(url="https://example.com", status_code=503)
+        raise NetworkError(url=MOCK_URL, status_code=503)
 
     with patch("tenacity.nap.sleep"), pytest.raises(NetworkError):
         mock_function()
@@ -124,7 +127,7 @@ def test_jitter_randomness():
 
     @retry(**RetryStrategy.get_crawler_retry())
     def mock_function():
-        raise NetworkError(url="https://example.com", status_code=503)
+        raise NetworkError(url=MOCK_URL, status_code=503)
 
     original_sleep = time.sleep
     time.sleep = capture_sleep
@@ -174,7 +177,7 @@ def test_retry_success_after_failures():
         nonlocal call_count
         call_count += 1
         if call_count <= 2:
-            raise NetworkError(url="https://example.com", status_code=503)
+            raise NetworkError(url=MOCK_URL, status_code=503)
         return "success"
 
     with patch("tenacity.nap.sleep"):
