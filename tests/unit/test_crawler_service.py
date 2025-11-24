@@ -137,29 +137,17 @@ async def test_crawl_structured_logging(
 
 
 @pytest.fixture
-def proxy_config():
-    """ProxyConfig pour tests."""
-    return ProxyConfig(
-        host="fr.decodo.com",
-        port=40000,
-        username="testuser",
-        password="testpassword",
-        country="FR",
-    )
-
-
-@pytest.fixture
-def proxy_service(proxy_config):
-    """ProxyService avec 1 proxy."""
-    return ProxyService([proxy_config])
+def proxy_service_single(proxy_config_factory):
+    """ProxyService avec 1 proxy (utilise factory)."""
+    return ProxyService([proxy_config_factory(password="testpassword")])
 
 
 @pytest.mark.asyncio
 async def test_crawl_with_proxy_service(
-    mock_crawl_result, proxy_service, mock_async_web_crawler
+    mock_crawl_result, proxy_service_single, mock_async_web_crawler
 ):
     """CrawlerService utilise proxy_service."""
-    crawler_service = CrawlerService(proxy_service=proxy_service)
+    crawler_service = CrawlerService(proxy_service=proxy_service_single)
     crawler = mock_async_web_crawler(mock_result=mock_crawl_result)
 
     with patch(
@@ -193,12 +181,12 @@ async def test_crawl_without_proxy_when_disabled(
 
 @pytest.mark.asyncio
 async def test_crawl_proxy_rotation_called(
-    mock_crawl_result, proxy_service, mock_async_web_crawler
+    mock_crawl_result, proxy_service_single, mock_async_web_crawler
 ):
     """get_next_proxy() appele si use_proxy=True."""
-    crawler_service = CrawlerService(proxy_service=proxy_service)
-    proxy_service.get_next_proxy = MagicMock(
-        return_value=proxy_service.get_next_proxy()
+    crawler_service = CrawlerService(proxy_service=proxy_service_single)
+    proxy_service_single.get_next_proxy = MagicMock(
+        return_value=proxy_service_single.get_next_proxy()
     )
     crawler = mock_async_web_crawler(mock_result=mock_crawl_result)
 
@@ -207,7 +195,7 @@ async def test_crawl_proxy_rotation_called(
             GOOGLE_FLIGHTS_BASE_URL, use_proxy=True
         )
 
-        proxy_service.get_next_proxy.assert_called_once()
+        proxy_service_single.get_next_proxy.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -456,21 +444,21 @@ async def test_crawl_retry_before_sleep_logging(
 
 @pytest.mark.asyncio
 async def test_crawl_retry_with_proxy_rotation(
-    mock_crawl_result, proxy_service, mock_async_web_crawler
+    mock_crawl_result, proxy_service_single, mock_async_web_crawler
 ):
     """Rotation proxy a chaque retry."""
-    crawler_service = CrawlerService(proxy_service=proxy_service)
+    crawler_service = CrawlerService(proxy_service=proxy_service_single)
     call_count = 0
     proxy_calls = []
 
-    original_get_next_proxy = proxy_service.get_next_proxy
+    original_get_next_proxy = proxy_service_single.get_next_proxy
 
     def track_proxy_calls():
         proxy = original_get_next_proxy()
         proxy_calls.append(proxy)
         return proxy
 
-    proxy_service.get_next_proxy = track_proxy_calls
+    proxy_service_single.get_next_proxy = track_proxy_calls
 
     async def mock_arun_side_effect(*args, **kwargs):
         nonlocal call_count

@@ -11,7 +11,6 @@ from tenacity import retry
 from app.exceptions import CaptchaDetectedError, NetworkError
 from app.services.retry_strategy import RetryStrategy
 
-# URL fictive pour tests retry (valeur n'a pas d'importance)
 MOCK_URL = "https://example.com"
 
 
