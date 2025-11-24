@@ -98,7 +98,7 @@ def test_end_to_end_validation_error_too_many_segments(
     client_with_mock_search: TestClient,
 ) -> None:
     """Plus de 5 segments retourne 422."""
-    tomorrow = date.today() + timedelta(days=1)
+    tomorrow = get_future_date(1)
 
     request_data = {
         "template_url": TEMPLATE_URL,

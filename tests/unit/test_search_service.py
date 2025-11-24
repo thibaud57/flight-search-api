@@ -89,7 +89,7 @@ async def test_search_flights_crawls_all_urls(
     valid_search_request,
 ):
     """Crawle toutes URLs generees."""
-    tomorrow = date.today() + timedelta(days=1)
+    tomorrow = get_future_date(1)
     mock_combination_generator.generate_combinations.return_value = [
         DateCombination(
             segment_dates=[
@@ -138,7 +138,7 @@ async def test_search_flights_parses_all_html(
     valid_search_request,
 ):
     """Parse HTML de tous crawls reussis."""
-    tomorrow = date.today() + timedelta(days=1)
+    tomorrow = get_future_date(1)
     mock_combination_generator.generate_combinations.return_value = [
         DateCombination(
             segment_dates=[
@@ -167,7 +167,7 @@ async def test_search_flights_ranking_top_10(
     valid_search_request,
 ):
     """Selectionne top 10 resultats par prix."""
-    tomorrow = date.today() + timedelta(days=1)
+    tomorrow = get_future_date(1)
     mock_combination_generator.generate_combinations.return_value = [
         DateCombination(
             segment_dates=[
@@ -219,7 +219,7 @@ async def test_search_flights_ranking_price_primary(
     valid_search_request,
 ):
     """Prix total est critere dominant ranking."""
-    tomorrow = date.today() + timedelta(days=1)
+    tomorrow = get_future_date(1)
     mock_combination_generator.generate_combinations.return_value = [
         DateCombination(
             segment_dates=[
@@ -266,7 +266,7 @@ async def test_search_flights_ranking_same_price_stable(
     valid_search_request,
 ):
     """Ordre stable quand prix identiques (premier crawle = premier retourne)."""
-    tomorrow = date.today() + timedelta(days=1)
+    tomorrow = get_future_date(1)
     mock_combination_generator.generate_combinations.return_value = [
         DateCombination(
             segment_dates=[
@@ -316,7 +316,7 @@ async def test_search_flights_ranking_tie_breaker_duration(
     valid_search_request,
 ):
     """Departage ex-aequo prix par duree."""
-    tomorrow = date.today() + timedelta(days=1)
+    tomorrow = get_future_date(1)
     mock_combination_generator.generate_combinations.return_value = [
         DateCombination(
             segment_dates=[
@@ -363,7 +363,7 @@ async def test_search_flights_handles_partial_crawl_failures(
     valid_search_request,
 ):
     """Gestion erreurs crawl partielles (50% echecs)."""
-    tomorrow = date.today() + timedelta(days=1)
+    tomorrow = get_future_date(1)
     mock_combination_generator.generate_combinations.return_value = [
         DateCombination(
             segment_dates=[
@@ -483,7 +483,7 @@ async def test_search_flights_search_stats_accurate(
     valid_search_request,
 ):
     """search_stats coherentes avec resultats."""
-    tomorrow = date.today() + timedelta(days=1)
+    tomorrow = get_future_date(1)
     mock_combination_generator.generate_combinations.return_value = [
         DateCombination(
             segment_dates=[
@@ -513,7 +513,7 @@ async def test_search_flights_less_than_10_results(
     valid_search_request,
 ):
     """Retourne <10 resultats si <10 combinaisons reussies."""
-    tomorrow = date.today() + timedelta(days=1)
+    tomorrow = get_future_date(1)
     mock_combination_generator.generate_combinations.return_value = [
         DateCombination(
             segment_dates=[
