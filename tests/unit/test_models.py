@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 from pydantic import ValidationError
@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from app.models.google_flight_dto import GoogleFlightDTO
 from app.models.request import DateRange, SearchRequest
 from app.models.response import FlightCombinationResult, SearchResponse, SearchStats
-from tests.fixtures.helpers import TEMPLATE_URL
+from tests.fixtures.helpers import TEMPLATE_URL, get_future_date
 
 
 def test_date_range_valid_dates(date_range_factory):
@@ -19,8 +19,8 @@ def test_date_range_valid_dates(date_range_factory):
 
 def test_date_range_end_before_start_fails():
     """End avant start rejetée."""
-    tomorrow = date.today() + timedelta(days=1)
-    week_later = tomorrow + timedelta(days=6)
+    tomorrow = get_future_date(1)
+    week_later = get_future_date(7)
     invalid_date_range = {
         "start": week_later.isoformat(),
         "end": tomorrow.isoformat(),
@@ -78,16 +78,16 @@ def test_date_range_future_dates_valid():
 
 def test_search_request_valid_two_segments():
     """Request valide avec 2 segments (minimum)."""
-    tomorrow = date.today() + timedelta(days=1)
-    week_later = tomorrow + timedelta(days=6)
+    tomorrow = get_future_date(1)
+    week_later = get_future_date(7)
 
     request = SearchRequest(
         template_url=TEMPLATE_URL,
         segments_date_ranges=[
             DateRange(start=tomorrow.isoformat(), end=week_later.isoformat()),
             DateRange(
-                start=(week_later + timedelta(days=1)).isoformat(),
-                end=(week_later + timedelta(days=6)).isoformat(),
+                start=get_future_date(8).isoformat(),
+                end=get_future_date(13).isoformat(),
             ),
         ],
     )
@@ -96,12 +96,10 @@ def test_search_request_valid_two_segments():
 
 def test_search_request_valid_five_segments():
     """Request valide avec 5 segments (maximum)."""
-    tomorrow = date.today() + timedelta(days=1)
-
     segments_date_ranges = []
     for i in range(5):
-        start = tomorrow + timedelta(days=i * 10)
-        end = start + timedelta(days=2)
+        start = get_future_date(1 + i * 10)
+        end = get_future_date(1 + i * 10 + 2)
         segments_date_ranges.append(
             DateRange(start=start.isoformat(), end=end.isoformat())
         )
@@ -115,14 +113,14 @@ def test_search_request_valid_five_segments():
 
 def test_search_request_single_segment_fails():
     """1 segment rejeté (multi-city minimum 2)."""
-    tomorrow = date.today() + timedelta(days=1)
+    tomorrow = get_future_date(1)
     with pytest.raises(ValidationError):
         SearchRequest(
             template_url=TEMPLATE_URL,
             segments_date_ranges=[
                 DateRange(
                     start=tomorrow.isoformat(),
-                    end=(tomorrow + timedelta(days=5)).isoformat(),
+                    end=get_future_date(6).isoformat(),
                 )
             ],
         )
@@ -130,12 +128,10 @@ def test_search_request_single_segment_fails():
 
 def test_search_request_too_many_segments_fails():
     """Plus de 5 segments rejetés."""
-    tomorrow = date.today() + timedelta(days=1)
-
     segments_date_ranges = []
     for i in range(6):
-        start = tomorrow + timedelta(days=i * 10)
-        end = start + timedelta(days=2)
+        start = get_future_date(1 + i * 10)
+        end = get_future_date(1 + i * 10 + 2)
         segments_date_ranges.append(
             DateRange(start=start.isoformat(), end=end.isoformat())
         )
@@ -158,30 +154,28 @@ def test_search_request_empty_segments_fails():
 
 def test_search_request_explosion_combinatoire_ok():
     """1000 combinaisons exactement accepté."""
-    tomorrow = date.today() + timedelta(days=1)
-
     request = SearchRequest(
         template_url=TEMPLATE_URL,
         segments_date_ranges=[
             DateRange(
-                start=tomorrow.isoformat(),
-                end=(tomorrow + timedelta(days=9)).isoformat(),
+                start=get_future_date(1).isoformat(),
+                end=get_future_date(10).isoformat(),
             ),
             DateRange(
-                start=(tomorrow + timedelta(days=10)).isoformat(),
-                end=(tomorrow + timedelta(days=11)).isoformat(),
+                start=get_future_date(11).isoformat(),
+                end=get_future_date(12).isoformat(),
             ),
             DateRange(
-                start=(tomorrow + timedelta(days=20)).isoformat(),
-                end=(tomorrow + timedelta(days=24)).isoformat(),
+                start=get_future_date(21).isoformat(),
+                end=get_future_date(25).isoformat(),
             ),
             DateRange(
-                start=(tomorrow + timedelta(days=30)).isoformat(),
-                end=(tomorrow + timedelta(days=31)).isoformat(),
+                start=get_future_date(31).isoformat(),
+                end=get_future_date(32).isoformat(),
             ),
             DateRange(
-                start=(tomorrow + timedelta(days=40)).isoformat(),
-                end=(tomorrow + timedelta(days=44)).isoformat(),
+                start=get_future_date(41).isoformat(),
+                end=get_future_date(45).isoformat(),
             ),
         ],
     )
@@ -190,31 +184,29 @@ def test_search_request_explosion_combinatoire_ok():
 
 def test_search_request_explosion_combinatoire_fails():
     """Plus de 1000 combinaisons rejeté."""
-    tomorrow = date.today() + timedelta(days=1)
-
     with pytest.raises(ValidationError) as exc_info:
         SearchRequest(
             template_url=TEMPLATE_URL,
             segments_date_ranges=[
                 DateRange(
-                    start=tomorrow.isoformat(),
-                    end=(tomorrow + timedelta(days=14)).isoformat(),
+                    start=get_future_date(1).isoformat(),
+                    end=get_future_date(15).isoformat(),
                 ),
                 DateRange(
-                    start=(tomorrow + timedelta(days=20)).isoformat(),
-                    end=(tomorrow + timedelta(days=34)).isoformat(),
+                    start=get_future_date(21).isoformat(),
+                    end=get_future_date(35).isoformat(),
                 ),
                 DateRange(
-                    start=(tomorrow + timedelta(days=40)).isoformat(),
-                    end=(tomorrow + timedelta(days=54)).isoformat(),
+                    start=get_future_date(41).isoformat(),
+                    end=get_future_date(55).isoformat(),
                 ),
                 DateRange(
-                    start=(tomorrow + timedelta(days=60)).isoformat(),
-                    end=(tomorrow + timedelta(days=61)).isoformat(),
+                    start=get_future_date(61).isoformat(),
+                    end=get_future_date(62).isoformat(),
                 ),
                 DateRange(
-                    start=(tomorrow + timedelta(days=70)).isoformat(),
-                    end=(tomorrow + timedelta(days=71)).isoformat(),
+                    start=get_future_date(71).isoformat(),
+                    end=get_future_date(72).isoformat(),
                 ),
             ],
         )
@@ -223,23 +215,21 @@ def test_search_request_explosion_combinatoire_fails():
 
 def test_search_request_explosion_message_suggests_reduction():
     """Message erreur suggère segment à réduire."""
-    tomorrow = date.today() + timedelta(days=1)
-
     with pytest.raises(ValidationError) as exc_info:
         SearchRequest(
             template_url=TEMPLATE_URL,
             segments_date_ranges=[
                 DateRange(
-                    start=tomorrow.isoformat(),
-                    end=(tomorrow + timedelta(days=9)).isoformat(),
+                    start=get_future_date(1).isoformat(),
+                    end=get_future_date(10).isoformat(),
                 ),
                 DateRange(
-                    start=(tomorrow + timedelta(days=20)).isoformat(),
-                    end=(tomorrow + timedelta(days=34)).isoformat(),
+                    start=get_future_date(21).isoformat(),
+                    end=get_future_date(35).isoformat(),
                 ),
                 DateRange(
-                    start=(tomorrow + timedelta(days=50)).isoformat(),
-                    end=(tomorrow + timedelta(days=64)).isoformat(),
+                    start=get_future_date(51).isoformat(),
+                    end=get_future_date(65).isoformat(),
                 ),
             ],
         )
@@ -249,30 +239,28 @@ def test_search_request_explosion_message_suggests_reduction():
 
 def test_search_request_asymmetric_ranges_valid():
     """Ranges asymétriques optimisés acceptés."""
-    tomorrow = date.today() + timedelta(days=1)
-
     request = SearchRequest(
         template_url=TEMPLATE_URL,
         segments_date_ranges=[
             DateRange(
-                start=tomorrow.isoformat(),
-                end=(tomorrow + timedelta(days=14)).isoformat(),
+                start=get_future_date(1).isoformat(),
+                end=get_future_date(15).isoformat(),
             ),
             DateRange(
-                start=(tomorrow + timedelta(days=20)).isoformat(),
-                end=(tomorrow + timedelta(days=21)).isoformat(),
+                start=get_future_date(21).isoformat(),
+                end=get_future_date(22).isoformat(),
             ),
             DateRange(
-                start=(tomorrow + timedelta(days=30)).isoformat(),
-                end=(tomorrow + timedelta(days=31)).isoformat(),
+                start=get_future_date(31).isoformat(),
+                end=get_future_date(32).isoformat(),
             ),
             DateRange(
-                start=(tomorrow + timedelta(days=40)).isoformat(),
-                end=(tomorrow + timedelta(days=41)).isoformat(),
+                start=get_future_date(41).isoformat(),
+                end=get_future_date(42).isoformat(),
             ),
             DateRange(
-                start=(tomorrow + timedelta(days=50)).isoformat(),
-                end=(tomorrow + timedelta(days=51)).isoformat(),
+                start=get_future_date(51).isoformat(),
+                end=get_future_date(52).isoformat(),
             ),
         ],
     )
@@ -287,18 +275,16 @@ def test_search_request_missing_fields_fails():
 
 def test_search_request_model_dump_json_valid():
     """Serialization JSON valide."""
-    tomorrow = date.today() + timedelta(days=1)
-
     request = SearchRequest(
         template_url=TEMPLATE_URL,
         segments_date_ranges=[
             DateRange(
-                start=tomorrow.isoformat(),
-                end=(tomorrow + timedelta(days=5)).isoformat(),
+                start=get_future_date(1).isoformat(),
+                end=get_future_date(6).isoformat(),
             ),
             DateRange(
-                start=(tomorrow + timedelta(days=10)).isoformat(),
-                end=(tomorrow + timedelta(days=14)).isoformat(),
+                start=get_future_date(11).isoformat(),
+                end=get_future_date(15).isoformat(),
             ),
         ],
     )

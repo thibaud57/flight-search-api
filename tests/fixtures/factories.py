@@ -9,7 +9,7 @@ from app.core.config import Settings
 from app.models.google_flight_dto import GoogleFlightDTO
 from app.models.request import DateRange, SearchRequest
 from app.services.flight_parser import FlightParser
-from tests.fixtures.helpers import TEMPLATE_URL, get_future_date
+from tests.fixtures.helpers import TEMPLATE_URL, get_date_range, get_future_date
 
 
 @pytest.fixture
@@ -55,8 +55,6 @@ def date_range_factory():
     def _create(
         start_offset=1, duration=6, past=False, invalid_format=False, as_dict=False
     ):
-        from tests.fixtures.helpers import get_date_range
-
         start_date, end_date = get_date_range(start_offset, duration, past)
 
         if as_dict:
@@ -151,12 +149,35 @@ def flight_parser_mock_factory():
 
 
 @pytest.fixture
-def flight_parser_mock_single(flight_parser_mock_factory):
+def flight_parser_mock_single_factory(flight_parser_mock_factory):
     """Mock FlightParser retournant 1 vol valide (tests retry)."""
     return flight_parser_mock_factory(num_flights=1, base_price=500.0)
 
 
 @pytest.fixture
-def flight_parser_mock_10_flights(flight_parser_mock_factory):
+def flight_parser_mock_10_flights_factory(flight_parser_mock_factory):
     """Mock FlightParser retournant 10 vols."""
     return flight_parser_mock_factory(num_flights=10, base_price=1000.0)
+
+
+@pytest.fixture
+def proxy_config_factory():
+    """Factory pour créer ProxyConfig avec paramètres configurables."""
+    from app.models.proxy import ProxyConfig
+
+    def _create(
+        host="fr.decodo.com",
+        port=40000,
+        username="testuser",
+        password="testpass",
+        country="FR",
+    ):
+        return ProxyConfig(
+            host=host,
+            port=port,
+            username=username,
+            password=password,
+            country=country,
+        )
+
+    return _create

@@ -14,14 +14,14 @@ from tests.fixtures.helpers import TEMPLATE_URL
 
 @pytest.mark.asyncio
 async def test_integration_search_two_segments_success(
-    mock_crawler_success, flight_parser_mock_10_flights, search_request_factory
+    mock_crawler_success, flight_parser_mock_10_flights_factory, search_request_factory
 ):
     """Orchestration complete 2 segments (7x6=42 combinaisons)."""
     request = search_request_factory(days_segment1=6, days_segment2=5)
     service = SearchService(
         combination_generator=CombinationGenerator(),
         crawler_service=mock_crawler_success,
-        flight_parser=flight_parser_mock_10_flights,
+        flight_parser=flight_parser_mock_10_flights_factory,
     )
 
     with patch(
@@ -41,7 +41,7 @@ async def test_integration_search_two_segments_success(
 
 @pytest.mark.asyncio
 async def test_integration_search_five_segments_asymmetric(
-    mock_crawler_success, flight_parser_mock_10_flights, date_range_factory
+    mock_crawler_success, flight_parser_mock_10_flights_factory, date_range_factory
 ):
     """5 segments asymetriques (15x2x2x2x2=240 combinaisons)."""
     request = SearchRequest(
@@ -57,7 +57,7 @@ async def test_integration_search_five_segments_asymmetric(
     service = SearchService(
         combination_generator=CombinationGenerator(),
         crawler_service=mock_crawler_success,
-        flight_parser=flight_parser_mock_10_flights,
+        flight_parser=flight_parser_mock_10_flights_factory,
     )
 
     with patch(
@@ -72,7 +72,7 @@ async def test_integration_search_five_segments_asymmetric(
 
 @pytest.mark.asyncio
 async def test_integration_search_with_captcha_partial_failures(
-    flight_parser_mock_10_flights, search_request_factory
+    flight_parser_mock_10_flights_factory, search_request_factory
 ):
     """40% echecs captcha."""
     from app.exceptions import CaptchaDetectedError
@@ -92,7 +92,7 @@ async def test_integration_search_with_captcha_partial_failures(
     service = SearchService(
         combination_generator=CombinationGenerator(),
         crawler_service=mock_crawler,
-        flight_parser=flight_parser_mock_10_flights,
+        flight_parser=flight_parser_mock_10_flights_factory,
     )
 
     with patch(

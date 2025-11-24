@@ -13,11 +13,11 @@ from app.services.proxy_service import ProxyService
 
 @pytest.mark.asyncio
 async def test_integration_crawler_with_proxy_rotation(
-    proxy_pool: list[ProxyConfig],
+    mock_proxy_pool: list[ProxyConfig],
     mock_crawl_result: MagicMock,
 ) -> None:
     """CrawlerService exécute 3 crawls successifs avec ProxyService."""
-    proxy_service = ProxyService(proxy_pool)
+    proxy_service = ProxyService(mock_proxy_pool)
     crawler_service = CrawlerService(proxy_service=proxy_service)
 
     with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
@@ -53,11 +53,11 @@ def test_integration_settings_load_from_env(monkeypatch: pytest.MonkeyPatch) -> 
 
 @pytest.mark.asyncio
 async def test_integration_proxy_service_injected_crawler(
-    proxy_pool: list[ProxyConfig],
+    mock_proxy_pool: list[ProxyConfig],
     mock_crawl_result: MagicMock,
 ) -> None:
     """get_next_proxy() retourne proxies différents (rotation round-robin)."""
-    proxy_service = ProxyService(proxy_pool)
+    proxy_service = ProxyService(mock_proxy_pool)
     crawler_service = CrawlerService(proxy_service=proxy_service)
 
     with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
@@ -79,12 +79,12 @@ async def test_integration_proxy_service_injected_crawler(
 
 @pytest.mark.asyncio
 async def test_integration_proxy_rotation_logging_observability(
-    proxy_pool: list[ProxyConfig],
+    mock_proxy_pool: list[ProxyConfig],
     mock_crawl_result: MagicMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Logs ne contiennent pas 'password' (sécurité)."""
-    proxy_service = ProxyService(proxy_pool)
+    proxy_service = ProxyService(mock_proxy_pool)
     crawler_service = CrawlerService(proxy_service=proxy_service)
 
     with (

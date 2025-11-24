@@ -154,12 +154,12 @@ def mock_crawler_with_mixed_errors():
 @pytest.mark.asyncio
 async def test_integration_search_with_transient_errors(
     mock_crawler_with_transient_errors,
-    flight_parser_mock_single,
-    proxy_pool,
+    flight_parser_mock_single_factory,
+    mock_proxy_pool,
     search_request_factory,
 ) -> None:
     """Test retry logic avec erreurs transitoires 30%."""
-    proxy_service = ProxyService(proxy_pool)
+    proxy_service = ProxyService(mock_proxy_pool)
 
     with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
         mock_crawler_class.return_value.__aenter__.return_value = (
@@ -171,7 +171,7 @@ async def test_integration_search_with_transient_errors(
         search_service = SearchService(
             combination_generator=combination_generator,
             crawler_service=crawler_service,
-            flight_parser=flight_parser_mock_single,
+            flight_parser=flight_parser_mock_single_factory,
         )
 
         request = search_request_factory(days_segment1=2, days_segment2=2)
@@ -186,12 +186,12 @@ async def test_integration_search_with_transient_errors(
 @pytest.mark.asyncio
 async def test_integration_retry_exhaustion_graceful_degradation(
     mock_crawler_with_persistent_errors,
-    flight_parser_mock_single,
-    proxy_pool,
+    flight_parser_mock_single_factory,
+    mock_proxy_pool,
     search_request_factory,
 ) -> None:
     """Test graceful degradation avec erreurs persistantes 40%."""
-    proxy_service = ProxyService(proxy_pool)
+    proxy_service = ProxyService(mock_proxy_pool)
 
     with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
         mock_crawler_class.return_value.__aenter__.return_value = (
@@ -203,7 +203,7 @@ async def test_integration_retry_exhaustion_graceful_degradation(
         search_service = SearchService(
             combination_generator=combination_generator,
             crawler_service=crawler_service,
-            flight_parser=flight_parser_mock_single,
+            flight_parser=flight_parser_mock_single_factory,
         )
 
         request = search_request_factory(
@@ -219,12 +219,12 @@ async def test_integration_retry_exhaustion_graceful_degradation(
 @pytest.mark.asyncio
 async def test_integration_partial_retry_success(
     mock_crawler_with_captcha_then_success,
-    flight_parser_mock_single,
-    proxy_pool,
+    flight_parser_mock_single_factory,
+    mock_proxy_pool,
     search_request_factory,
 ) -> None:
     """Test retry success avec captcha 50% puis proxy rotation."""
-    proxy_service = ProxyService(proxy_pool)
+    proxy_service = ProxyService(mock_proxy_pool)
 
     with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
         mock_crawler_class.return_value.__aenter__.return_value = (
@@ -236,7 +236,7 @@ async def test_integration_partial_retry_success(
         search_service = SearchService(
             combination_generator=combination_generator,
             crawler_service=crawler_service,
-            flight_parser=flight_parser_mock_single,
+            flight_parser=flight_parser_mock_single_factory,
         )
 
         request = search_request_factory(days_segment1=4, days_segment2=4)
@@ -250,12 +250,12 @@ async def test_integration_partial_retry_success(
 @pytest.mark.asyncio
 async def test_integration_no_retry_on_client_errors(
     mock_crawler_with_404_errors,
-    flight_parser_mock_single,
-    proxy_pool,
+    flight_parser_mock_single_factory,
+    mock_proxy_pool,
     search_request_factory,
 ) -> None:
     """Test aucun retry sur erreurs 404."""
-    proxy_service = ProxyService(proxy_pool)
+    proxy_service = ProxyService(mock_proxy_pool)
 
     with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
         mock_crawler_class.return_value.__aenter__.return_value = (
@@ -267,7 +267,7 @@ async def test_integration_no_retry_on_client_errors(
         search_service = SearchService(
             combination_generator=combination_generator,
             crawler_service=crawler_service,
-            flight_parser=flight_parser_mock_single,
+            flight_parser=flight_parser_mock_single_factory,
         )
 
         request = search_request_factory(days_segment1=4, days_segment2=4)
@@ -281,13 +281,13 @@ async def test_integration_no_retry_on_client_errors(
 @pytest.mark.asyncio
 async def test_integration_end_to_end_retry_metrics_logging(
     mock_crawler_with_mixed_errors,
-    flight_parser_mock_single,
-    proxy_pool,
+    flight_parser_mock_single_factory,
+    mock_proxy_pool,
     search_request_factory,
     caplog,
 ) -> None:
     """Test logs retry avec erreurs mixtes."""
-    proxy_service = ProxyService(proxy_pool)
+    proxy_service = ProxyService(mock_proxy_pool)
 
     with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
         mock_crawler_class.return_value.__aenter__.return_value = (
@@ -299,7 +299,7 @@ async def test_integration_end_to_end_retry_metrics_logging(
         search_service = SearchService(
             combination_generator=combination_generator,
             crawler_service=crawler_service,
-            flight_parser=flight_parser_mock_single,
+            flight_parser=flight_parser_mock_single_factory,
         )
 
         request = search_request_factory(days_segment1=4, days_segment2=4)

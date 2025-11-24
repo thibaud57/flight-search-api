@@ -99,7 +99,7 @@ def mock_search_service(flight_dto_factory):
 
 
 @pytest.fixture
-def proxy_pool():
+def mock_proxy_pool():
     """Pool de 3 proxies pour tests."""
     from app.models.proxy import ProxyConfig
 
