@@ -15,38 +15,21 @@ def combination_generator() -> CombinationGenerator:
 
 
 @pytest.fixture
-def two_segments() -> list[DateRange]:
+def two_segments(date_range_factory) -> list[DateRange]:
     """2 segments avec 7 et 6 jours."""
-    tomorrow = date.today() + timedelta(days=1)
     return [
-        DateRange(
-            start=tomorrow.isoformat(),
-            end=(tomorrow + timedelta(days=6)).isoformat(),
-        ),
-        DateRange(
-            start=(tomorrow + timedelta(days=14)).isoformat(),
-            end=(tomorrow + timedelta(days=19)).isoformat(),
-        ),
+        date_range_factory(start_offset=1, duration=6),
+        date_range_factory(start_offset=14, duration=5),
     ]
 
 
 @pytest.fixture
-def three_segments() -> list[DateRange]:
+def three_segments(date_range_factory) -> list[DateRange]:
     """3 segments avec 7, 6, 5 jours."""
-    tomorrow = date.today() + timedelta(days=1)
     return [
-        DateRange(
-            start=tomorrow.isoformat(),
-            end=(tomorrow + timedelta(days=6)).isoformat(),
-        ),
-        DateRange(
-            start=(tomorrow + timedelta(days=14)).isoformat(),
-            end=(tomorrow + timedelta(days=19)).isoformat(),
-        ),
-        DateRange(
-            start=(tomorrow + timedelta(days=30)).isoformat(),
-            end=(tomorrow + timedelta(days=34)).isoformat(),
-        ),
+        date_range_factory(start_offset=1, duration=6),
+        date_range_factory(start_offset=14, duration=5),
+        date_range_factory(start_offset=30, duration=4),
     ]
 
 

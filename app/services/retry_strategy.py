@@ -5,7 +5,14 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from tenacity import RetryCallState
+from tenacity import (
+    RetryCallState,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_random_exponential,
+)
+
+from app.exceptions import CaptchaDetectedError, NetworkError
 
 logger = logging.getLogger(__name__)
 
@@ -48,14 +55,6 @@ class RetryStrategy:
     @staticmethod
     def get_crawler_retry() -> dict[str, Any]:
         """Retourne configuration retry optimisee CrawlerService."""
-        from tenacity import (
-            retry_if_exception_type,
-            stop_after_attempt,
-            wait_random_exponential,
-        )
-
-        from app.exceptions import CaptchaDetectedError, NetworkError
-
         logger.debug(
             "Creating retry configuration",
             extra={

@@ -4,25 +4,16 @@ from datetime import date, timedelta
 
 from fastapi.testclient import TestClient
 
+from tests.fixtures.helpers import TEMPLATE_URL
 
-def test_end_to_end_search_request_valid(client_with_mock_search: TestClient) -> None:
+
+def test_end_to_end_search_request_valid(
+    client_with_mock_search: TestClient, search_request_factory
+) -> None:
     """Request valide retourne 200 avec SearchResponse."""
-    tomorrow = date.today() + timedelta(days=1)
-
-    request_data = {
-        "template_url": "https://www.google.com/travel/flights?tfs=test",
-        "segments_date_ranges": [
-            {
-                "start": tomorrow.isoformat(),
-                "end": (tomorrow + timedelta(days=6)).isoformat(),
-            },
-            {
-                "start": (tomorrow + timedelta(days=14)).isoformat(),
-                "end": (tomorrow + timedelta(days=19)).isoformat(),
-            },
-        ],
-    }
-
+    request_data = search_request_factory(
+        days_segment1=6, days_segment2=5, as_dict=True
+    )
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200
@@ -49,7 +40,7 @@ def test_end_to_end_validation_error_empty_segments(
 ) -> None:
     """Segments vide retourne 422."""
     request_data = {
-        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "template_url": TEMPLATE_URL,
         "segments_date_ranges": [],
     }
 
@@ -62,22 +53,14 @@ def test_end_to_end_validation_error_empty_segments(
 
 
 def test_end_to_end_validation_error_invalid_dates(
-    client_with_mock_search: TestClient,
+    client_with_mock_search: TestClient, date_range_factory
 ) -> None:
     """Dates invalides retourne 422."""
-    tomorrow = date.today() + timedelta(days=1)
-
     request_data = {
-        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "template_url": TEMPLATE_URL,
         "segments_date_ranges": [
-            {
-                "start": (tomorrow + timedelta(days=10)).isoformat(),
-                "end": tomorrow.isoformat(),
-            },
-            {
-                "start": (tomorrow + timedelta(days=14)).isoformat(),
-                "end": (tomorrow + timedelta(days=19)).isoformat(),
-            },
+            date_range_factory(start_offset=10, duration=-10, as_dict=True),
+            date_range_factory(start_offset=14, duration=5, as_dict=True),
         ],
     }
 
@@ -90,22 +73,14 @@ def test_end_to_end_validation_error_invalid_dates(
 
 
 def test_end_to_end_search_request_exact_dates(
-    client_with_mock_search: TestClient,
+    client_with_mock_search: TestClient, date_range_factory
 ) -> None:
     """Request avec dates exactes (start=end) retourne 200."""
-    tomorrow = date.today() + timedelta(days=1)
-
     request_data = {
-        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "template_url": TEMPLATE_URL,
         "segments_date_ranges": [
-            {
-                "start": tomorrow.isoformat(),
-                "end": tomorrow.isoformat(),
-            },
-            {
-                "start": (tomorrow + timedelta(days=6)).isoformat(),
-                "end": (tomorrow + timedelta(days=6)).isoformat(),
-            },
+            date_range_factory(start_offset=1, duration=0, as_dict=True),
+            date_range_factory(start_offset=6, duration=0, as_dict=True),
         ],
     }
 
@@ -126,7 +101,7 @@ def test_end_to_end_validation_error_too_many_segments(
     tomorrow = date.today() + timedelta(days=1)
 
     request_data = {
-        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "template_url": TEMPLATE_URL,
         "segments_date_ranges": [
             {
                 "start": (tomorrow + timedelta(days=i * 10)).isoformat(),

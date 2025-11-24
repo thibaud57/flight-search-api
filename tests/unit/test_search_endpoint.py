@@ -1,26 +1,15 @@
 """Tests unitaires endpoint search."""
 
-from datetime import date, timedelta
+from tests.fixtures.helpers import TEMPLATE_URL
 
 
-def test_endpoint_accepts_valid_request(client_with_mock_search):
+def test_endpoint_accepts_valid_request(
+    client_with_mock_search, search_request_factory
+):
     """Endpoint accepte request valide."""
-    tomorrow = date.today() + timedelta(days=1)
-
-    request_data = {
-        "template_url": "https://www.google.com/travel/flights?tfs=test",
-        "segments_date_ranges": [
-            {
-                "start": tomorrow.isoformat(),
-                "end": (tomorrow + timedelta(days=6)).isoformat(),
-            },
-            {
-                "start": (tomorrow + timedelta(days=14)).isoformat(),
-                "end": (tomorrow + timedelta(days=19)).isoformat(),
-            },
-        ],
-    }
-
+    request_data = search_request_factory(
+        days_segment1=6, days_segment2=5, as_dict=True
+    )
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200
@@ -32,7 +21,7 @@ def test_endpoint_accepts_valid_request(client_with_mock_search):
 def test_endpoint_validates_request_body(client_with_mock_search):
     """Body invalide rejete."""
     request_data = {
-        "template_url": "https://www.google.com/travel/flights?tfs=test",
+        "template_url": TEMPLATE_URL,
         "segments_date_ranges": [],
     }
 
@@ -43,24 +32,11 @@ def test_endpoint_validates_request_body(client_with_mock_search):
     assert "detail" in data
 
 
-def test_endpoint_returns_10_results(client_with_mock_search):
+def test_endpoint_returns_10_results(client_with_mock_search, search_request_factory):
     """Endpoint retourne 10 resultats."""
-    tomorrow = date.today() + timedelta(days=1)
-
-    request_data = {
-        "template_url": "https://www.google.com/travel/flights?tfs=test",
-        "segments_date_ranges": [
-            {
-                "start": tomorrow.isoformat(),
-                "end": (tomorrow + timedelta(days=6)).isoformat(),
-            },
-            {
-                "start": (tomorrow + timedelta(days=14)).isoformat(),
-                "end": (tomorrow + timedelta(days=19)).isoformat(),
-            },
-        ],
-    }
-
+    request_data = search_request_factory(
+        days_segment1=6, days_segment2=5, as_dict=True
+    )
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200
@@ -68,24 +44,13 @@ def test_endpoint_returns_10_results(client_with_mock_search):
     assert len(data["results"]) == 10
 
 
-def test_endpoint_response_matches_schema(client_with_mock_search):
+def test_endpoint_response_matches_schema(
+    client_with_mock_search, search_request_factory
+):
     """Response conforme SearchResponse schema."""
-    tomorrow = date.today() + timedelta(days=1)
-
-    request_data = {
-        "template_url": "https://www.google.com/travel/flights?tfs=test",
-        "segments_date_ranges": [
-            {
-                "start": tomorrow.isoformat(),
-                "end": (tomorrow + timedelta(days=6)).isoformat(),
-            },
-            {
-                "start": (tomorrow + timedelta(days=14)).isoformat(),
-                "end": (tomorrow + timedelta(days=19)).isoformat(),
-            },
-        ],
-    }
-
+    request_data = search_request_factory(
+        days_segment1=6, days_segment2=5, as_dict=True
+    )
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200
@@ -106,24 +71,13 @@ def test_endpoint_response_matches_schema(client_with_mock_search):
     assert "segments_count" in stats
 
 
-def test_endpoint_injects_search_service_dependency(client_with_mock_search):
+def test_endpoint_injects_search_service_dependency(
+    client_with_mock_search, search_request_factory
+):
     """SearchService injecte via Depends()."""
-    tomorrow = date.today() + timedelta(days=1)
-
-    request_data = {
-        "template_url": "https://www.google.com/travel/flights?tfs=test",
-        "segments_date_ranges": [
-            {
-                "start": tomorrow.isoformat(),
-                "end": (tomorrow + timedelta(days=6)).isoformat(),
-            },
-            {
-                "start": (tomorrow + timedelta(days=14)).isoformat(),
-                "end": (tomorrow + timedelta(days=19)).isoformat(),
-            },
-        ],
-    }
-
+    request_data = search_request_factory(
+        days_segment1=6, days_segment2=5, as_dict=True
+    )
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 
     assert response.status_code == 200

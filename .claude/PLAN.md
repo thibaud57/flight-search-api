@@ -553,9 +553,9 @@
 
 **Branche** : `feature/story-7-retry`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-7-retry.md
-- [ ] **Validation manuelle** : Simuler échec, vérifier retry dans logs
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-7-retry.md
+- [x] **Validation manuelle** : Simuler échec, vérifier retry dans logs
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit** : `feat(services): add retry logic and error handling`
 - [ ] **PR** : feature/story-7 → develop
 

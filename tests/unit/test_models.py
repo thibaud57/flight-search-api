@@ -6,80 +6,53 @@ from pydantic import ValidationError
 from app.models.google_flight_dto import GoogleFlightDTO
 from app.models.request import DateRange, SearchRequest
 from app.models.response import FlightCombinationResult, SearchResponse, SearchStats
+from tests.fixtures.helpers import TEMPLATE_URL
 
 
-@pytest.fixture
-def valid_date_range():
-    """Fixture pour un DateRange valide."""
-    tomorrow = date.today() + timedelta(days=1)
-    week_later = tomorrow + timedelta(days=6)
-    return {
-        "start": tomorrow.isoformat(),
-        "end": week_later.isoformat(),
-    }
-
-
-@pytest.fixture
-def invalid_date_range_end_before_start():
-    """Fixture pour un DateRange avec end avant start."""
-    tomorrow = date.today() + timedelta(days=1)
-    week_later = tomorrow + timedelta(days=6)
-    return {
-        "start": week_later.isoformat(),
-        "end": tomorrow.isoformat(),
-    }
-
-
-@pytest.fixture
-def invalid_date_range_past():
-    """Fixture pour un DateRange avec start dans le passé."""
-    past_date = date.today() - timedelta(days=10)
-    past_end = past_date + timedelta(days=5)
-    return {
-        "start": past_date.isoformat(),
-        "end": past_end.isoformat(),
-    }
-
-
-def test_date_range_valid_dates(valid_date_range):
+def test_date_range_valid_dates(date_range_factory):
     """DateRange dates valides."""
+    valid_date_range = date_range_factory(start_offset=1, duration=6, as_dict=True)
     date_range = DateRange(**valid_date_range)
     assert date_range.start == valid_date_range["start"]
     assert date_range.end == valid_date_range["end"]
 
 
-def test_date_range_end_before_start_fails(invalid_date_range_end_before_start):
+def test_date_range_end_before_start_fails():
     """End avant start rejetée."""
-    with pytest.raises(ValidationError):
-        DateRange(**invalid_date_range_end_before_start)
-
-
-def test_date_range_same_day_valid():
-    """Start = end acceptée (range 1 jour = date exacte)."""
     tomorrow = date.today() + timedelta(days=1)
-    date_range_data = {
-        "start": tomorrow.isoformat(),
+    week_later = tomorrow + timedelta(days=6)
+    invalid_date_range = {
+        "start": week_later.isoformat(),
         "end": tomorrow.isoformat(),
     }
-    date_range = DateRange(**date_range_data)
-    assert date_range.start == tomorrow.isoformat()
-    assert date_range.end == tomorrow.isoformat()
+    with pytest.raises(ValidationError):
+        DateRange(**invalid_date_range)
 
 
-def test_date_range_start_past_fails(invalid_date_range_past):
+def test_date_range_same_day_valid(date_range_factory):
+    """Start = end acceptée (range 1 jour = date exacte)."""
+    same_day_range = date_range_factory(start_offset=1, duration=0, as_dict=True)
+    date_range = DateRange(**same_day_range)
+    assert date_range.start == same_day_range["start"]
+    assert date_range.end == same_day_range["end"]
+
+
+def test_date_range_start_past_fails(date_range_factory):
     """Start dans le passé rejetée."""
+    invalid_past_range = date_range_factory(
+        start_offset=10, duration=5, past=True, as_dict=True
+    )
     with pytest.raises(ValidationError):
-        DateRange(**invalid_date_range_past)
+        DateRange(**invalid_past_range)
 
 
-def test_date_range_invalid_format_fails():
+def test_date_range_invalid_format_fails(date_range_factory):
     """Format date invalide rejeté."""
-    date_range_data = {
-        "start": "01-06-2025",
-        "end": "15-06-2025",
-    }
+    invalid_format_range = date_range_factory(
+        start_offset=1, duration=14, invalid_format=True, as_dict=True
+    )
     with pytest.raises(ValidationError):
-        DateRange(**date_range_data)
+        DateRange(**invalid_format_range)
 
 
 def test_date_range_non_existent_date_fails():
@@ -109,7 +82,7 @@ def test_search_request_valid_two_segments():
     week_later = tomorrow + timedelta(days=6)
 
     request = SearchRequest(
-        template_url="https://www.google.com/travel/flights?tfs=test",
+        template_url=TEMPLATE_URL,
         segments_date_ranges=[
             DateRange(start=tomorrow.isoformat(), end=week_later.isoformat()),
             DateRange(
@@ -134,7 +107,7 @@ def test_search_request_valid_five_segments():
         )
 
     request = SearchRequest(
-        template_url="https://www.google.com/travel/flights?tfs=test",
+        template_url=TEMPLATE_URL,
         segments_date_ranges=segments_date_ranges,
     )
     assert len(request.segments_date_ranges) == 5
@@ -145,7 +118,7 @@ def test_search_request_single_segment_fails():
     tomorrow = date.today() + timedelta(days=1)
     with pytest.raises(ValidationError):
         SearchRequest(
-            template_url="https://www.google.com/travel/flights?tfs=test",
+            template_url=TEMPLATE_URL,
             segments_date_ranges=[
                 DateRange(
                     start=tomorrow.isoformat(),
@@ -169,7 +142,7 @@ def test_search_request_too_many_segments_fails():
 
     with pytest.raises(ValidationError):
         SearchRequest(
-            template_url="https://www.google.com/travel/flights?tfs=test",
+            template_url=TEMPLATE_URL,
             segments_date_ranges=segments_date_ranges,
         )
 
@@ -178,7 +151,7 @@ def test_search_request_empty_segments_fails():
     """Segments vide rejetée."""
     with pytest.raises(ValidationError):
         SearchRequest(
-            template_url="https://www.google.com/travel/flights?tfs=test",
+            template_url=TEMPLATE_URL,
             segments_date_ranges=[],
         )
 
@@ -188,7 +161,7 @@ def test_search_request_explosion_combinatoire_ok():
     tomorrow = date.today() + timedelta(days=1)
 
     request = SearchRequest(
-        template_url="https://www.google.com/travel/flights?tfs=test",
+        template_url=TEMPLATE_URL,
         segments_date_ranges=[
             DateRange(
                 start=tomorrow.isoformat(),
@@ -221,7 +194,7 @@ def test_search_request_explosion_combinatoire_fails():
 
     with pytest.raises(ValidationError) as exc_info:
         SearchRequest(
-            template_url="https://www.google.com/travel/flights?tfs=test",
+            template_url=TEMPLATE_URL,
             segments_date_ranges=[
                 DateRange(
                     start=tomorrow.isoformat(),
@@ -254,7 +227,7 @@ def test_search_request_explosion_message_suggests_reduction():
 
     with pytest.raises(ValidationError) as exc_info:
         SearchRequest(
-            template_url="https://www.google.com/travel/flights?tfs=test",
+            template_url=TEMPLATE_URL,
             segments_date_ranges=[
                 DateRange(
                     start=tomorrow.isoformat(),
@@ -279,7 +252,7 @@ def test_search_request_asymmetric_ranges_valid():
     tomorrow = date.today() + timedelta(days=1)
 
     request = SearchRequest(
-        template_url="https://www.google.com/travel/flights?tfs=test",
+        template_url=TEMPLATE_URL,
         segments_date_ranges=[
             DateRange(
                 start=tomorrow.isoformat(),
@@ -317,7 +290,7 @@ def test_search_request_model_dump_json_valid():
     tomorrow = date.today() + timedelta(days=1)
 
     request = SearchRequest(
-        template_url="https://www.google.com/travel/flights?tfs=test",
+        template_url=TEMPLATE_URL,
         segments_date_ranges=[
             DateRange(
                 start=tomorrow.isoformat(),

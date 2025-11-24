@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.models.google_flight_dto import GoogleFlightDTO
-from app.models.request import DateCombination, SearchRequest
+from app.models.request import DateCombination
 from app.models.response import SearchResponse
 from app.services.crawler_service import CrawlResult
 from app.services.search_service import SearchService
@@ -23,24 +23,9 @@ def mock_crawler_service():
 
 
 @pytest.fixture
-def valid_search_request():
+def valid_search_request(search_request_factory):
     """SearchRequest valide 2 segments."""
-    from app.models.request import DateRange
-
-    tomorrow = date.today() + timedelta(days=1)
-    return SearchRequest(
-        template_url="https://www.google.com/travel/flights?tfs=test",
-        segments_date_ranges=[
-            DateRange(
-                start=tomorrow.isoformat(),
-                end=(tomorrow + timedelta(days=6)).isoformat(),
-            ),
-            DateRange(
-                start=(tomorrow + timedelta(days=14)).isoformat(),
-                end=(tomorrow + timedelta(days=19)).isoformat(),
-            ),
-        ],
-    )
+    return search_request_factory(days_segment1=6, days_segment2=5)
 
 
 @pytest.fixture(autouse=True)
@@ -54,13 +39,13 @@ def mock_settings(test_settings):
 def search_service(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
 ):
     """SearchService avec mocks."""
     return SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
 
@@ -89,7 +74,7 @@ async def test_search_flights_calls_combination_generator(
 async def test_search_flights_crawls_all_urls(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
     valid_search_request,
 ):
     """Crawle toutes URLs generees."""
@@ -106,7 +91,7 @@ async def test_search_flights_crawls_all_urls(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
     await service.search_flights(valid_search_request)
@@ -118,14 +103,14 @@ async def test_search_flights_crawls_all_urls(
 async def test_search_flights_parallel_crawling_asyncio_gather(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
     valid_search_request,
 ):
     """Crawling parallele avec asyncio.gather."""
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -138,7 +123,7 @@ async def test_search_flights_parallel_crawling_asyncio_gather(
 async def test_search_flights_parses_all_html(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
     valid_search_request,
 ):
     """Parse HTML de tous crawls reussis."""
@@ -155,19 +140,19 @@ async def test_search_flights_parses_all_html(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
     await service.search_flights(valid_search_request)
 
-    assert mock_flight_parser_10_flights.parse.call_count == 5
+    assert flight_parser_mock_10_flights.parse.call_count == 5
 
 
 @pytest.mark.asyncio
 async def test_search_flights_ranking_top_10(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
     valid_search_request,
 ):
     """Selectionne top 10 resultats par prix."""
@@ -198,11 +183,11 @@ async def test_search_flights_ranking_top_10(
             )
         ]
 
-    mock_flight_parser_10_flights.parse.side_effect = mock_parse
+    flight_parser_mock_10_flights.parse.side_effect = mock_parse
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -219,7 +204,7 @@ async def test_search_flights_ranking_top_10(
 async def test_search_flights_ranking_price_primary(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
     valid_search_request,
 ):
     """Prix total est critere dominant ranking."""
@@ -250,11 +235,11 @@ async def test_search_flights_ranking_price_primary(
             )
         ]
 
-    mock_flight_parser_10_flights.parse.side_effect = mock_parse
+    flight_parser_mock_10_flights.parse.side_effect = mock_parse
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -266,7 +251,7 @@ async def test_search_flights_ranking_price_primary(
 async def test_search_flights_ranking_same_price_stable(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
     valid_search_request,
 ):
     """Ordre stable quand prix identiques (premier crawle = premier retourne)."""
@@ -296,11 +281,11 @@ async def test_search_flights_ranking_same_price_stable(
             )
         ]
 
-    mock_flight_parser_10_flights.parse.side_effect = mock_parse
+    flight_parser_mock_10_flights.parse.side_effect = mock_parse
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -316,7 +301,7 @@ async def test_search_flights_ranking_same_price_stable(
 async def test_search_flights_ranking_tie_breaker_duration(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
     valid_search_request,
 ):
     """Departage ex-aequo prix par duree."""
@@ -347,11 +332,11 @@ async def test_search_flights_ranking_tie_breaker_duration(
             )
         ]
 
-    mock_flight_parser_10_flights.parse.side_effect = mock_parse
+    flight_parser_mock_10_flights.parse.side_effect = mock_parse
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -363,7 +348,7 @@ async def test_search_flights_ranking_tie_breaker_duration(
 async def test_search_flights_handles_partial_crawl_failures(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
     valid_search_request,
 ):
     """Gestion erreurs crawl partielles (50% echecs)."""
@@ -392,7 +377,7 @@ async def test_search_flights_handles_partial_crawl_failures(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -405,7 +390,7 @@ async def test_search_flights_handles_partial_crawl_failures(
 async def test_search_flights_returns_empty_all_crawls_failed(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
     valid_search_request,
 ):
     """Retourne response vide si tous crawls echouent."""
@@ -417,7 +402,7 @@ async def test_search_flights_returns_empty_all_crawls_failed(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -430,7 +415,7 @@ async def test_search_flights_returns_empty_all_crawls_failed(
 async def test_search_flights_constructs_google_flights_urls(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
     valid_search_request,
     mock_generate_google_flights_url,
 ):
@@ -447,7 +432,7 @@ async def test_search_flights_constructs_google_flights_urls(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
     await service.search_flights(valid_search_request)
@@ -490,7 +475,7 @@ async def test_search_flights_logging_structured(
 async def test_search_flights_search_stats_accurate(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
     valid_search_request,
 ):
     """search_stats coherentes avec resultats."""
@@ -507,7 +492,7 @@ async def test_search_flights_search_stats_accurate(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -520,7 +505,7 @@ async def test_search_flights_search_stats_accurate(
 async def test_search_flights_less_than_10_results(
     mock_combination_generator,
     mock_crawler_service,
-    mock_flight_parser_10_flights,
+    flight_parser_mock_10_flights,
     valid_search_request,
 ):
     """Retourne <10 resultats si <10 combinaisons reussies."""
@@ -537,7 +522,7 @@ async def test_search_flights_less_than_10_results(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=mock_flight_parser_10_flights,
+        flight_parser=flight_parser_mock_10_flights,
     )
 
     response = await service.search_flights(valid_search_request)
