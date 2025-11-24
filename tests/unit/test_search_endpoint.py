@@ -1,6 +1,6 @@
 """Tests unitaires endpoint search."""
 
-from tests.fixtures.helpers import TEMPLATE_URL
+from tests.fixtures.helpers import SEARCH_FLIGHTS_ENDPOINT, TEMPLATE_URL
 
 
 def test_endpoint_accepts_valid_request(
@@ -10,7 +10,7 @@ def test_endpoint_accepts_valid_request(
     request_data = search_request_factory(
         days_segment1=6, days_segment2=5, as_dict=True
     )
-    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -25,7 +25,7 @@ def test_endpoint_validates_request_body(client_with_mock_search):
         "segments_date_ranges": [],
     }
 
-    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
 
     assert response.status_code == 422
     data = response.json()
@@ -37,7 +37,7 @@ def test_endpoint_returns_10_results(client_with_mock_search, search_request_fac
     request_data = search_request_factory(
         days_segment1=6, days_segment2=5, as_dict=True
     )
-    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -51,7 +51,7 @@ def test_endpoint_response_matches_schema(
     request_data = search_request_factory(
         days_segment1=6, days_segment2=5, as_dict=True
     )
-    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -78,6 +78,6 @@ def test_endpoint_injects_search_service_dependency(
     request_data = search_request_factory(
         days_segment1=6, days_segment2=5, as_dict=True
     )
-    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
 
     assert response.status_code == 200

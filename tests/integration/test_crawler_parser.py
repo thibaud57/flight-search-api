@@ -7,7 +7,7 @@ import pytest
 from app.exceptions import ParsingError
 from app.services.crawler_service import CrawlerService
 from app.services.flight_parser import FlightParser
-from tests.fixtures.helpers import GOOGLE_FLIGHTS_BASE_URL
+from tests.fixtures.helpers import BASE_URL
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ async def test_integration_crawl_and_parse_success(google_flights_html_factory):
 
         crawler_service = CrawlerService()
         crawl_result = await crawler_service.crawl_google_flights(
-            GOOGLE_FLIGHTS_BASE_URL
+            BASE_URL
         )
 
         assert crawl_result.success is True
@@ -68,7 +68,7 @@ async def test_integration_crawl_success_parse_zero_flights(empty_google_flights
 
         crawler_service = CrawlerService()
         crawl_result = await crawler_service.crawl_google_flights(
-            GOOGLE_FLIGHTS_BASE_URL
+            BASE_URL
         )
 
         assert crawl_result.success is True

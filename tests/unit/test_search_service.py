@@ -12,7 +12,7 @@ from app.models.request import DateCombination
 from app.models.response import SearchResponse
 from app.services.crawler_service import CrawlResult
 from app.services.search_service import SearchService
-from tests.fixtures.helpers import GOOGLE_FLIGHTS_MOCKED_URL, get_future_date
+from tests.fixtures.helpers import MOCKED_URL, get_future_date
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def mock_settings(test_settings):
 def mock_url_generation():
     """Mock generate_google_flights_url pour tous les tests."""
     with patch("app.services.search_service.generate_google_flights_url") as mock_url:
-        mock_url.return_value = GOOGLE_FLIGHTS_MOCKED_URL
+        mock_url.return_value = MOCKED_URL
         yield mock_url
 
 

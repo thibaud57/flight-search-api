@@ -10,7 +10,7 @@ from app.models.request import SearchRequest
 from app.services.combination_generator import CombinationGenerator
 from app.services.crawler_service import CrawlResult
 from app.services.search_service import SearchService
-from tests.fixtures.helpers import GOOGLE_FLIGHTS_MOCKED_URL, TEMPLATE_URL
+from tests.fixtures.helpers import MOCKED_URL, SEARCH_FLIGHTS_ENDPOINT, TEMPLATE_URL
 
 
 @pytest.mark.asyncio
@@ -28,7 +28,7 @@ async def test_integration_search_two_segments_success(
     with patch(
         "app.services.search_service.generate_google_flights_url"
     ) as mock_url_gen:
-        mock_url_gen.return_value = GOOGLE_FLIGHTS_MOCKED_URL
+        mock_url_gen.return_value = MOCKED_URL
         response = await service.search_flights(request)
 
         assert len(response.results) == 10
@@ -64,7 +64,7 @@ async def test_integration_search_five_segments_asymmetric(
     with patch(
         "app.services.search_service.generate_google_flights_url"
     ) as mock_url_gen:
-        mock_url_gen.return_value = GOOGLE_FLIGHTS_MOCKED_URL
+        mock_url_gen.return_value = MOCKED_URL
         response = await service.search_flights(request)
 
         assert len(response.results) == 10
@@ -97,7 +97,7 @@ async def test_integration_search_with_captcha_partial_failures(
     with patch(
         "app.services.search_service.generate_google_flights_url"
     ) as mock_url_gen:
-        mock_url_gen.return_value = GOOGLE_FLIGHTS_MOCKED_URL
+        mock_url_gen.return_value = MOCKED_URL
         response = await service.search_flights(request)
 
         assert len(response.results) <= 10
@@ -138,7 +138,7 @@ async def test_integration_search_dates_ranking(
     with patch(
         "app.services.search_service.generate_google_flights_url"
     ) as mock_url_gen:
-        mock_url_gen.return_value = GOOGLE_FLIGHTS_MOCKED_URL
+        mock_url_gen.return_value = MOCKED_URL
         response = await service.search_flights(request)
 
         assert len(response.results) == 10
@@ -155,7 +155,7 @@ def test_integration_end_to_end_search_endpoint(
     request_data = search_request_factory(
         days_segment1=6, days_segment2=5, as_dict=True
     )
-    response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
+    response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
 
     assert response.status_code == 200
     data = response.json()

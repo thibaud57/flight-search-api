@@ -9,7 +9,7 @@ from app.core.config import Settings
 from app.models.proxy import ProxyConfig
 from app.services.crawler_service import CrawlerService
 from app.services.proxy_service import ProxyService
-from tests.fixtures.helpers import GOOGLE_FLIGHTS_BASE_URL
+from tests.fixtures.helpers import BASE_URL
 
 
 @pytest.mark.asyncio
@@ -30,7 +30,7 @@ async def test_integration_crawler_with_proxy_rotation(
 
         for _ in range(3):
             await crawler_service.crawl_google_flights(
-                GOOGLE_FLIGHTS_BASE_URL,
+                BASE_URL,
                 use_proxy=True,
             )
 
@@ -70,7 +70,7 @@ async def test_integration_proxy_service_injected_crawler(
 
         first_proxy = proxy_service.get_next_proxy()
         await crawler_service.crawl_google_flights(
-            GOOGLE_FLIGHTS_BASE_URL,
+            BASE_URL,
             use_proxy=True,
         )
         second_proxy = proxy_service.get_next_proxy()
@@ -100,7 +100,7 @@ async def test_integration_proxy_rotation_logging_observability(
 
         for _ in range(3):
             await crawler_service.crawl_google_flights(
-                GOOGLE_FLIGHTS_BASE_URL,
+                BASE_URL,
                 use_proxy=True,
             )
 
@@ -123,7 +123,7 @@ async def test_integration_proxy_service_disabled_no_injection(
         mock_crawler_class.return_value = mock_crawler
 
         result = await crawler_service.crawl_google_flights(
-            GOOGLE_FLIGHTS_BASE_URL,
+            BASE_URL,
             use_proxy=True,
         )
 

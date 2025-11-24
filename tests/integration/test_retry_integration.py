@@ -10,6 +10,7 @@ from app.services.combination_generator import CombinationGenerator
 from app.services.crawler_service import CrawlerService
 from app.services.proxy_service import ProxyService
 from app.services.search_service import SearchService
+from tests.fixtures.helpers import MOCK_URL
 
 
 @pytest.fixture
@@ -24,7 +25,7 @@ def mock_crawler_with_transient_errors():
         call_count += 1
 
         if call_count in (2, 5):
-            raise NetworkError(url="https://google.com", status_code=None, attempts=1)
+            raise NetworkError(url=MOCK_URL, status_code=None, attempts=1)
 
         result = MagicMock()
         result.success = True
@@ -48,7 +49,7 @@ def mock_crawler_with_persistent_errors():
         call_count += 1
 
         if call_count in (2, 5, 8, 11, 14):
-            raise NetworkError(url="https://google.com", status_code=503, attempts=3)
+            raise NetworkError(url=MOCK_URL, status_code=503, attempts=3)
 
         result = MagicMock()
         result.success = True
@@ -79,7 +80,7 @@ def mock_crawler_with_captcha_then_success():
         ):
             captcha_calls.add(call_count)
             raise CaptchaDetectedError(
-                url="https://google.com", captcha_type="recaptcha_v2"
+                url=MOCK_URL, captcha_type="recaptcha_v2"
             )
 
         result = MagicMock()
@@ -133,12 +134,12 @@ def mock_crawler_with_mixed_errors():
         call_count += 1
 
         if call_count in (2, 5, 8, 12) and call_count not in captcha_calls:
-            raise NetworkError(url="https://google.com", status_code=None, attempts=1)
+            raise NetworkError(url=MOCK_URL, status_code=None, attempts=1)
 
         if call_count in (4, 10) and call_count not in captcha_calls:
             captcha_calls.add(call_count)
             raise CaptchaDetectedError(
-                url="https://google.com", captcha_type="recaptcha_v2"
+                url=MOCK_URL, captcha_type="recaptcha_v2"
             )
 
         result = MagicMock()

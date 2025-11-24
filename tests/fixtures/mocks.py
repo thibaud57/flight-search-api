@@ -8,7 +8,7 @@ from app.models.proxy import ProxyConfig
 from app.models.request import DateCombination
 from app.models.response import FlightCombinationResult, SearchResponse, SearchStats
 from app.services.combination_generator import CombinationGenerator
-from tests.fixtures.helpers import GOOGLE_FLIGHTS_MOCKED_URL, get_future_date
+from tests.fixtures.helpers import MOCKED_URL, get_future_date
 
 
 @pytest.fixture
@@ -179,5 +179,5 @@ def mock_generate_google_flights_url():
     with patch(
         "app.services.search_service.generate_google_flights_url"
     ) as mock_url_gen:
-        mock_url_gen.return_value = GOOGLE_FLIGHTS_MOCKED_URL
+        mock_url_gen.return_value = MOCKED_URL
         yield mock_url_gen
