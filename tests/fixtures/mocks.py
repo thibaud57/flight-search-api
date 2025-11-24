@@ -174,6 +174,18 @@ def mock_search_service_full(flight_dto_factory):
 
 
 @pytest.fixture
+def mock_crawler_success():
+    """Mock CrawlerService async avec HTML valide (partagé tests integration)."""
+    from app.services.crawler_service import CrawlResult
+
+    crawler = AsyncMock()
+    crawler.crawl_google_flights.return_value = CrawlResult(
+        success=True, html="<html>valid</html>", status_code=200
+    )
+    return crawler
+
+
+@pytest.fixture
 def mock_generate_google_flights_url():
     """Mock generate_google_flights_url pour tests SearchService."""
     with patch(
