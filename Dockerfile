@@ -70,6 +70,9 @@ COPY --from=builder --chown=appuser:appuser /app /app
 # Copier cache Playwright depuis builder
 COPY --from=builder --chown=appuser:appuser /root/.cache/ms-playwright /home/appuser/.cache/ms-playwright
 
+# Définir variable environnement pour Playwright (cherche browsers dans home appuser)
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/appuser/.cache/ms-playwright
+
 # Changer vers utilisateur non-root
 USER appuser
 
