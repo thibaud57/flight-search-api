@@ -50,9 +50,9 @@ def assert_results_sorted_by_price(results):
     for i in range(len(results) - 1):
         current_price = results[i].flights[0].price
         next_price = results[i + 1].flights[0].price
-        assert (
-            current_price <= next_price
-        ), f"Results not sorted: {current_price} > {next_price} at index {i}"
+        assert current_price <= next_price, (
+            f"Results not sorted: {current_price} > {next_price} at index {i}"
+        )
 
 
 def assert_flight_dto_valid(flight: GoogleFlightDTO):

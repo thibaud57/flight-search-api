@@ -41,9 +41,7 @@ def test_retry_on_captcha_detected():
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            raise CaptchaDetectedError(
-                url=MOCK_URL, captcha_type="recaptcha_v2"
-            )
+            raise CaptchaDetectedError(url=MOCK_URL, captcha_type="recaptcha_v2")
         return "success"
 
     with patch("asyncio.sleep"):
@@ -155,7 +153,7 @@ def test_before_sleep_callback_logging(caplog):
         return "success"
 
     with patch("tenacity.nap.sleep"):
-        mock_function("https://example.com")
+        mock_function(MOCK_URL)
 
     assert call_count == 3
     warning_logs = [

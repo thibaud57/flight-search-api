@@ -34,9 +34,7 @@ async def test_integration_crawl_and_parse_success(google_flights_html_factory):
         mock_crawler_class.return_value = mock_crawler
 
         crawler_service = CrawlerService()
-        crawl_result = await crawler_service.crawl_google_flights(
-            BASE_URL
-        )
+        crawl_result = await crawler_service.crawl_google_flights(BASE_URL)
 
         assert crawl_result.success is True
 
@@ -67,9 +65,7 @@ async def test_integration_crawl_success_parse_zero_flights(empty_google_flights
         mock_crawler_class.return_value = mock_crawler
 
         crawler_service = CrawlerService()
-        crawl_result = await crawler_service.crawl_google_flights(
-            BASE_URL
-        )
+        crawl_result = await crawler_service.crawl_google_flights(BASE_URL)
 
         assert crawl_result.success is True
 

@@ -6,9 +6,9 @@ from pydantic import ValidationError
 from app.models.proxy import ProxyConfig
 
 
-def test_proxy_config_valid_fields() -> None:
+def test_proxy_config_valid_fields(proxy_config_factory) -> None:
     """ProxyConfig avec tous champs valides."""
-    config = ProxyConfig(
+    config = proxy_config_factory(
         host="fr.decodo.com",
         port=40000,
         username="testuser",
@@ -23,9 +23,9 @@ def test_proxy_config_valid_fields() -> None:
     assert config.country == "FR"
 
 
-def test_proxy_config_username_valid() -> None:
+def test_proxy_config_username_valid(proxy_config_factory) -> None:
     """Username valide (min 5 caracteres)."""
-    config = ProxyConfig(
+    config = proxy_config_factory(
         host="fr.decodo.com",
         port=40000,
         username="testuser",
@@ -64,9 +64,9 @@ def test_proxy_config_invalid_port() -> None:
     assert "port" in str(exc_info.value).lower()
 
 
-def test_proxy_config_generate_url_format() -> None:
+def test_proxy_config_generate_url_format(proxy_config_factory) -> None:
     """get_proxy_url() genere URL correcte."""
-    config = ProxyConfig(
+    config = proxy_config_factory(
         host="fr.decodo.com",
         port=40000,
         username="testuser",
@@ -77,9 +77,9 @@ def test_proxy_config_generate_url_format() -> None:
     assert config.get_proxy_url() == "http://testuser:mypassword@fr.decodo.com:40000"
 
 
-def test_proxy_config_country_uppercase_conversion() -> None:
+def test_proxy_config_country_uppercase_conversion(proxy_config_factory) -> None:
     """Country automatiquement converti en uppercase."""
-    config = ProxyConfig(
+    config = proxy_config_factory(
         host="fr.decodo.com",
         port=40000,
         username="testuser",

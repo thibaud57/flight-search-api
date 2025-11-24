@@ -1,10 +1,12 @@
 """Tests integration endpoint search."""
 
-from datetime import date, timedelta
-
 from fastapi.testclient import TestClient
 
-from tests.fixtures.helpers import SEARCH_FLIGHTS_ENDPOINT, TEMPLATE_URL
+from tests.fixtures.helpers import (
+    SEARCH_FLIGHTS_ENDPOINT,
+    TEMPLATE_URL,
+    get_future_date,
+)
 
 
 def test_end_to_end_search_request_valid(
@@ -98,14 +100,12 @@ def test_end_to_end_validation_error_too_many_segments(
     client_with_mock_search: TestClient,
 ) -> None:
     """Plus de 5 segments retourne 422."""
-    tomorrow = get_future_date(1)
-
     request_data = {
         "template_url": TEMPLATE_URL,
         "segments_date_ranges": [
             {
-                "start": (tomorrow + timedelta(days=i * 10)).isoformat(),
-                "end": (tomorrow + timedelta(days=i * 10 + 2)).isoformat(),
+                "start": get_future_date(1 + i * 10).isoformat(),
+                "end": get_future_date(1 + i * 10 + 2).isoformat(),
             }
             for i in range(6)
         ],

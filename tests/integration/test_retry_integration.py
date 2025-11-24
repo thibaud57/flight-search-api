@@ -79,9 +79,7 @@ def mock_crawler_with_captcha_then_success():
             and call_count not in captcha_calls
         ):
             captcha_calls.add(call_count)
-            raise CaptchaDetectedError(
-                url=MOCK_URL, captcha_type="recaptcha_v2"
-            )
+            raise CaptchaDetectedError(url=MOCK_URL, captcha_type="recaptcha_v2")
 
         result = MagicMock()
         result.success = True
@@ -138,9 +136,7 @@ def mock_crawler_with_mixed_errors():
 
         if call_count in (4, 10) and call_count not in captcha_calls:
             captcha_calls.add(call_count)
-            raise CaptchaDetectedError(
-                url=MOCK_URL, captcha_type="recaptcha_v2"
-            )
+            raise CaptchaDetectedError(url=MOCK_URL, captcha_type="recaptcha_v2")
 
         result = MagicMock()
         result.success = True
