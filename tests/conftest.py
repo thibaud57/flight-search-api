@@ -45,6 +45,20 @@ def client(test_settings: Settings) -> TestClient:
 
 
 @pytest.fixture
+def mock_crawler_success():
+    """Mock CrawlerService async avec HTML valide (partagé tests integration)."""
+    from unittest.mock import AsyncMock
+
+    from app.services.crawler_service import CrawlResult
+
+    crawler = AsyncMock()
+    crawler.crawl_google_flights.return_value = CrawlResult(
+        success=True, html="<html>valid</html>", status_code=200
+    )
+    return crawler
+
+
+@pytest.fixture
 def client_with_mock_search(test_settings: Settings, mock_search_service):
     """TestClient avec mock SearchService."""
     get_settings.cache_clear()
