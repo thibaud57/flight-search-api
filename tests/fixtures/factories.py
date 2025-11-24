@@ -164,6 +164,7 @@ def flight_parser_mock_10_flights_factory(flight_parser_mock_factory):
 @pytest.fixture
 def proxy_config_factory():
     """Factory pour créer ProxyConfig avec paramètres configurables."""
+
     def _create(
         host="fr.decodo.com",
         port=40000,
@@ -178,5 +179,39 @@ def proxy_config_factory():
             password=password,
             country=country,
         )
+
+    return _create
+
+
+@pytest.fixture
+def google_flights_html_factory():
+    """Factory pour générer HTML Google Flights avec structure réelle."""
+
+    def _create(
+        num_flights=1,
+        base_price=500.0,
+        price_increment=100.0,
+        airline_prefix="Airline",
+        departure_airport="Paris",
+        arrival_airport="Tokyo",
+        include_wrapper=True,
+    ):
+        """Génère HTML Google Flights mock."""
+        flights_html = ""
+        for i in range(num_flights):
+            price = int(base_price + i * price_increment)
+            airline = f"{airline_prefix} {i}" if num_flights > 1 else airline_prefix
+            departure_time = f"10:{i:02d}"
+            arrival_time = f"14:{i:02d}"
+
+            flights_html += f"""
+        <li class="pIav2d">
+            <div aria-label="À partir de {price} euros. Départ de {departure_airport} à {departure_time}, arrivée à {arrival_airport} à {arrival_time}. Durée totale : 4 h 00 min. Vol direct avec {airline}."></div>
+        </li>
+        """
+
+        if include_wrapper:
+            return f"<html><body><ul>{flights_html}</ul></body></html>"
+        return flights_html
 
     return _create

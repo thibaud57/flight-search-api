@@ -1,6 +1,7 @@
 """Tests unitaires RetryStrategy."""
 
 import contextlib
+import logging
 import time
 from unittest.mock import patch
 
