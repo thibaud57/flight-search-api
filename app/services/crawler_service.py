@@ -6,9 +6,10 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from crawl4ai import AsyncWebCrawler, CacheMode, CrawlerRunConfig
+from playwright.async_api import BrowserContext, Cookie, Page, Response
 from tenacity import retry
 
 from app.core.config import get_settings
@@ -49,7 +50,7 @@ class CrawlerService:
         """Initialise service avec ProxyService optionnel."""
         self._proxy_service = proxy_service
         self._settings = get_settings()
-        self._captured_cookies: list[dict[str, Any]] = []
+        self._captured_cookies: list[Cookie] = []
 
     async def get_google_session(
         self,
@@ -95,8 +96,6 @@ class CrawlerService:
                 },
             )
             raise NetworkError(url=url, status_code=None) from err
-        except Exception:
-            raise
 
         response_time_ms = int((time.time() - start_time) * 1000)
 
@@ -131,7 +130,7 @@ class CrawlerService:
         """Crawl une URL Google Flights avec proxy rotation et retry logic."""
         attempt_count = 0
 
-        @retry(**RetryStrategy.get_crawler_retry())  # type: ignore[misc]
+        @retry(**RetryStrategy.get_crawler_retry())
         async def _crawl_with_retry() -> CrawlResult:
             nonlocal attempt_count
             attempt_count += 1
@@ -184,8 +183,6 @@ class CrawlerService:
                 if use_proxy and self._proxy_service:
                     self._proxy_service.get_next_proxy()
                     logger.debug("Proxy rotation triggered after captcha")
-                raise
-            except Exception:
                 raise
 
             response_time_ms = int((time.time() - start_time) * 1000)
@@ -244,11 +241,16 @@ class CrawlerService:
                 status_code=result.status_code,
             )
 
-        return await _crawl_with_retry()  # type: ignore[no-any-return]
+        return await _crawl_with_retry()
 
     async def _after_goto_hook(
-        self, page: Any, context: Any, url: str, response: Any, **kwargs: Any
-    ) -> Any:
+        self,
+        page: Page,
+        context: BrowserContext,
+        url: str,
+        response: Response,
+        **kwargs: object,
+    ) -> Page:
         """Hook combiné: Accept consent popup."""
         try:
             accept_button = await page.wait_for_selector(
@@ -260,12 +262,16 @@ class CrawlerService:
                 await asyncio.sleep(1)
                 logger.info("Auto-clicked consent Accept button")
         except Exception as e:
-            logger.warning(f"Could not auto-click consent button: {e}")
+            logger.warning("Could not auto-click consent button: %s", e)
 
         return page
 
     async def _extract_cookies_hook(
-        self, page: Any, context: Any, html: str, **kwargs: Any
+        self,
+        page: Page,
+        context: BrowserContext,
+        html: str,
+        **kwargs: object,
     ) -> None:
         """Hook: Récupère cookies après consentement Google."""
         cookies = await context.cookies()
@@ -286,7 +292,7 @@ class CrawlerService:
         proxy_config = {
             "server": f"http://{proxy.host}:{proxy.port}",
             "username": proxy.username,
-            "password": proxy.password,
+            "password": proxy.password.get_secret_value(),
         }
         return proxy_config, proxy
 

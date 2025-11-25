@@ -57,6 +57,23 @@ def mock_crawl_result():
 
 
 @pytest.fixture
+def mock_crawl_result_factory():
+    """Factory pour créer CrawlResult mocké personnalisé."""
+
+    def _create(
+        html="<html><body>Valid content</body></html>", success=True, status_code=200
+    ):
+        """Crée CrawlResult mocké avec paramètres configurables."""
+        result = MagicMock()
+        result.success = success
+        result.html = html
+        result.status_code = status_code
+        return result
+
+    return _create
+
+
+@pytest.fixture
 def mock_search_service(flight_dto_factory):
     """Mock SearchService pour tests integration endpoint."""
     service = MagicMock()
@@ -111,66 +128,6 @@ def mock_proxy_pool():
         )
         for i in range(3)
     ]
-
-
-@pytest.fixture
-def mock_search_service_full(flight_dto_factory):
-    """Mock SearchService avec contrôle avancé (échecs, résultats partiels)."""
-
-    def _create(
-        num_results=10,
-        base_price=800.0,
-        price_increment=100.0,
-        search_time_ms=100,
-        segments_count=2,
-        partial_failure=False,
-        failure_rate=0.0,
-    ):
-        """Crée mock SearchService configurable."""
-        service = MagicMock()
-        start_date = get_future_date(1)
-
-        async def mock_search(request):
-            if failure_rate > 0 and partial_failure:
-                actual_results = int(num_results * (1 - failure_rate))
-            else:
-                actual_results = num_results
-
-            results = [
-                FlightCombinationResult(
-                    segment_dates=[
-                        start_date.isoformat(),
-                        get_future_date(15).isoformat(),
-                    ],
-                    flights=[
-                        flight_dto_factory(
-                            price=base_price + i * price_increment,
-                            airline="Test Airline",
-                            departure_time="10:00",
-                            arrival_time="14:00",
-                            duration="4h",
-                            stops=0,
-                            departure_airport="Aéroport de Paris-Charles de Gaulle",
-                            arrival_airport="Aéroport international de Tokyo-Haneda",
-                        )
-                    ],
-                )
-                for i in range(actual_results)
-            ]
-
-            return SearchResponse(
-                results=results,
-                search_stats=SearchStats(
-                    total_results=len(results),
-                    search_time_ms=search_time_ms,
-                    segments_count=segments_count,
-                ),
-            )
-
-        service.search_flights = mock_search
-        return service
-
-    return _create
 
 
 @pytest.fixture

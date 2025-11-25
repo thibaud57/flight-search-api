@@ -1,7 +1,7 @@
 ---
 title: "TEMPLATE - Format Metadata Documentation Générique"
 description: "Template standardisé pour metadata YAML des documentations projet (ARCHITECTURE, CHANGELOG, VERSIONS, etc.). Pour docs techniques references/, voir TEMPLATE_REFERENCES.md."
-date: "2025-18-11"
+date: "YYYY-DD-MM"
 keywords: ["template", "metadata", "yaml", "documentation", "format", "standard"]
 scope: ["docs"]
 technologies: []

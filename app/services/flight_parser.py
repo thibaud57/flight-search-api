@@ -2,7 +2,6 @@
 
 import logging
 import re
-from typing import Any
 
 from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 from pydantic import ValidationError
@@ -20,7 +19,8 @@ DURATION_PATTERN = re.compile(r"Durée totale\s*:\s*(.+?)(?:\.|$)")
 STOPS_PATTERN = re.compile(r"(\d+)\s*escales?")
 DEPARTURE_AIRPORT_PATTERN = re.compile(r"Départ de ([^à]+) à")
 ARRIVAL_AIRPORT_PATTERN = re.compile(r"arrivée à ([^à]+) à")
-FLIGHT_SCHEMA: dict[str, Any] = {
+
+FLIGHT_SCHEMA = {
     "name": "Google Flights Results",
     "baseSelector": "li.pIav2d",
     "fields": [

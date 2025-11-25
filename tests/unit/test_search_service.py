@@ -6,13 +6,11 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.models.request import DateCombination
 from app.models.response import SearchResponse
 from app.services.search_service import SearchService
 from tests.fixtures.helpers import (
-    MOCKED_URL,
     assert_results_sorted_by_price,
-    get_future_date,
+    create_date_combinations,
 )
 
 
@@ -80,15 +78,9 @@ async def test_search_flights_crawls_all_urls(
     valid_search_request,
 ):
     """Crawle toutes URLs generees."""
-    mock_combination_generator.generate_combinations.return_value = [
-        DateCombination(
-            segment_dates=[
-                get_future_date(1 + i).isoformat(),
-                get_future_date(15 + i).isoformat(),
-            ]
-        )
-        for i in range(42)
-    ]
+    mock_combination_generator.generate_combinations.return_value = (
+        create_date_combinations(42)
+    )
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
@@ -128,15 +120,9 @@ async def test_search_flights_parses_all_html(
     valid_search_request,
 ):
     """Parse HTML de tous crawls reussis."""
-    mock_combination_generator.generate_combinations.return_value = [
-        DateCombination(
-            segment_dates=[
-                get_future_date(1 + i).isoformat(),
-                get_future_date(15 + i).isoformat(),
-            ]
-        )
-        for i in range(5)
-    ]
+    mock_combination_generator.generate_combinations.return_value = (
+        create_date_combinations(5)
+    )
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
@@ -157,15 +143,9 @@ async def test_search_flights_ranking_top_10(
     valid_search_request,
 ):
     """Selectionne top 10 resultats par prix."""
-    mock_combination_generator.generate_combinations.return_value = [
-        DateCombination(
-            segment_dates=[
-                get_future_date(1 + i).isoformat(),
-                get_future_date(15 + i).isoformat(),
-            ]
-        )
-        for i in range(50)
-    ]
+    mock_combination_generator.generate_combinations.return_value = (
+        create_date_combinations(50)
+    )
     prices = list(range(800, 2050, 25))
     call_count = [0]
 
@@ -196,15 +176,9 @@ async def test_search_flights_ranking_price_primary(
     valid_search_request,
 ):
     """Prix total est critere dominant ranking."""
-    mock_combination_generator.generate_combinations.return_value = [
-        DateCombination(
-            segment_dates=[
-                get_future_date(1 + i).isoformat(),
-                get_future_date(15 + i).isoformat(),
-            ]
-        )
-        for i in range(3)
-    ]
+    mock_combination_generator.generate_combinations.return_value = (
+        create_date_combinations(3)
+    )
     test_prices = [1000.0, 1200.0, 900.0]
     call_count = [0]
 
@@ -234,15 +208,9 @@ async def test_search_flights_ranking_same_price_stable(
     valid_search_request,
 ):
     """Ordre stable quand prix identiques (premier crawle = premier retourne)."""
-    mock_combination_generator.generate_combinations.return_value = [
-        DateCombination(
-            segment_dates=[
-                get_future_date(1 + i).isoformat(),
-                get_future_date(15 + i).isoformat(),
-            ]
-        )
-        for i in range(2)
-    ]
+    mock_combination_generator.generate_combinations.return_value = (
+        create_date_combinations(2)
+    )
     call_count = [0]
 
     def mock_parse(html):
@@ -275,22 +243,18 @@ async def test_search_flights_ranking_tie_breaker_duration(
     valid_search_request,
 ):
     """Departage ex-aequo prix par duree."""
-    mock_combination_generator.generate_combinations.return_value = [
-        DateCombination(
-            segment_dates=[
-                get_future_date(1 + i).isoformat(),
-                get_future_date(15 + i).isoformat(),
-            ]
-        )
-        for i in range(2)
-    ]
+    mock_combination_generator.generate_combinations.return_value = (
+        create_date_combinations(2)
+    )
     call_count = [0]
 
     def mock_parse(html):
         idx = call_count[0]
         call_count[0] += 1
         durations = ["15h 00min", "10h 00min"]
-        return [flight_dto_factory(price=1000.0, airline="Test", duration=durations[idx])]
+        return [
+            flight_dto_factory(price=1000.0, airline="Test", duration=durations[idx])
+        ]
 
     flight_parser_mock_10_flights_factory.parse.side_effect = mock_parse
     service = SearchService(
@@ -313,15 +277,9 @@ async def test_search_flights_handles_partial_crawl_failures(
     valid_search_request,
 ):
     """Gestion erreurs crawl partielles (50% echecs)."""
-    mock_combination_generator.generate_combinations.return_value = [
-        DateCombination(
-            segment_dates=[
-                get_future_date(1 + i).isoformat(),
-                get_future_date(15 + i).isoformat(),
-            ]
-        )
-        for i in range(10)
-    ]
+    mock_combination_generator.generate_combinations.return_value = (
+        create_date_combinations(10)
+    )
     call_count = [0]
 
     async def mock_crawl(url, use_proxy=True):
@@ -376,14 +334,9 @@ async def test_search_flights_constructs_google_flights_urls(
     mock_generate_google_flights_url,
 ):
     """Construction URLs multi-city correctes."""
-    mock_combination_generator.generate_combinations.return_value = [
-        DateCombination(
-            segment_dates=[
-                get_future_date(1).isoformat(),
-                get_future_date(15).isoformat(),
-            ]
-        )
-    ]
+    mock_combination_generator.generate_combinations.return_value = (
+        create_date_combinations(1)
+    )
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
@@ -432,15 +385,9 @@ async def test_search_flights_search_stats_accurate(
     valid_search_request,
 ):
     """search_stats coherentes avec resultats."""
-    mock_combination_generator.generate_combinations.return_value = [
-        DateCombination(
-            segment_dates=[
-                get_future_date(1 + i).isoformat(),
-                get_future_date(15 + i).isoformat(),
-            ]
-        )
-        for i in range(15)
-    ]
+    mock_combination_generator.generate_combinations.return_value = (
+        create_date_combinations(15)
+    )
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
@@ -461,15 +408,9 @@ async def test_search_flights_less_than_10_results(
     valid_search_request,
 ):
     """Retourne <10 resultats si <10 combinaisons reussies."""
-    mock_combination_generator.generate_combinations.return_value = [
-        DateCombination(
-            segment_dates=[
-                get_future_date(1 + i).isoformat(),
-                get_future_date(15 + i).isoformat(),
-            ]
-        )
-        for i in range(5)
-    ]
+    mock_combination_generator.generate_combinations.return_value = (
+        create_date_combinations(5)
+    )
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,

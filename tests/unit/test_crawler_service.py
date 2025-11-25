@@ -40,12 +40,13 @@ async def test_crawl_success_dev_local(
 
 
 @pytest.mark.asyncio
-async def test_crawl_recaptcha_v2_detection(crawler_service, mock_async_web_crawler):
+async def test_crawl_recaptcha_v2_detection(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
     """HTML contient reCAPTCHA v2."""
-    mock_result = MagicMock()
-    mock_result.success = True
-    mock_result.html = '<html><div class="g-recaptcha">Challenge</div></html>'
-    mock_result.status_code = 200
+    mock_result = mock_crawl_result_factory(
+        html='<html><div class="g-recaptcha">Challenge</div></html>'
+    )
 
     crawler = mock_async_web_crawler(mock_result=mock_result)
 
@@ -57,12 +58,13 @@ async def test_crawl_recaptcha_v2_detection(crawler_service, mock_async_web_craw
 
 
 @pytest.mark.asyncio
-async def test_crawl_hcaptcha_detection(crawler_service, mock_async_web_crawler):
+async def test_crawl_hcaptcha_detection(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
     """HTML contient hCaptcha."""
-    mock_result = MagicMock()
-    mock_result.success = True
-    mock_result.html = '<html><div class="h-captcha">Challenge</div></html>'
-    mock_result.status_code = 200
+    mock_result = mock_crawl_result_factory(
+        html='<html><div class="h-captcha">Challenge</div></html>'
+    )
 
     crawler = mock_async_web_crawler(mock_result=mock_result)
 
@@ -86,12 +88,11 @@ async def test_crawl_network_timeout(crawler_service, mock_async_web_crawler):
 
 
 @pytest.mark.asyncio
-async def test_crawl_status_403(crawler_service, mock_async_web_crawler):
+async def test_crawl_status_403(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
     """Status code 403 (rate limiting)."""
-    mock_result = MagicMock()
-    mock_result.success = False
-    mock_result.html = ""
-    mock_result.status_code = 403
+    mock_result = mock_crawl_result_factory(success=False, html="", status_code=403)
 
     crawler = mock_async_web_crawler(mock_result=mock_result)
 
@@ -192,17 +193,16 @@ async def test_crawl_proxy_rotation_called(
 
 
 @pytest.mark.asyncio
-async def test_get_google_session_success(crawler_service, mock_async_web_crawler):
+async def test_get_google_session_success(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
     """Session capture réussie avec cookies."""
     mock_cookies = [
         {"name": "NID", "value": "abc123"},
         {"name": "CONSENT", "value": "YES+"},
     ]
 
-    mock_result = MagicMock()
-    mock_result.success = True
-    mock_result.html = "<html>Google Flights</html>"
-    mock_result.status_code = 200
+    mock_result = mock_crawl_result_factory(html="<html>Google Flights</html>")
 
     async def mock_hook_execution(url, config):
         crawler_service._captured_cookies = mock_cookies
@@ -221,7 +221,7 @@ async def test_get_google_session_success(crawler_service, mock_async_web_crawle
 
 @pytest.mark.asyncio
 async def test_get_google_session_auto_click_consent(
-    crawler_service, mock_async_web_crawler
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
 ):
     """Auto-click popup RGPD 'Tout accepter'."""
     mock_page = MagicMock()
@@ -229,9 +229,7 @@ async def test_get_google_session_auto_click_consent(
     mock_page.wait_for_selector = AsyncMock(return_value=mock_button)
     mock_button.click = AsyncMock()
 
-    mock_result = MagicMock()
-    mock_result.success = True
-    mock_result.html = "<html>Google Flights</html>"
+    mock_result = mock_crawl_result_factory(html="<html>Google Flights</html>")
 
     crawler = mock_async_web_crawler(mock_result=mock_result)
 
@@ -243,12 +241,10 @@ async def test_get_google_session_auto_click_consent(
 
 @pytest.mark.asyncio
 async def test_get_google_session_no_consent_popup(
-    crawler_service, mock_async_web_crawler, caplog
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory, caplog
 ):
     """Popup RGPD absent - timeout sans erreur."""
-    mock_result = MagicMock()
-    mock_result.success = True
-    mock_result.html = "<html>No popup</html>"
+    mock_result = mock_crawl_result_factory(html="<html>No popup</html>")
 
     crawler = mock_async_web_crawler(mock_result=mock_result)
 
@@ -259,12 +255,13 @@ async def test_get_google_session_no_consent_popup(
 
 
 @pytest.mark.asyncio
-async def test_crawl_status_429(crawler_service, mock_async_web_crawler):
+async def test_crawl_status_429(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
     """Status code 429 rate limiting lève NetworkError."""
-    mock_result = MagicMock()
-    mock_result.success = False
-    mock_result.html = "<html>Too Many Requests</html>"
-    mock_result.status_code = 429
+    mock_result = mock_crawl_result_factory(
+        success=False, html="<html>Too Many Requests</html>", status_code=429
+    )
 
     crawler = mock_async_web_crawler(mock_result=mock_result)
 
@@ -304,23 +301,18 @@ async def test_crawl_retry_success_no_retry(
 
 
 @pytest.mark.asyncio
-async def test_crawl_retry_on_500_error(crawler_service, mock_async_web_crawler):
+async def test_crawl_retry_on_500_error(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
     """Retry automatique sur status 500."""
     call_count = 0
 
     async def mock_arun_side_effect(*args, **kwargs):
         nonlocal call_count
         call_count += 1
-        mock_result = MagicMock()
         if call_count == 1:
-            mock_result.success = False
-            mock_result.status_code = 500
-            mock_result.html = ""
-        else:
-            mock_result.success = True
-            mock_result.status_code = 200
-            mock_result.html = "<html>Success</html>"
-        return mock_result
+            return mock_crawl_result_factory(success=False, status_code=500, html="")
+        return mock_crawl_result_factory(html="<html>Success</html>")
 
     crawler = mock_async_web_crawler(side_effect=mock_arun_side_effect)
 
@@ -333,7 +325,9 @@ async def test_crawl_retry_on_500_error(crawler_service, mock_async_web_crawler)
 
 
 @pytest.mark.asyncio
-async def test_crawl_retry_on_timeout(crawler_service, mock_async_web_crawler):
+async def test_crawl_retry_on_timeout(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
     """Retry automatique sur timeout reseau."""
     call_count = 0
 
@@ -342,11 +336,7 @@ async def test_crawl_retry_on_timeout(crawler_service, mock_async_web_crawler):
         call_count += 1
         if call_count == 1:
             raise TimeoutError("Network timeout")
-        mock_result = MagicMock()
-        mock_result.success = True
-        mock_result.status_code = 200
-        mock_result.html = "<html>Success</html>"
-        return mock_result
+        return mock_crawl_result_factory(html="<html>Success</html>")
 
     crawler = mock_async_web_crawler(side_effect=mock_arun_side_effect)
 
@@ -381,18 +371,16 @@ async def test_crawl_retry_max_retries_network_error(
 
 
 @pytest.mark.asyncio
-async def test_crawl_retry_no_retry_on_404(crawler_service, mock_async_web_crawler):
+async def test_crawl_retry_no_retry_on_404(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
     """Pas de retry sur 404 Not Found."""
     call_count = 0
 
     async def mock_arun_side_effect(*args, **kwargs):
         nonlocal call_count
         call_count += 1
-        mock_result = MagicMock()
-        mock_result.success = False
-        mock_result.status_code = 404
-        mock_result.html = ""
-        return mock_result
+        return mock_crawl_result_factory(success=False, status_code=404, html="")
 
     crawler = mock_async_web_crawler(side_effect=mock_arun_side_effect)
 
@@ -404,7 +392,7 @@ async def test_crawl_retry_no_retry_on_404(crawler_service, mock_async_web_crawl
 
 @pytest.mark.asyncio
 async def test_crawl_retry_before_sleep_logging(
-    crawler_service, mock_async_web_crawler, caplog
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory, caplog
 ):
     """Logging before_sleep callback chaque retry."""
     caplog.set_level(logging.WARNING)
@@ -413,16 +401,11 @@ async def test_crawl_retry_before_sleep_logging(
     async def mock_arun_side_effect(*args, **kwargs):
         nonlocal call_count
         call_count += 1
-        mock_result = MagicMock()
         if call_count <= 2:
-            mock_result.success = True
-            mock_result.html = '<div class="g-recaptcha">Captcha</div>'
-            mock_result.status_code = 200
-        else:
-            mock_result.success = True
-            mock_result.html = "<html>Success</html>"
-            mock_result.status_code = 200
-        return mock_result
+            return mock_crawl_result_factory(
+                html='<div class="g-recaptcha">Captcha</div>'
+            )
+        return mock_crawl_result_factory(html="<html>Success</html>")
 
     crawler = mock_async_web_crawler(side_effect=mock_arun_side_effect)
 
@@ -437,7 +420,7 @@ async def test_crawl_retry_before_sleep_logging(
 
 @pytest.mark.asyncio
 async def test_crawl_retry_with_proxy_rotation(
-    mock_crawl_result, proxy_service_single, mock_async_web_crawler
+    proxy_service_single, mock_async_web_crawler, mock_crawl_result_factory
 ):
     """Rotation proxy a chaque retry."""
     crawler_service = CrawlerService(proxy_service=proxy_service_single)
@@ -456,16 +439,11 @@ async def test_crawl_retry_with_proxy_rotation(
     async def mock_arun_side_effect(*args, **kwargs):
         nonlocal call_count
         call_count += 1
-        mock_result = MagicMock()
         if call_count == 1:
-            mock_result.success = True
-            mock_result.html = '<div class="g-recaptcha">Captcha</div>'
-            mock_result.status_code = 200
-        else:
-            mock_result.success = True
-            mock_result.html = "<html>Success</html>"
-            mock_result.status_code = 200
-        return mock_result
+            return mock_crawl_result_factory(
+                html='<div class="g-recaptcha">Captcha</div>'
+            )
+        return mock_crawl_result_factory(html="<html>Success</html>")
 
     crawler = mock_async_web_crawler(side_effect=mock_arun_side_effect)
 

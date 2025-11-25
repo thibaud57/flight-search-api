@@ -3,7 +3,7 @@ title: "VERSIONS - Matrice de compatibilité"
 description: "Versions exactes des dépendances Python 3.13+ et compatibilité croisée. Consulter pour configuration pyproject.toml, installation dependencies, migration Pydantic v2."
 date: "2025-16-11"
 keywords: ["versions", "dependencies", "compatibility", "python", "python3.13", "fastapi", "pydantic", "pydantic-v2", "crawl4ai", "tenacity", "pyproject", "migration"]
-scope: ["config", "setup"]
+scope: ["docs", "config", "setup"]
 technologies: ["python", "fastapi", "pydantic", "crawl4ai", "tenacity", "uvicorn"]
 ---
 

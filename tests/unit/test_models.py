@@ -1,27 +1,26 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.google_flight_dto import GoogleFlightDTO
 from app.models.request import DateRange, SearchRequest
 from app.models.response import FlightCombinationResult, SearchResponse, SearchStats
-from tests.fixtures.helpers import TEMPLATE_URL, get_future_date
+from tests.fixtures.helpers import TEMPLATE_URL, get_date_range, get_future_date
 
 
 def test_date_range_valid_dates(date_range_factory):
     """DateRange dates valides."""
     valid_date_range = date_range_factory(start_offset=1, duration=6, as_dict=True)
     date_range = DateRange(**valid_date_range)
+
     assert date_range.start == valid_date_range["start"]
     assert date_range.end == valid_date_range["end"]
 
 
 def test_date_range_end_before_start_fails():
     """End avant start rejetée."""
-    tomorrow = get_future_date(1)
-    week_later = get_future_date(7)
+    start_date, end_date = get_date_range(start_offset=1, duration=6)
     invalid_date_range = {
-        "start": week_later.isoformat(),
-        "end": tomorrow.isoformat(),
+        "start": end_date.isoformat(),
+        "end": start_date.isoformat(),
     }
     with pytest.raises(ValidationError):
         DateRange(**invalid_date_range)
@@ -31,6 +30,7 @@ def test_date_range_same_day_valid(date_range_factory):
     """Start = end acceptée (range 1 jour = date exacte)."""
     same_day_range = date_range_factory(start_offset=1, duration=0, as_dict=True)
     date_range = DateRange(**same_day_range)
+
     assert date_range.start == same_day_range["start"]
     assert date_range.end == same_day_range["end"]
 
@@ -63,32 +63,21 @@ def test_date_range_non_existent_date_fails():
         DateRange(**date_range_data)
 
 
-def test_date_range_future_dates_valid():
+def test_date_range_future_dates_valid(date_range_factory):
     """Dates très futures acceptées."""
-    date_range_data = {
-        "start": "2030-01-01",
-        "end": "2030-01-10",
-    }
+    date_range_data = date_range_factory(start_offset=1825, duration=9, as_dict=True)
     date_range = DateRange(**date_range_data)
-    assert date_range.start == "2030-01-01"
-    assert date_range.end == "2030-01-10"
+
+    assert date_range.start == date_range_data["start"]
+    assert date_range.end == date_range_data["end"]
 
 
-def test_search_request_valid_two_segments():
+def test_search_request_valid_two_segments(search_request_factory):
     """Request valide avec 2 segments (minimum)."""
-    tomorrow = get_future_date(1)
-    week_later = get_future_date(7)
-
-    request = SearchRequest(
-        template_url=TEMPLATE_URL,
-        segments_date_ranges=[
-            DateRange(start=tomorrow.isoformat(), end=week_later.isoformat()),
-            DateRange(
-                start=get_future_date(8).isoformat(),
-                end=get_future_date(13).isoformat(),
-            ),
-        ],
+    request = search_request_factory(
+        days_segment1=6, days_segment2=5, offset_segment2=7
     )
+
     assert len(request.segments_date_ranges) == 2
 
 
@@ -106,6 +95,7 @@ def test_search_request_valid_five_segments():
         template_url=TEMPLATE_URL,
         segments_date_ranges=segments_date_ranges,
     )
+
     assert len(request.segments_date_ranges) == 5
 
 
@@ -177,6 +167,7 @@ def test_search_request_explosion_combinatoire_ok():
             ),
         ],
     )
+
     assert len(request.segments_date_ranges) == 5
 
 
@@ -208,6 +199,7 @@ def test_search_request_explosion_combinatoire_fails():
                 ),
             ],
         )
+
     assert "Too many combinations" in str(exc_info.value)
 
 
@@ -232,6 +224,7 @@ def test_search_request_explosion_message_suggests_reduction():
             ],
         )
     error_msg = str(exc_info.value)
+
     assert "date range too large" in error_msg.lower() or "15 days" in error_msg
 
 
@@ -262,6 +255,7 @@ def test_search_request_asymmetric_ranges_valid():
             ),
         ],
     )
+
     assert len(request.segments_date_ranges) == 5
 
 
@@ -287,6 +281,7 @@ def test_search_request_model_dump_json_valid():
         ],
     )
     json_str = request.model_dump_json()
+
     assert json_str is not None
     assert "template_url" in json_str
     assert "google.com/travel/flights" in json_str
@@ -299,42 +294,51 @@ def test_search_request_type_hints_pep695_compliant():
     assert "list" in str(segments_annotation)
 
 
-def test_flight_combination_result_valid_fields():
+def test_flight_combination_result_valid_fields(flight_dto_factory, date_range_factory):
     """FlightCombinationResult valide."""
+    start_date1, _ = get_date_range(start_offset=1, duration=0)
+    start_date2, _ = get_date_range(start_offset=15, duration=0)
+
+    flight = flight_dto_factory(
+        price=1250.50,
+        airline="Air France",
+        departure_time="10:30",
+        arrival_time="14:45",
+        duration="4h 15min",
+        stops=0,
+        departure_airport="Aéroport de Paris-Charles de Gaulle",
+        arrival_airport="Aéroport international de Tokyo-Haneda",
+    )
+
     combination_data = {
-        "segment_dates": ["2025-06-01", "2025-06-15"],
+        "segment_dates": [start_date1.isoformat(), start_date2.isoformat()],
         "flights": [
             {
-                "price": 1250.50,
-                "airline": "Air France",
-                "departure_time": "10:30",
-                "arrival_time": "14:45",
-                "duration": "4h 15min",
-                "stops": 0,
-                "departure_airport": "Aéroport de Paris-Charles de Gaulle",
-                "arrival_airport": "Aéroport international de Tokyo-Haneda",
+                "price": flight.price,
+                "airline": flight.airline,
+                "departure_time": flight.departure_time,
+                "arrival_time": flight.arrival_time,
+                "duration": flight.duration,
+                "stops": flight.stops,
+                "departure_airport": flight.departure_airport,
+                "arrival_airport": flight.arrival_airport,
             }
         ],
     }
     combination = FlightCombinationResult(**combination_data)
+
     assert len(combination.segment_dates) == 2
-    assert combination.segment_dates[0] == "2025-06-01"
-    assert combination.segment_dates[1] == "2025-06-15"
+    assert combination.segment_dates[0] == start_date1.isoformat()
+    assert combination.segment_dates[1] == start_date2.isoformat()
     assert len(combination.flights) == 1
     assert combination.flights[0].price == 1250.50
     assert combination.flights[0].airline == "Air France"
 
 
-def test_google_flight_dto_negative_price_fails():
+def test_google_flight_dto_negative_price_fails(flight_dto_factory):
     """Prix négatif rejeté dans GoogleFlightDTO."""
     with pytest.raises(ValidationError):
-        GoogleFlightDTO(
-            price=-100.0,
-            airline="Air France",
-            departure_time="10:30",
-            arrival_time="14:00",
-            duration="4h",
-        )
+        flight_dto_factory(price=-100.0)
 
 
 def test_search_stats_valid_fields():
@@ -345,35 +349,42 @@ def test_search_stats_valid_fields():
         "segments_count": 2,
     }
     stats = SearchStats(**stats_data)
+
     assert stats.total_results == 10
     assert stats.search_time_ms == 50
     assert stats.segments_count == 2
 
 
-def test_search_response_results_sorted_by_price():
+def test_search_response_results_sorted_by_price(flight_dto_factory):
     """Results triés prix croissant."""
+    start_date1, _ = get_date_range(start_offset=1, duration=0)
+    start_date2, _ = get_date_range(start_offset=2, duration=0)
+
+    flight1 = flight_dto_factory(price=2000.0, airline="Airline2")
+    flight2 = flight_dto_factory(price=1000.0, airline="Airline1")
+
     results_unsorted = [
         {
-            "segment_dates": ["2025-06-02", "2025-06-16"],
+            "segment_dates": [start_date2.isoformat(), start_date2.isoformat()],
             "flights": [
                 {
-                    "price": 2000.0,
-                    "airline": "Airline2",
-                    "departure_time": "10:00",
-                    "arrival_time": "14:00",
-                    "duration": "4h",
+                    "price": flight1.price,
+                    "airline": flight1.airline,
+                    "departure_time": flight1.departure_time,
+                    "arrival_time": flight1.arrival_time,
+                    "duration": flight1.duration,
                 }
             ],
         },
         {
-            "segment_dates": ["2025-06-01", "2025-06-15"],
+            "segment_dates": [start_date1.isoformat(), start_date1.isoformat()],
             "flights": [
                 {
-                    "price": 1000.0,
-                    "airline": "Airline1",
-                    "departure_time": "10:00",
-                    "arrival_time": "14:00",
-                    "duration": "4h",
+                    "price": flight2.price,
+                    "airline": flight2.airline,
+                    "departure_time": flight2.departure_time,
+                    "arrival_time": flight2.arrival_time,
+                    "duration": flight2.duration,
                 }
             ],
         },
@@ -386,23 +397,34 @@ def test_search_response_results_sorted_by_price():
 
     with pytest.raises(ValidationError) as exc_info:
         SearchResponse(results=results_unsorted, search_stats=stats_data)
+
     assert "sorted" in str(exc_info.value).lower()
 
 
-def test_search_response_max_10_results():
+def test_search_response_max_10_results(flight_dto_factory):
     """Max 10 results respecté."""
+    start_date1, _ = get_date_range(start_offset=1, duration=0)
+    start_date2, _ = get_date_range(start_offset=15, duration=0)
+
     results = []
     for i in range(11):
+        flight = flight_dto_factory(
+            price=1000.0 + i * 100,
+            airline=f"Airline{i}",
+            departure_time="10:00",
+            arrival_time="14:00",
+            duration="4h",
+        )
         results.append(
             {
-                "segment_dates": ["2025-06-01", "2025-06-15"],
+                "segment_dates": [start_date1.isoformat(), start_date2.isoformat()],
                 "flights": [
                     {
-                        "price": 1000.0 + i * 100,
-                        "airline": f"Airline{i}",
-                        "departure_time": "10:00",
-                        "arrival_time": "14:00",
-                        "duration": "4h",
+                        "price": flight.price,
+                        "airline": flight.airline,
+                        "departure_time": flight.departure_time,
+                        "arrival_time": flight.arrival_time,
+                        "duration": flight.duration,
                     }
                 ],
             }
@@ -418,63 +440,38 @@ def test_search_response_max_10_results():
         SearchResponse(results=results, search_stats=stats_data)
 
 
-def test_flight_price_must_be_positive():
+def test_flight_price_must_be_positive(flight_dto_factory):
     """GoogleFlightDTO price doit être > 0."""
     with pytest.raises(ValidationError):
-        GoogleFlightDTO(
-            price=0,
-            airline="Air France",
-            departure_time="10:00",
-            arrival_time="14:00",
-            duration="4h 00min",
-        )
+        flight_dto_factory(price=0)
 
 
-def test_flight_airline_min_length():
+def test_flight_airline_min_length(flight_dto_factory):
     """Airline doit avoir au moins 2 caractères."""
     with pytest.raises(ValidationError):
-        GoogleFlightDTO(
-            price=100.0,
-            airline="A",
-            departure_time="10:00",
-            arrival_time="14:00",
-            duration="4h 00min",
-        )
+        flight_dto_factory(airline="A")
 
 
-def test_flight_time_string_format():
+def test_flight_time_string_format(flight_dto_factory):
     """GoogleFlightDTO accepte times en format string."""
-    flight = GoogleFlightDTO(
-        price=100.0,
-        airline="Air France",
-        departure_time="10:30",
-        arrival_time="14:45",
-        duration="4h 15min",
+    flight = flight_dto_factory(
+        departure_time="10:30", arrival_time="14:45", duration="4h 15min"
     )
+
     assert flight.departure_time == "10:30"
     assert flight.arrival_time == "14:45"
 
 
-def test_flight_duration_format():
+def test_flight_duration_format(flight_dto_factory):
     """GoogleFlightDTO duration accepte format string."""
-    flight = GoogleFlightDTO(
-        price=100.0,
-        airline="Air France",
-        departure_time="10:00",
-        arrival_time="20:30",
-        duration="10h 30min",
+    flight = flight_dto_factory(
+        departure_time="10:00", arrival_time="20:30", duration="10h 30min"
     )
+
     assert flight.duration == "10h 30min"
 
 
-def test_flight_stops_must_be_non_negative():
+def test_flight_stops_must_be_non_negative(flight_dto_factory):
     """stops doit être >= 0."""
     with pytest.raises(ValidationError):
-        GoogleFlightDTO(
-            price=100.0,
-            airline="Air France",
-            departure_time="10:00",
-            arrival_time="14:00",
-            duration="4h 00min",
-            stops=-1,
-        )
+        flight_dto_factory(stops=-1)

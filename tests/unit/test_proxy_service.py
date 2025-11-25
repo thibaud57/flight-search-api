@@ -22,6 +22,7 @@ def test_proxy_service_round_robin_rotation(mock_proxy_pool: list[ProxyConfig]) 
         "proxy1user",
         "proxy2user",
     ]
+
     assert results == expected
 
 

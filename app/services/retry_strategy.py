@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from tenacity import (
     RetryCallState,
@@ -13,6 +12,7 @@ from tenacity import (
 )
 
 from app.exceptions import CaptchaDetectedError, NetworkError
+from app.types import TenacityRetryConfig
 
 logger = logging.getLogger(__name__)
 
@@ -46,14 +46,14 @@ def log_retry_attempt(retry_state: RetryCallState) -> None:
             },
         )
     except Exception as e:
-        logger.debug(f"Before_sleep callback failed: {e}")
+        logger.debug("Before_sleep callback failed: %s", e)
 
 
 class RetryStrategy:
     """Configuration Tenacity centralisee pour retry logic production."""
 
     @staticmethod
-    def get_crawler_retry() -> dict[str, Any]:
+    def get_crawler_retry() -> TenacityRetryConfig:
         """Retourne configuration retry optimisee CrawlerService."""
         logger.debug(
             "Creating retry configuration",

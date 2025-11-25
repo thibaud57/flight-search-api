@@ -124,11 +124,15 @@ def test_generate_combinations_date_range_single_day(combination_generator):
     assert len(combinations) == 4
 
 
-def test_date_combination_model_valid_fields():
+def test_date_combination_model_valid_fields(date_range_factory):
     """Modele DateCombination valide."""
-    combo = DateCombination(segment_dates=["2025-06-01", "2025-06-15"])
+    date_range1 = date_range_factory(start_offset=1, duration=0)
+    date_range2 = date_range_factory(start_offset=15, duration=0)
+    combo = DateCombination(segment_dates=[date_range1.start, date_range2.start])
 
-    assert combo.segment_dates == ["2025-06-01", "2025-06-15"]
+    assert len(combo.segment_dates) == 2
+    assert combo.segment_dates[0] == date_range1.start
+    assert combo.segment_dates[1] == date_range2.start
 
 
 def test_combinations_unique_dates(combination_generator):

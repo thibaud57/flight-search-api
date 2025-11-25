@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 from tests.fixtures.helpers import (
     SEARCH_FLIGHTS_ENDPOINT,
     TEMPLATE_URL,
-    get_future_date,
 )
 
 
@@ -19,22 +18,20 @@ def test_end_to_end_search_request_valid(
     response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
 
     assert response.status_code == 200
-
     data = response.json()
+
     assert "results" in data
     assert "search_stats" in data
-
     assert len(data["results"]) == 10
+    assert data["search_stats"]["total_results"] == 10
+    assert data["search_stats"]["segments_count"] == 2
+    assert data["search_stats"]["search_time_ms"] > 0
 
     for i in range(len(data["results"]) - 1):
         assert (
             data["results"][i]["flights"][0]["price"]
             <= data["results"][i + 1]["flights"][0]["price"]
         )
-
-    assert data["search_stats"]["total_results"] == 10
-    assert data["search_stats"]["segments_count"] == 2
-    assert data["search_stats"]["search_time_ms"] > 0
 
 
 def test_end_to_end_validation_error_empty_segments(
@@ -45,13 +42,10 @@ def test_end_to_end_validation_error_empty_segments(
         "template_url": TEMPLATE_URL,
         "segments_date_ranges": [],
     }
-
     response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
 
     assert response.status_code == 422
-
-    data = response.json()
-    assert "detail" in data
+    assert "detail" in response.json()
 
 
 def test_end_to_end_validation_error_invalid_dates(
@@ -65,13 +59,10 @@ def test_end_to_end_validation_error_invalid_dates(
             date_range_factory(start_offset=14, duration=5, as_dict=True),
         ],
     }
-
     response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
 
     assert response.status_code == 422
-
-    data = response.json()
-    assert "detail" in data
+    assert "detail" in response.json()
 
 
 def test_end_to_end_search_request_exact_dates(
@@ -85,38 +76,31 @@ def test_end_to_end_search_request_exact_dates(
             date_range_factory(start_offset=6, duration=0, as_dict=True),
         ],
     }
-
     response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
 
     assert response.status_code == 200
-
     data = response.json()
+
     assert "results" in data
     assert len(data["results"]) == 10
     assert data["search_stats"]["segments_count"] == 2
 
 
 def test_end_to_end_validation_error_too_many_segments(
-    client_with_mock_search: TestClient,
+    client_with_mock_search: TestClient, date_range_factory
 ) -> None:
     """Plus de 5 segments retourne 422."""
     request_data = {
         "template_url": TEMPLATE_URL,
         "segments_date_ranges": [
-            {
-                "start": get_future_date(1 + i * 10).isoformat(),
-                "end": get_future_date(1 + i * 10 + 2).isoformat(),
-            }
+            date_range_factory(start_offset=1 + i * 10, duration=2, as_dict=True)
             for i in range(6)
         ],
     }
-
     response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
 
     assert response.status_code == 422
-
-    data = response.json()
-    assert "detail" in data
+    assert "detail" in response.json()
 
 
 def test_end_to_end_openapi_schema_includes_endpoint(
@@ -126,8 +110,8 @@ def test_end_to_end_openapi_schema_includes_endpoint(
     response = client_with_mock_search.get("/openapi.json")
 
     assert response.status_code == 200
-
     schema = response.json()
+
     assert "paths" in schema
     assert SEARCH_FLIGHTS_ENDPOINT in schema["paths"]
 

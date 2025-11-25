@@ -67,7 +67,7 @@ class Settings(BaseSettings):
                 host=host_parts[0],
                 port=int(host_parts[1]),
                 username=self.DECODO_USERNAME,
-                password=self.DECODO_PASSWORD.get_secret_value(),
+                password=self.DECODO_PASSWORD,
                 country="FR",
             )
 

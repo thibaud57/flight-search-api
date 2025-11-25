@@ -1,6 +1,7 @@
 """Tests integration retry logic avec scénarios multi-combinaisons."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from contextlib import asynccontextmanager
+from unittest.mock import patch
 
 import pytest
 
@@ -14,164 +15,98 @@ from tests.fixtures.helpers import MOCK_URL
 
 
 @pytest.fixture
-def mock_crawler_with_transient_errors():
-    """Mock AsyncWebCrawler : 30% requetes timeout puis succes."""
-    crawler = AsyncMock()
+def mock_crawler_with_errors_factory(mock_async_web_crawler, mock_crawl_result):
+    """Factory pour créer crawlers avec patterns erreurs configurables."""
 
-    call_count = 0
+    def _create(
+        error_calls=None,
+        error_type="network",
+        captcha_calls=None,
+        status_404_calls=None,
+    ):
+        call_count = [0]
+        captcha_triggered = set()
 
-    async def arun_side_effect(*args, **kwargs):
-        nonlocal call_count
-        call_count += 1
+        async def arun_side_effect(*args, **kwargs):
+            call_count[0] += 1
+            current_call = call_count[0]
 
-        if call_count in (2, 5):
-            raise NetworkError(url=MOCK_URL, status_code=None, attempts=1)
+            if error_calls and current_call in error_calls:
+                if error_type == "network":
+                    raise NetworkError(url=MOCK_URL, status_code=None, attempts=1)
+                elif error_type == "network_persistent":
+                    raise NetworkError(url=MOCK_URL, status_code=503, attempts=3)
 
-        result = MagicMock()
-        result.success = True
-        result.html = "<html><body>Valid content</body></html>"
-        result.status_code = 200
-        return result
+            if (
+                error_type == "captcha"
+                and captcha_calls
+                and current_call in captcha_calls
+                and current_call not in captcha_triggered
+            ):
+                captcha_triggered.add(current_call)
+                raise CaptchaDetectedError(url=MOCK_URL, captcha_type="recaptcha_v2")
 
-    crawler.arun = arun_side_effect
-    return crawler
+            if error_type == "mixed":
+                if error_calls and current_call in error_calls:
+                    raise NetworkError(url=MOCK_URL, status_code=None, attempts=1)
+                if (
+                    captcha_calls
+                    and current_call in captcha_calls
+                    and current_call not in captcha_triggered
+                ):
+                    captcha_triggered.add(current_call)
+                    raise CaptchaDetectedError(
+                        url=MOCK_URL, captcha_type="recaptcha_v2"
+                    )
 
+            if status_404_calls and current_call in status_404_calls:
+                result = mock_async_web_crawler().arun.return_value
+                result.success = False
+                result.html = ""
+                result.status_code = 404
+                return result
 
-@pytest.fixture
-def mock_crawler_with_persistent_errors():
-    """Mock AsyncWebCrawler : 40% requetes levent NetworkError persistant."""
-    crawler = AsyncMock()
+            return mock_crawl_result
 
-    call_count = 0
-
-    async def arun_side_effect(*args, **kwargs):
-        nonlocal call_count
-        call_count += 1
-
-        if call_count in (2, 5, 8, 11, 14):
-            raise NetworkError(url=MOCK_URL, status_code=503, attempts=3)
-
-        result = MagicMock()
-        result.success = True
-        result.html = "<html><body>Valid content</body></html>"
-        result.status_code = 200
-        return result
-
-    crawler.arun = arun_side_effect
-    return crawler
-
-
-@pytest.fixture
-def mock_crawler_with_captcha_then_success():
-    """Mock AsyncWebCrawler : 50% requetes captcha 1ere tentative puis succes retry."""
-    crawler = AsyncMock()
-
-    call_count = 0
-    captcha_calls = set()
-
-    async def arun_side_effect(*args, **kwargs):
-        nonlocal call_count
-        call_count += 1
-
-        if (
-            call_count > 1
-            and call_count in (2, 4, 6, 8, 10)
-            and call_count not in captcha_calls
-        ):
-            captcha_calls.add(call_count)
-            raise CaptchaDetectedError(url=MOCK_URL, captcha_type="recaptcha_v2")
-
-        result = MagicMock()
-        result.success = True
-        result.html = "<html><body>Valid content</body></html>"
-        result.status_code = 200
-        return result
-
-    crawler.arun = arun_side_effect
-    return crawler
-
-
-@pytest.fixture
-def mock_crawler_with_404_errors():
-    """Mock AsyncWebCrawler : 20% requetes retournent status 404."""
-    crawler = AsyncMock()
-
-    call_count = 0
-
-    async def arun_side_effect(*args, **kwargs):
-        nonlocal call_count
-        call_count += 1
-
-        result = MagicMock()
-
-        if call_count in (3, 7, 11, 15):
-            result.success = False
-            result.html = ""
-            result.status_code = 404
-        else:
-            result.success = True
-            result.html = "<html><body>Valid content</body></html>"
-            result.status_code = 200
-
-        return result
-
-    crawler.arun = arun_side_effect
-    return crawler
-
-
-@pytest.fixture
-def mock_crawler_with_mixed_errors():
-    """Mock AsyncWebCrawler : mix erreurs (20% timeout, 10% captcha, 70% succes)."""
-    crawler = AsyncMock()
-
-    call_count = 0
-    captcha_calls = set()
-
-    async def arun_side_effect(*args, **kwargs):
-        nonlocal call_count
-        call_count += 1
-
-        if call_count in (2, 5, 8, 12) and call_count not in captcha_calls:
-            raise NetworkError(url=MOCK_URL, status_code=None, attempts=1)
-
-        if call_count in (4, 10) and call_count not in captcha_calls:
-            captcha_calls.add(call_count)
-            raise CaptchaDetectedError(url=MOCK_URL, captcha_type="recaptcha_v2")
-
-        result = MagicMock()
-        result.success = True
-        result.html = "<html><body>Valid content</body></html>"
-        result.status_code = 200
-        return result
-
-    crawler.arun = arun_side_effect
-    return crawler
-
-
-@pytest.mark.asyncio
-async def test_integration_search_with_transient_errors(
-    mock_crawler_with_transient_errors,
-    flight_parser_mock_single_factory,
-    mock_proxy_pool,
-    search_request_factory,
-) -> None:
-    """Test retry logic avec erreurs transitoires 30%."""
-    proxy_service = ProxyService(mock_proxy_pool)
-
-    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
-        mock_crawler_class.return_value.__aenter__.return_value = (
-            mock_crawler_with_transient_errors
+        return mock_async_web_crawler(
+            mock_result=mock_crawl_result, side_effect=arun_side_effect
         )
 
+    return _create
+
+
+@asynccontextmanager
+async def _patch_crawler_and_search(crawler, proxy_pool, flight_parser):
+    """Context manager : patch AsyncWebCrawler et crée SearchService."""
+    proxy_service = ProxyService(proxy_pool)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
+        mock_crawler_class.return_value.__aenter__.return_value = crawler
         crawler_service = CrawlerService(proxy_service=proxy_service)
         combination_generator = CombinationGenerator()
         search_service = SearchService(
             combination_generator=combination_generator,
             crawler_service=crawler_service,
-            flight_parser=flight_parser_mock_single_factory,
+            flight_parser=flight_parser,
         )
+        yield search_service
 
+
+@pytest.mark.asyncio
+async def test_integration_search_with_transient_errors(
+    mock_crawler_with_errors_factory,
+    flight_parser_mock_single_factory,
+    mock_proxy_pool,
+    search_request_factory,
+) -> None:
+    """Test retry logic avec erreurs transitoires 30%."""
+    crawler = mock_crawler_with_errors_factory(error_calls=[2, 5], error_type="network")
+
+    async with _patch_crawler_and_search(
+        crawler, mock_proxy_pool, flight_parser_mock_single_factory
+    ) as search_service:
         request = search_request_factory(days_segment1=2, days_segment2=2)
+
         response = await search_service.search_flights(request)
 
         assert isinstance(response, SearchResponse)
@@ -182,30 +117,23 @@ async def test_integration_search_with_transient_errors(
 
 @pytest.mark.asyncio
 async def test_integration_retry_exhaustion_graceful_degradation(
-    mock_crawler_with_persistent_errors,
+    mock_crawler_with_errors_factory,
     flight_parser_mock_single_factory,
     mock_proxy_pool,
     search_request_factory,
 ) -> None:
     """Test graceful degradation avec erreurs persistantes 40%."""
-    proxy_service = ProxyService(mock_proxy_pool)
+    crawler = mock_crawler_with_errors_factory(
+        error_calls=[2, 5, 8, 11, 14], error_type="network_persistent"
+    )
 
-    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
-        mock_crawler_class.return_value.__aenter__.return_value = (
-            mock_crawler_with_persistent_errors
-        )
-
-        crawler_service = CrawlerService(proxy_service=proxy_service)
-        combination_generator = CombinationGenerator()
-        search_service = SearchService(
-            combination_generator=combination_generator,
-            crawler_service=crawler_service,
-            flight_parser=flight_parser_mock_single_factory,
-        )
-
+    async with _patch_crawler_and_search(
+        crawler, mock_proxy_pool, flight_parser_mock_single_factory
+    ) as search_service:
         request = search_request_factory(
             days_segment1=5, days_segment2=3, offset_segment2=12
         )
+
         response = await search_service.search_flights(request)
 
         assert isinstance(response, SearchResponse)
@@ -215,28 +143,21 @@ async def test_integration_retry_exhaustion_graceful_degradation(
 
 @pytest.mark.asyncio
 async def test_integration_partial_retry_success(
-    mock_crawler_with_captcha_then_success,
+    mock_crawler_with_errors_factory,
     flight_parser_mock_single_factory,
     mock_proxy_pool,
     search_request_factory,
 ) -> None:
     """Test retry success avec captcha 50% puis proxy rotation."""
-    proxy_service = ProxyService(mock_proxy_pool)
+    crawler = mock_crawler_with_errors_factory(
+        captcha_calls=[2, 4, 6, 8, 10], error_type="captcha"
+    )
 
-    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
-        mock_crawler_class.return_value.__aenter__.return_value = (
-            mock_crawler_with_captcha_then_success
-        )
-
-        crawler_service = CrawlerService(proxy_service=proxy_service)
-        combination_generator = CombinationGenerator()
-        search_service = SearchService(
-            combination_generator=combination_generator,
-            crawler_service=crawler_service,
-            flight_parser=flight_parser_mock_single_factory,
-        )
-
+    async with _patch_crawler_and_search(
+        crawler, mock_proxy_pool, flight_parser_mock_single_factory
+    ) as search_service:
         request = search_request_factory(days_segment1=4, days_segment2=4)
+
         response = await search_service.search_flights(request)
 
         assert isinstance(response, SearchResponse)
@@ -246,28 +167,19 @@ async def test_integration_partial_retry_success(
 
 @pytest.mark.asyncio
 async def test_integration_no_retry_on_client_errors(
-    mock_crawler_with_404_errors,
+    mock_crawler_with_errors_factory,
     flight_parser_mock_single_factory,
     mock_proxy_pool,
     search_request_factory,
 ) -> None:
     """Test aucun retry sur erreurs 404."""
-    proxy_service = ProxyService(mock_proxy_pool)
+    crawler = mock_crawler_with_errors_factory(status_404_calls=[3, 7, 11, 15])
 
-    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
-        mock_crawler_class.return_value.__aenter__.return_value = (
-            mock_crawler_with_404_errors
-        )
-
-        crawler_service = CrawlerService(proxy_service=proxy_service)
-        combination_generator = CombinationGenerator()
-        search_service = SearchService(
-            combination_generator=combination_generator,
-            crawler_service=crawler_service,
-            flight_parser=flight_parser_mock_single_factory,
-        )
-
+    async with _patch_crawler_and_search(
+        crawler, mock_proxy_pool, flight_parser_mock_single_factory
+    ) as search_service:
         request = search_request_factory(days_segment1=4, days_segment2=4)
+
         response = await search_service.search_flights(request)
 
         assert isinstance(response, SearchResponse)
@@ -277,35 +189,27 @@ async def test_integration_no_retry_on_client_errors(
 
 @pytest.mark.asyncio
 async def test_integration_end_to_end_retry_metrics_logging(
-    mock_crawler_with_mixed_errors,
+    mock_crawler_with_errors_factory,
     flight_parser_mock_single_factory,
     mock_proxy_pool,
     search_request_factory,
     caplog,
 ) -> None:
     """Test logs retry avec erreurs mixtes."""
-    proxy_service = ProxyService(mock_proxy_pool)
+    crawler = mock_crawler_with_errors_factory(
+        error_calls=[2, 5, 8, 12], captcha_calls=[4, 10], error_type="mixed"
+    )
 
-    with patch("app.services.crawler_service.AsyncWebCrawler") as mock_crawler_class:
-        mock_crawler_class.return_value.__aenter__.return_value = (
-            mock_crawler_with_mixed_errors
-        )
-
-        crawler_service = CrawlerService(proxy_service=proxy_service)
-        combination_generator = CombinationGenerator()
-        search_service = SearchService(
-            combination_generator=combination_generator,
-            crawler_service=crawler_service,
-            flight_parser=flight_parser_mock_single_factory,
-        )
-
+    async with _patch_crawler_and_search(
+        crawler, mock_proxy_pool, flight_parser_mock_single_factory
+    ) as search_service:
         request = search_request_factory(days_segment1=4, days_segment2=4)
+
         response = await search_service.search_flights(request)
 
         assert isinstance(response, SearchResponse)
         assert len(response.results) >= 8
         assert response.search_stats.total_results >= 8
-
         assert any(
             "Retry attempt triggered" in record.message for record in caplog.records
         )

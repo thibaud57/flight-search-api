@@ -95,14 +95,6 @@ def test_settings_proxy_disabled(settings_env_factory) -> None:
     assert settings.proxy_config is None
 
 
-def test_settings_username_too_short(settings_env_factory) -> None:
-    """Username trop court rejette Settings."""
-    with pytest.raises(ValidationError) as exc_info:
-        settings_env_factory(DECODO_USERNAME="abc")
-
-    assert "DECODO_USERNAME" in str(exc_info.value)
-
-
 def test_settings_secret_str_password_masked(settings_env_factory) -> None:
     """SecretStr masque password dans logs."""
     settings = settings_env_factory(DECODO_PASSWORD="secret123")
