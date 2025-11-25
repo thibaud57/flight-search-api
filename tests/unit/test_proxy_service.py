@@ -8,9 +8,9 @@ from app.models.proxy import ProxyConfig
 from app.services.proxy_service import ProxyService
 
 
-def test_proxy_service_round_robin_rotation(proxy_pool: list[ProxyConfig]) -> None:
+def test_proxy_service_round_robin_rotation(mock_proxy_pool: list[ProxyConfig]) -> None:
     """Rotation round-robin cycle 3 proxies."""
-    service = ProxyService(proxy_pool)
+    service = ProxyService(mock_proxy_pool)
 
     results = [service.get_next_proxy().username for _ in range(6)]
 
@@ -22,14 +22,15 @@ def test_proxy_service_round_robin_rotation(proxy_pool: list[ProxyConfig]) -> No
         "proxy1user",
         "proxy2user",
     ]
+
     assert results == expected
 
 
 def test_proxy_service_get_next_logging(
-    proxy_pool: list[ProxyConfig], caplog: pytest.LogCaptureFixture
+    mock_proxy_pool: list[ProxyConfig], caplog: pytest.LogCaptureFixture
 ) -> None:
     """get_next_proxy() log DEBUG contient mot-clé 'proxy'."""
-    service = ProxyService(proxy_pool)
+    service = ProxyService(mock_proxy_pool)
 
     with caplog.at_level(logging.DEBUG, logger="app.services.proxy_service"):
         service.get_next_proxy()

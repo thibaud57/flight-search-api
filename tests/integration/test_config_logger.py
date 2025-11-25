@@ -1,59 +1,51 @@
 """Tests intégration pour Settings et Logger."""
 
 import io
-import json
 import logging
 
 import pytest
 from pydantic import ValidationError
+from pythonjsonlogger import jsonlogger
 
-from app.core.config import Settings
 from app.core.logger import setup_logger
+from tests.fixtures.helpers import (
+    assert_log_captured,
+    assert_log_contains_fields,
+    parse_log_output,
+)
 
 
-def test_settings_loaded_at_app_startup(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_settings_loaded_at_app_startup(settings_env_factory) -> None:
     """Settings instance accessible sans erreur."""
-    monkeypatch.setenv("LOG_LEVEL", "INFO")
-    monkeypatch.setenv("DECODO_USERNAME", "testuser")
-    monkeypatch.setenv("DECODO_PASSWORD", "testpass123")
-    monkeypatch.setenv("DECODO_PROXY_HOST", "fr.decodo.com:40000")
-    monkeypatch.setenv("PROXY_ROTATION_ENABLED", "true")
-    monkeypatch.setenv("CAPTCHA_DETECTION_ENABLED", "true")
-
-    settings = Settings()
+    settings = settings_env_factory(
+        LOG_LEVEL="INFO",
+        PROXY_ROTATION_ENABLED="true",
+        CAPTCHA_DETECTION_ENABLED="true",
+    )
 
     assert settings.LOG_LEVEL == "INFO"
     assert settings.DECODO_USERNAME == "testuser"
-    assert settings.DECODO_PASSWORD.get_secret_value() == "testpass123"
+    assert settings.DECODO_PASSWORD.get_secret_value() == "password123"
     assert settings.PROXY_ROTATION_ENABLED is True
 
 
-def test_app_refuses_startup_with_invalid_config(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_app_refuses_startup_with_invalid_config(settings_env_factory) -> None:
     """ValidationError levee avec config invalide."""
-    monkeypatch.setenv("LOG_LEVEL", "INVALID")
-    monkeypatch.setenv("DECODO_USERNAME", "testuser")
-    monkeypatch.setenv("DECODO_PASSWORD", "testpass123")
-
     with pytest.raises(ValidationError):
-        Settings()
+        settings_env_factory(LOG_LEVEL="INVALID")
 
 
 def test_logger_functional_with_settings_log_level(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    settings_env_factory, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Logger affiche logs DEBUG avec Settings.LOG_LEVEL=DEBUG."""
-    monkeypatch.setenv("LOG_LEVEL", "DEBUG")
-    monkeypatch.setenv("DECODO_USERNAME", "testuser")
-    monkeypatch.setenv("DECODO_PASSWORD", "testpass123")
-    settings = Settings()
+    settings = settings_env_factory(LOG_LEVEL="DEBUG")
 
     logger = setup_logger(settings.LOG_LEVEL)
     with caplog.at_level(logging.DEBUG, logger=logger.name):
         logger.debug("test debug log")
 
-    assert any("test debug log" in record.message for record in caplog.records)
+    assert_log_captured(caplog, "test debug log", logging.DEBUG)
 
 
 def test_logs_parsable_by_json_parser() -> None:
@@ -61,8 +53,6 @@ def test_logs_parsable_by_json_parser() -> None:
     logger = setup_logger("INFO")
     stream = io.StringIO()
     handler = logging.StreamHandler(stream)
-    from pythonjsonlogger import jsonlogger
-
     formatter = jsonlogger.JsonFormatter(
         "%(asctime)s %(name)s %(levelname)s %(message)s"
     )
@@ -71,13 +61,8 @@ def test_logs_parsable_by_json_parser() -> None:
 
     logger.info("test message 1")
     logger.warning("test message 2", extra={"key": "value"})
-    output = stream.getvalue()
 
-    lines = output.strip().split("\n")
+    lines = stream.getvalue().strip().split("\n")
     for line in lines:
-        try:
-            parsed = json.loads(line)
-            assert isinstance(parsed, dict)
-            assert "message" in parsed
-        except json.JSONDecodeError as e:
-            pytest.fail(f"Line is not valid JSON: {line}, error: {e}")
+        parsed = parse_log_output(io.StringIO(line))
+        assert_log_contains_fields(parsed, "message")

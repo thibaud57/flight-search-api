@@ -11,11 +11,12 @@ from app.core.config import get_settings
 from app.exceptions import CaptchaDetectedError, NetworkError, ParsingError
 from app.models.request import CombinationResult, DateCombination, SearchRequest
 from app.models.response import FlightCombinationResult, SearchResponse, SearchStats
+from app.types import CrawlResultTuple
 from app.utils import generate_google_flights_url
 
 if TYPE_CHECKING:
     from app.services.combination_generator import CombinationGenerator
-    from app.services.crawler_service import CrawlerService, CrawlResult
+    from app.services.crawler_service import CrawlerService
     from app.services.flight_parser import FlightParser
 
 logger = logging.getLogger(__name__)
@@ -82,13 +83,12 @@ class SearchService:
         self,
         request: SearchRequest,
         combinations: list[DateCombination],
-    ) -> list[tuple[DateCombination, CrawlResult | None]]:
-        """Crawle toutes les combinaisons en parallele."""
+    ) -> list[CrawlResultTuple]:
+        """Crawle toutes les combinaisons en parallele avec TaskGroup."""
         semaphore = asyncio.Semaphore(self._settings.MAX_CONCURRENCY)
+        results: list[CrawlResultTuple] = []
 
-        async def crawl_with_limit(
-            combo: DateCombination,
-        ) -> tuple[DateCombination, CrawlResult | None]:
+        async def crawl_with_limit(combo: DateCombination) -> None:
             async with semaphore:
                 url = self._build_google_flights_url(request, combo)
                 try:
@@ -96,17 +96,19 @@ class SearchService:
                         url,
                         use_proxy=True,
                     )
-                    return (combo, result)
+                    results.append((combo, result))
                 except (CaptchaDetectedError, NetworkError) as e:
                     logger.warning(
                         "Crawl failed",
                         extra={"url": url, "error": str(e)},
                     )
-                    return (combo, None)
+                    results.append((combo, None))
 
-        tasks = [crawl_with_limit(combo) for combo in combinations]
-        results = await asyncio.gather(*tasks)
-        return list(results)
+        async with asyncio.TaskGroup() as tg:
+            for combo in combinations:
+                tg.create_task(crawl_with_limit(combo))
+
+        return results
 
     def _build_google_flights_url(
         self, request: SearchRequest, combination: DateCombination
@@ -118,7 +120,7 @@ class SearchService:
 
     def _parse_all_results(
         self,
-        crawl_results: list[tuple[DateCombination, CrawlResult | None]],
+        crawl_results: list[CrawlResultTuple],
     ) -> list[CombinationResult]:
         """Parse tous les resultats de crawl."""
         combination_results: list[CombinationResult] = []

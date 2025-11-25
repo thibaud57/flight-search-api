@@ -1,7 +1,7 @@
 ---
 title: "TEMPLATE - Documentation Technique Référence"
 description: "Template standardisé pour créer des documentations techniques dans docs/references/. Structure recommandée Description → Exemple → Points clés pour frameworks, APIs, outils et libraries."
-date: "2025-18-11"
+date: "YYYY-DD-MM"
 keywords: ["template", "references", "documentation", "technique", "pattern", "best-practices"]
 scope: ["docs"]
 technologies: []

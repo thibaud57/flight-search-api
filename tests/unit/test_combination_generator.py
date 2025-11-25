@@ -1,11 +1,13 @@
 """Tests unitaires CombinationGenerator."""
 
-from datetime import date, timedelta
+import logging
+from datetime import date
 
 import pytest
 
 from app.models.request import DateCombination, DateRange
 from app.services.combination_generator import CombinationGenerator
+from tests.fixtures.helpers import get_future_date
 
 
 @pytest.fixture
@@ -15,38 +17,21 @@ def combination_generator() -> CombinationGenerator:
 
 
 @pytest.fixture
-def two_segments() -> list[DateRange]:
+def two_segments(date_range_factory) -> list[DateRange]:
     """2 segments avec 7 et 6 jours."""
-    tomorrow = date.today() + timedelta(days=1)
     return [
-        DateRange(
-            start=tomorrow.isoformat(),
-            end=(tomorrow + timedelta(days=6)).isoformat(),
-        ),
-        DateRange(
-            start=(tomorrow + timedelta(days=14)).isoformat(),
-            end=(tomorrow + timedelta(days=19)).isoformat(),
-        ),
+        date_range_factory(start_offset=1, duration=6),
+        date_range_factory(start_offset=14, duration=5),
     ]
 
 
 @pytest.fixture
-def three_segments() -> list[DateRange]:
+def three_segments(date_range_factory) -> list[DateRange]:
     """3 segments avec 7, 6, 5 jours."""
-    tomorrow = date.today() + timedelta(days=1)
     return [
-        DateRange(
-            start=tomorrow.isoformat(),
-            end=(tomorrow + timedelta(days=6)).isoformat(),
-        ),
-        DateRange(
-            start=(tomorrow + timedelta(days=14)).isoformat(),
-            end=(tomorrow + timedelta(days=19)).isoformat(),
-        ),
-        DateRange(
-            start=(tomorrow + timedelta(days=30)).isoformat(),
-            end=(tomorrow + timedelta(days=34)).isoformat(),
-        ),
+        date_range_factory(start_offset=1, duration=6),
+        date_range_factory(start_offset=14, duration=5),
+        date_range_factory(start_offset=30, duration=4),
     ]
 
 
@@ -66,27 +51,26 @@ def test_generate_combinations_three_segments(combination_generator, three_segme
 
 def test_generate_combinations_five_segments_asymmetric(combination_generator):
     """Genere combinaisons asymetriques (15x2x2x2x2=240)."""
-    tomorrow = date.today() + timedelta(days=1)
     segments = [
         DateRange(
-            start=tomorrow.isoformat(),
-            end=(tomorrow + timedelta(days=14)).isoformat(),
+            start=get_future_date(1).isoformat(),
+            end=get_future_date(15).isoformat(),
         ),
         DateRange(
-            start=(tomorrow + timedelta(days=20)).isoformat(),
-            end=(tomorrow + timedelta(days=21)).isoformat(),
+            start=get_future_date(21).isoformat(),
+            end=get_future_date(22).isoformat(),
         ),
         DateRange(
-            start=(tomorrow + timedelta(days=25)).isoformat(),
-            end=(tomorrow + timedelta(days=26)).isoformat(),
+            start=get_future_date(26).isoformat(),
+            end=get_future_date(27).isoformat(),
         ),
         DateRange(
-            start=(tomorrow + timedelta(days=30)).isoformat(),
-            end=(tomorrow + timedelta(days=31)).isoformat(),
+            start=get_future_date(31).isoformat(),
+            end=get_future_date(32).isoformat(),
         ),
         DateRange(
-            start=(tomorrow + timedelta(days=35)).isoformat(),
-            end=(tomorrow + timedelta(days=36)).isoformat(),
+            start=get_future_date(36).isoformat(),
+            end=get_future_date(37).isoformat(),
         ),
     ]
 
@@ -124,15 +108,14 @@ def test_generate_combinations_dates_within_ranges(combination_generator, two_se
 
 def test_generate_combinations_date_range_single_day(combination_generator):
     """Segment avec 2 jours genere 2 dates."""
-    tomorrow = date.today() + timedelta(days=1)
     segments = [
         DateRange(
-            start=tomorrow.isoformat(),
-            end=(tomorrow + timedelta(days=1)).isoformat(),
+            start=get_future_date(1).isoformat(),
+            end=get_future_date(2).isoformat(),
         ),
         DateRange(
-            start=(tomorrow + timedelta(days=10)).isoformat(),
-            end=(tomorrow + timedelta(days=11)).isoformat(),
+            start=get_future_date(11).isoformat(),
+            end=get_future_date(12).isoformat(),
         ),
     ]
 
@@ -141,24 +124,27 @@ def test_generate_combinations_date_range_single_day(combination_generator):
     assert len(combinations) == 4
 
 
-def test_date_combination_model_valid_fields():
+def test_date_combination_model_valid_fields(date_range_factory):
     """Modele DateCombination valide."""
-    combo = DateCombination(segment_dates=["2025-06-01", "2025-06-15"])
+    date_range1 = date_range_factory(start_offset=1, duration=0)
+    date_range2 = date_range_factory(start_offset=15, duration=0)
+    combo = DateCombination(segment_dates=[date_range1.start, date_range2.start])
 
-    assert combo.segment_dates == ["2025-06-01", "2025-06-15"]
+    assert len(combo.segment_dates) == 2
+    assert combo.segment_dates[0] == date_range1.start
+    assert combo.segment_dates[1] == date_range2.start
 
 
 def test_combinations_unique_dates(combination_generator):
     """Toutes combinaisons sont uniques."""
-    tomorrow = date.today() + timedelta(days=1)
     segments = [
         DateRange(
-            start=tomorrow.isoformat(),
-            end=(tomorrow + timedelta(days=2)).isoformat(),
+            start=get_future_date(1).isoformat(),
+            end=get_future_date(3).isoformat(),
         ),
         DateRange(
-            start=(tomorrow + timedelta(days=10)).isoformat(),
-            end=(tomorrow + timedelta(days=12)).isoformat(),
+            start=get_future_date(11).isoformat(),
+            end=get_future_date(13).isoformat(),
         ),
     ]
 
@@ -171,15 +157,14 @@ def test_combinations_unique_dates(combination_generator):
 
 def test_combinations_dates_ordered_chronologically(combination_generator):
     """Dates generees ordre chronologique par segment."""
-    tomorrow = date.today() + timedelta(days=1)
     segments = [
         DateRange(
-            start=tomorrow.isoformat(),
-            end=(tomorrow + timedelta(days=6)).isoformat(),
+            start=get_future_date(1).isoformat(),
+            end=get_future_date(7).isoformat(),
         ),
         DateRange(
-            start=(tomorrow + timedelta(days=10)).isoformat(),
-            end=(tomorrow + timedelta(days=10)).isoformat(),
+            start=get_future_date(11).isoformat(),
+            end=get_future_date(11).isoformat(),
         ),
     ]
 
@@ -192,8 +177,6 @@ def test_combinations_dates_ordered_chronologically(combination_generator):
 
 def test_generate_combinations_logging(combination_generator, three_segments, caplog):
     """Logging INFO avec statistiques generation."""
-    import logging
-
     with caplog.at_level(logging.INFO):
         combination_generator.generate_combinations(three_segments)
 

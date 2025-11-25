@@ -553,11 +553,11 @@
 
 **Branche** : `feature/story-7-retry`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-7-retry.md
-- [ ] **Validation manuelle** : Simuler échec, vérifier retry dans logs
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(services): add retry logic and error handling`
-- [ ] **PR** : feature/story-7 → develop
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-7-retry.md
+- [x] **Validation manuelle** : Simuler échec, vérifier retry dans logs
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(services): add retry logic and error handling`
+- [x] **PR** : feature/story-7 → develop
 
 📝 **Output** : Story 7 complétée (5 story points)
 
@@ -751,6 +751,7 @@
 - [ ] Commit : `feat(logs): add file logging with rotation and cleanup`
 
 ### Déploiement
+- [ ] **Prérequis VPS** : Vérifier Docker ≥20.10.0, RAM ≥4GB, disque ≥10GB
 - [ ] Configurer Dokploy : connecter repo GitHub
 - [ ] Ajouter env vars dans UI Dokploy :
       - LOG_LEVEL=INFO
@@ -759,9 +760,13 @@
       - DECODO_PROXY_HOST
       - PROXY_ROTATION_ENABLED=true
       - CAPTCHA_DETECTION_ENABLED=true
+- [ ] **Build Docker** : `docker build -t flight-search-api:latest .`
+- [ ] **Run avec shared memory** : `docker run --shm-size="2g" -p 8001:8000` (CRITIQUE pour Chromium)
+- [ ] **Test Playwright** : `docker exec <id> python -c "from crawl4ai import AsyncWebCrawler"`
 - [ ] Déclencher build automatique (push sur master)
 - [ ] Vérifier deployment : `curl https://ton-domaine.com/health`
 - [ ] Tester endpoint complet avec n8n : vérifier header `X-Search-ID` dans response
+- [ ] **Monitor startup** : Vérifier logs browser init, proxy rotation, pas erreurs permissions
 - [ ] Monitorer logs Dokploy UI (stdout) : captcha rate, proxy costs, success rate
 - [ ] Vérifier logs fichiers sur VPS : `docker exec <container_id> ls -lh logs/`
 

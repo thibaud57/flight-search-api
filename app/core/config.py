@@ -17,7 +17,7 @@ class CrawlerTimeouts(BaseModel):
 
     crawl_page_timeout_ms: int = 30000
     crawl_delay_s: float = 5.0
-    crawl_global_timeout_s: float = 50.0
+    crawl_global_timeout_s: float = 40.0
 
 
 class Settings(BaseSettings):
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
                 host=host_parts[0],
                 port=int(host_parts[1]),
                 username=self.DECODO_USERNAME,
-                password=self.DECODO_PASSWORD.get_secret_value(),
+                password=self.DECODO_PASSWORD,
                 country="FR",
             )
 

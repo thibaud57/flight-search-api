@@ -4,27 +4,7 @@ import pytest
 
 from app.exceptions import ParsingError
 from app.services.flight_parser import FlightParser
-
-
-@pytest.fixture
-def parser():
-    """Instance FlightParser."""
-    return FlightParser()
-
-
-@pytest.fixture
-def valid_flight_html():
-    """HTML Google Flights valide avec 10 vols."""
-    flights_html = ""
-    for i in range(10):
-        price = 100 + i * 50
-        airline = f"Airline {i}"
-        flights_html += f"""
-        <li class="pIav2d">
-            <div aria-label="À partir de {price} euros. Départ de Paris à 10:{i:02d}, arrivée à Tokyo à 14:{i:02d}. Durée totale : 4 h 00 min. Vol direct avec {airline}."></div>
-        </li>
-        """
-    return f"<html><body><ul>{flights_html}</ul></body></html>"
+from tests.fixtures.helpers import assert_flight_dto_valid
 
 
 @pytest.fixture
@@ -41,20 +21,30 @@ def single_flight_html():
     """
 
 
-def test_parse_valid_html_multiple_flights(parser, valid_flight_html):
+def test_parse_valid_html_multiple_flights(google_flights_html_factory):
     """HTML valide avec 10 vols."""
-    flights = parser.parse(valid_flight_html)
+    html = google_flights_html_factory(
+        num_flights=10, base_price=100.0, price_increment=50.0
+    )
+    parser = FlightParser()
+
+    flights = parser.parse(html)
+
     assert len(flights) == 10
     for flight in flights:
         assert flight.price > 0
         assert flight.airline is not None
 
 
-def test_parse_flight_all_fields_present(parser, single_flight_html):
+def test_parse_flight_all_fields_present(single_flight_html):
     """Vol avec tous champs renseignés."""
+    parser = FlightParser()
+
     flights = parser.parse(single_flight_html)
+
     assert len(flights) == 1
     flight = flights[0]
+    assert_flight_dto_valid(flight)
     assert flight.price == 1250.0
     assert flight.airline == "Air France"
     assert flight.departure_time == "10:30"
@@ -65,7 +55,7 @@ def test_parse_flight_all_fields_present(parser, single_flight_html):
     assert flight.arrival_airport == "Tokyo"
 
 
-def test_parse_price_with_spaces(parser):
+def test_parse_price_with_spaces():
     """Prix avec espaces '1 270 euros' → 1270.0."""
     html = """
     <html><body><ul>
@@ -74,13 +64,16 @@ def test_parse_price_with_spaces(parser):
     </li>
     </ul></body></html>
     """
+    parser = FlightParser()
+
     flights = parser.parse(html)
+
     assert len(flights) == 1
     assert flights[0].price == 1270.0
     assert flights[0].airline == "Air France"
 
 
-def test_parse_missing_price(parser, caplog):
+def test_parse_missing_price():
     """Vol sans prix est skippé."""
     html = """
     <html><body><ul>
@@ -92,12 +85,15 @@ def test_parse_missing_price(parser, caplog):
     </li>
     </ul></body></html>
     """
+    parser = FlightParser()
+
     flights = parser.parse(html)
+
     assert len(flights) == 1
     assert flights[0].airline == "Lufthansa"
 
 
-def test_parse_invalid_price_format(parser, caplog):
+def test_parse_invalid_price_format():
     """Prix non numérique est skippé."""
     html = """
     <html><body><ul>
@@ -109,12 +105,15 @@ def test_parse_invalid_price_format(parser, caplog):
     </li>
     </ul></body></html>
     """
+    parser = FlightParser()
+
     flights = parser.parse(html)
+
     assert len(flights) == 1
     assert flights[0].airline == "KLM"
 
 
-def test_parse_missing_airline(parser, caplog):
+def test_parse_missing_airline():
     """Vol sans compagnie est skippé."""
     html = """
     <html><body><ul>
@@ -126,12 +125,15 @@ def test_parse_missing_airline(parser, caplog):
     </li>
     </ul></body></html>
     """
+    parser = FlightParser()
+
     flights = parser.parse(html)
+
     assert len(flights) == 1
     assert flights[0].airline == "Emirates"
 
 
-def test_parse_invalid_datetime_format(parser):
+def test_parse_invalid_datetime_format():
     """Horaire invalide est skippé si regex ne match pas."""
     html = """
     <html><body><ul>
@@ -143,12 +145,15 @@ def test_parse_invalid_datetime_format(parser):
     </li>
     </ul></body></html>
     """
+    parser = FlightParser()
+
     flights = parser.parse(html)
+
     assert len(flights) == 1
     assert flights[0].airline == "British Airways"
 
 
-def test_parse_arrival_before_departure(parser):
+def test_parse_arrival_before_departure():
     """arrival_time < departure_time accepté (pas de validation temporelle)."""
     html = """
     <html><body><ul>
@@ -160,19 +165,25 @@ def test_parse_arrival_before_departure(parser):
     </li>
     </ul></body></html>
     """
+    parser = FlightParser()
+
     flights = parser.parse(html)
+
     assert len(flights) == 2
 
 
-def test_parse_no_flights_found(parser):
+def test_parse_no_flights_found():
     """HTML sans .pIav2d lève ParsingError."""
+    parser = FlightParser()
     html = "<html><body><div>No flights here</div></body></html>"
+
     with pytest.raises(ParsingError) as exc_info:
         parser.parse(html)
+
     assert "No flights found" in str(exc_info.value)
 
 
-def test_parse_stops_nonstop(parser):
+def test_parse_stops_nonstop():
     """Vol direct (Non-stop) → stops=0."""
     html = """
     <html><body><ul>
@@ -181,12 +192,15 @@ def test_parse_stops_nonstop(parser):
     </li>
     </ul></body></html>
     """
+    parser = FlightParser()
+
     flights = parser.parse(html)
+
     assert len(flights) == 1
     assert flights[0].stops == 0
 
 
-def test_parse_stops_multiple(parser):
+def test_parse_stops_multiple():
     """Vol avec escales → stops=2."""
     html = """
     <html><body><ul>
@@ -195,6 +209,9 @@ def test_parse_stops_multiple(parser):
     </li>
     </ul></body></html>
     """
+    parser = FlightParser()
+
     flights = parser.parse(html)
+
     assert len(flights) == 1
     assert flights[0].stops == 2
