@@ -348,6 +348,215 @@ async def extract_google_flights_data(url: str):
 4. **Performance Analysis** : Analyser les timings et patterns de chargement
 5. **Security Audit** : Détecter requêtes tierces non souhaitées
 
+# Resource Blocking - Optimisation Bandwidth
+
+## Description
+
+Le blocage de ressources permet de réduire significativement la consommation de bandwidth en empêchant le chargement de ressources non essentielles (images, fonts, stylesheets). Cette optimisation est particulièrement utile pour le scraping où seules les données textuelles ou les réponses API sont nécessaires.
+
+## Méthodes Disponibles
+
+### 1. BrowserConfig - text_mode (Simple)
+
+Active un mode texte qui désactive images et contenus lourds. **Attention** : désactive aussi le JavaScript, ce qui peut casser les sites dynamiques comme Google Flights.
+
+```python
+from crawl4ai import BrowserConfig
+
+browser_config = BrowserConfig(
+    text_mode=True,  # Désactive images ET JavaScript
+    light_mode=True  # Désactive features background pour performance
+)
+```
+
+**Limitations** :
+- ❌ Désactive JavaScript → incompatible avec Google Flights
+- ✅ Simple à activer
+- ✅ Gain performance 3-4x pour sites statiques
+
+### 2. BrowserConfig - extra_args (Chrome Flags)
+
+Utilise les flags Chrome pour désactiver uniquement les images tout en gardant JavaScript actif.
+
+```python
+from crawl4ai import BrowserConfig
+
+browser_config = BrowserConfig(
+    headless=True,
+    extra_args=["--blink-settings=imagesEnabled=false"]
+)
+```
+
+**Limitations** :
+- ✅ Garde JavaScript actif
+- ❌ Ne bloque pas fonts/stylesheets
+- ❌ Contrôle limité sur les types de ressources
+
+### 3. Hook on_page_context_created (Recommandé)
+
+Utilise le système de hooks Crawl4AI pour intercepter les requêtes via Playwright `context.route()`. **Méthode la plus flexible et recommandée**.
+
+```python
+from crawl4ai import AsyncWebCrawler, BrowserConfig
+from playwright.async_api import Page, BrowserContext, Route
+
+async def block_heavy_resources(
+    page: Page,
+    context: BrowserContext,
+    **kwargs
+) -> Page:
+    """Bloque images, fonts et stylesheets pour réduire bandwidth."""
+    async def route_filter(route: Route) -> None:
+        resource_type = route.request.resource_type
+        if resource_type in ["image", "font", "stylesheet"]:
+            await route.abort()
+        else:
+            await route.continue_()
+
+    await context.route("**/*", route_filter)
+    return page
+
+# Utilisation
+browser_config = BrowserConfig(headless=True)
+
+async with AsyncWebCrawler(config=browser_config) as crawler:
+    crawler.crawler_strategy.set_hook(
+        "on_page_context_created",
+        block_heavy_resources
+    )
+    result = await crawler.arun(url="https://example.com")
+```
+
+## Blocage par Domaine Spécifique
+
+Pour bloquer des domaines spécifiques (ex: gstatic.com pour Google) :
+
+```python
+BLOCKED_DOMAINS = [
+    "fonts.gstatic.com",
+    "fonts.googleapis.com",
+    "www.gstatic.com",
+]
+
+async def block_specific_domains(
+    page: Page,
+    context: BrowserContext,
+    **kwargs
+) -> Page:
+    """Bloque domaines spécifiques et types de ressources lourdes."""
+    async def route_filter(route: Route) -> None:
+        url = route.request.url
+        resource_type = route.request.resource_type
+
+        # Bloquer domaines spécifiques
+        if any(domain in url for domain in BLOCKED_DOMAINS):
+            await route.abort()
+        # Bloquer types de ressources lourdes
+        elif resource_type in ["image", "font", "media"]:
+            await route.abort()
+        else:
+            await route.continue_()
+
+    await context.route("**/*", route_filter)
+    return page
+```
+
+## Types de Ressources Playwright
+
+| Type | Description | Impact Bandwidth |
+|------|-------------|------------------|
+| `document` | Page HTML principale | ❌ Ne pas bloquer |
+| `stylesheet` | Fichiers CSS | Moyen (~5-10%) |
+| `image` | Images (png, jpg, gif, webp, svg) | Élevé (~20-40%) |
+| `font` | Polices (woff, woff2, ttf) | Moyen (~10-20%) |
+| `script` | JavaScript | ❌ Ne pas bloquer (casse sites dynamiques) |
+| `xhr` | Requêtes AJAX | ❌ Ne pas bloquer (données API) |
+| `fetch` | Fetch API | ❌ Ne pas bloquer (données API) |
+| `media` | Audio/Vidéo | Élevé si présent |
+| `websocket` | WebSocket | ❌ Ne pas bloquer |
+| `manifest` | Web App Manifest | Faible |
+| `other` | Autres ressources | Variable |
+
+## Compatibilité avec Network Capture
+
+Le blocage de ressources et le network capture sont **indépendants et compatibles** :
+
+```python
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
+
+async def block_heavy_resources(page, context, **kwargs):
+    async def route_filter(route):
+        if route.request.resource_type in ["image", "font"]:
+            await route.abort()
+        else:
+            await route.continue_()
+    await context.route("**/*", route_filter)
+    return page
+
+browser_config = BrowserConfig(headless=True)
+run_config = CrawlerRunConfig(
+    capture_network_requests=True,  # Network capture actif
+    wait_until="networkidle"
+)
+
+async with AsyncWebCrawler(config=browser_config) as crawler:
+    crawler.crawler_strategy.set_hook("on_page_context_created", block_heavy_resources)
+    result = await crawler.arun(url="https://example.com", config=run_config)
+
+    # Les requêtes XHR/Fetch sont toujours capturées
+    api_responses = [r for r in result.network_requests
+                     if r.get("resource_type") in ["xhr", "fetch"]]
+```
+
+**Points clés** :
+- Les ressources bloquées apparaissent comme `request_failed` dans network_requests
+- Les requêtes XHR/Fetch (API) ne sont pas affectées par le blocage images/fonts
+- Le blocage réduit le temps de chargement total → network capture plus rapide
+
+## Impact Bandwidth Estimé
+
+| Ressources Bloquées | Économie Bandwidth | Impact Fonctionnel |
+|---------------------|-------------------|-------------------|
+| Images seules | ~30-40% | Aucun pour scraping data |
+| Images + Fonts | ~50-60% | Aucun pour scraping data |
+| Images + Fonts + CSS | ~60-70% | Rendu visuel dégradé (non pertinent) |
+| Domaines tiers (analytics, ads) | ~10-20% | Aucun |
+
+## Recommandations Google Flights
+
+Pour le scraping Google Flights avec network capture :
+
+1. **Bloquer** : `image`, `font`, `media`, domaines `gstatic.com`
+2. **Ne pas bloquer** : `script`, `xhr`, `fetch`, `document`
+3. **Garder** : JavaScript actif (essentiel pour charger les résultats)
+
+```python
+GOOGLE_BLOCKED_DOMAINS = [
+    "fonts.gstatic.com",
+    "fonts.googleapis.com",
+    "maps.googleapis.com",
+    "play.google.com",
+]
+
+async def optimize_google_flights(page, context, **kwargs):
+    """Optimisation bandwidth pour Google Flights."""
+    async def route_filter(route):
+        url = route.request.url
+        resource_type = route.request.resource_type
+
+        # Bloquer domaines non essentiels
+        if any(domain in url for domain in GOOGLE_BLOCKED_DOMAINS):
+            await route.abort()
+        # Bloquer ressources lourdes
+        elif resource_type in ["image", "font", "media"]:
+            await route.abort()
+        else:
+            await route.continue_()
+
+    await context.route("**/*", route_filter)
+    return page
+```
+
 # Ressources
 
 ## Documentation Officielle

@@ -556,8 +556,8 @@
 - [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-7-retry.md
 - [x] **Validation manuelle** : Simuler échec, vérifier retry dans logs
 - [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(services): add retry logic and error handling`
-- [ ] **PR** : feature/story-7 → develop
+- [x] **Commit** : `feat(services): add retry logic and error handling`
+- [x] **PR** : feature/story-7 → develop
 
 📝 **Output** : Story 7 complétée (5 story points)
 

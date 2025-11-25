@@ -4,9 +4,9 @@ epic: "Epic 3: Production Ready"
 story_points: 8
 dependencies: ["epic-2/story-6", "epic-3/story-7"]
 date: "2025-23-11"
-keywords: ["network-capture", "crawl4ai", "xhr-interception", "api-response", "multi-segment", "json-parsing", "complete-data", "google-flights-api"]
+keywords: ["network-capture", "crawl4ai", "xhr-interception", "api-response", "multi-segment", "json-parsing", "complete-data", "google-flights-api", "resource-blocking", "bandwidth-optimization", "playwright-hooks"]
 scope: ["specs"]
-technologies: ["Crawl4AI", "asyncio", "Python", "Pydantic v2", "JSON"]
+technologies: ["Crawl4AI", "asyncio", "Python", "Pydantic v2", "JSON", "Playwright"]
 ---
 
 # 🎯 Contexte Business
@@ -22,7 +22,7 @@ technologies: ["Crawl4AI", "asyncio", "Python", "Pydantic v2", "JSON"]
 
 - **Limitation CSS extraction actuelle** : `JsonCssExtractionStrategy` de Crawl4AI parse uniquement HTML DOM visible, or Google Flights charge résultats via API calls JavaScript → seulement premier vol visible statiquement dans HTML, segments 2-3 chargés dynamiquement
 - **API Google Flights non documentée** : Responses API internes Google Flights format JSON propriétaire non stable (peut changer), nécessite parsing résilient avec fallback si structure change
-- **Coûts bandwidth identiques** : Network capture n'augmente pas consommation bandwidth Decodo (même requête HTTP crawlée), seulement stratégie extraction différente (interception vs parsing HTML)
+- **Coûts bandwidth optimisables** : Network capture n'augmente pas consommation bandwidth Decodo, et permet blocage ressources non essentielles (images, fonts, gstatic.com) pour réduction ~40-60% bandwidth via hooks Playwright
 - **Compatibilité Crawl4AI 0.7.7+** : Feature `capture_network_requests` disponible depuis Crawl4AI 0.7.7, nécessite configuration `CrawlerRunConfig` avec `capture_network_requests=True`
 - **Performance parsing JSON** : Parsing JSON API responses plus rapide que CSS selectors (~10-20ms vs ~50-100ms per page) mais nécessite identifier correct API endpoint parmi tous network events capturés
 
@@ -39,7 +39,8 @@ technologies: ["Crawl4AI", "asyncio", "Python", "Pydantic v2", "JSON"]
 - **Zéro perte données** : Comparaison avant/après migration CSS→Network : 0% perte informations (price, airline, times identiques) + gain 200% données nouvelles (segments 2-3 ajoutés)
 - **Taux succès parsing JSON** : ≥95% responses API Google Flights parsées avec succès (structure JSON stable identifiée malgré API non documentée)
 - **Performance parsing** : Médiane temps parsing JSON <20ms par response (vs ~80ms CSS selectors), gain performance 4x sur parsing seul
-- **Coverage tests** : ≥80% sur NetworkResponseFilter, FlightParser JSON parsing, intégration CrawlerService network capture
+- **Coverage tests** : ≥80% sur NetworkResponseFilter, FlightParser JSON parsing, ResourceBlockingHook, intégration CrawlerService network capture
+- **Réduction bandwidth** : Blocage ressources non essentielles réduit consommation Decodo ~40-60% par crawl (mesurable via dashboard Decodo avant/après)
 
 ---
 
@@ -376,6 +377,95 @@ def validate_flights_length(cls, v: list[GoogleFlightDTO], info: ValidationInfo)
 
 ---
 
+## 5. ResourceBlockingHook (Optimisation Bandwidth)
+
+**Rôle** : Bloquer ressources non essentielles (images, fonts, domaines tiers) via hook Playwright `on_page_context_created` pour réduire consommation bandwidth Decodo ~40-60%.
+
+**Interface** :
+```python
+async def optimize_google_flights_bandwidth(
+    page: Page,
+    context: BrowserContext,
+    **kwargs
+) -> Page:
+    """
+    Hook Crawl4AI pour bloquer ressources non essentielles Google Flights.
+
+    Returns:
+        Page configurée avec route filter actif
+    """
+```
+
+**Configuration Domaines Bloqués** :
+
+| Domaine | Type Ressource | Justification Blocage |
+|---------|---------------|----------------------|
+| `fonts.gstatic.com` | Fonts Google | ~50-100KB par page, non nécessaire extraction données |
+| `fonts.googleapis.com` | CSS Fonts | Définitions fonts, non nécessaire |
+| `maps.googleapis.com` | Maps API | Non utilisé Google Flights recherche |
+| `play.google.com` | Play Store | Liens apps, non nécessaire |
+| `*.doubleclick.net` | Ads | Tracking publicitaire |
+| `*.googlesyndication.com` | Ads | Réseau publicitaire Google |
+
+**Configuration Resource Types Bloqués** :
+
+| Resource Type | Blocage | Justification |
+|--------------|---------|---------------|
+| `image` | ✅ Bloqué | Logos compagnies, photos destinations (~200-500KB par page) |
+| `font` | ✅ Bloqué | Fonts personnalisées (~50-150KB par page) |
+| `media` | ✅ Bloqué | Vidéos promotionnelles (rare mais lourd) |
+| `stylesheet` | ❌ Autorisé | Peut affecter rendering DOM nécessaire network capture |
+| `script` | ❌ Autorisé | JavaScript nécessaire pour API calls Google Flights |
+| `xhr` | ❌ Autorisé | API responses = données vols à capturer |
+| `fetch` | ❌ Autorisé | API responses = données vols à capturer |
+| `document` | ❌ Autorisé | HTML page principale |
+
+**Comportement Hook** :
+
+**Étape 1 : Configuration route filter**
+1. Hook appelé automatiquement par Crawl4AI après création `BrowserContext`
+2. Définir liste `BLOCKED_DOMAINS` et `BLOCKED_RESOURCE_TYPES`
+3. Enregistrer route filter via `context.route("**/*", route_filter)`
+
+**Étape 2 : Filtrage requêtes (route_filter)**
+1. Pour chaque requête interceptée :
+   - Extraire `route.request.url` et `route.request.resource_type`
+   - Si URL contient domaine dans `BLOCKED_DOMAINS` → `await route.abort()`
+   - Si `resource_type` dans `BLOCKED_RESOURCE_TYPES` → `await route.abort()`
+   - Sinon → `await route.continue_()`
+2. Logger DEBUG chaque requête bloquée (pour monitoring bandwidth économisé)
+
+**Étape 3 : Retour page configurée**
+3. Retourner `page` avec route filter actif
+4. Crawl4AI utilise cette page configurée pour navigation
+
+**Intégration CrawlerService** :
+
+```python
+CrawlerRunConfig(
+    capture_network_requests=True,
+    wait_until="networkidle",
+    hooks={
+        "on_page_context_created": optimize_google_flights_bandwidth
+    }
+)
+```
+
+**Edge cases** :
+- **Ressource critique bloquée par erreur** : Si blocage casse fonctionnalité (ex: JavaScript manquant) → Réduire liste blocage, logger ERROR
+- **Hook échoue** : Try/except autour route registration, fallback sans blocage (dégradation gracieuse)
+- **Domaine inconnu** : Par défaut autoriser (whitelist approach pour blocage, pas blacklist)
+
+**Erreurs levées** :
+- Aucune exception levée (hook silencieux, logging uniquement)
+
+**Logging structuré** :
+- INFO : Hook activé avec nombre domaines/types bloqués
+- DEBUG : Chaque requête bloquée (URL, resource_type, taille estimée)
+- WARNING : Hook registration échoue (fallback sans blocage)
+
+---
+
 # 🧪 Tests
 
 ## Tests unitaires (TDD)
@@ -415,7 +505,16 @@ def validate_flights_length(cls, v: list[GoogleFlightDTO], info: ValidationInfo)
 | 17 | `test_crawl_fallback_if_no_network_events` | Fallback gracieux si aucun event | Mock crawler avec `network_requests=[]` | Logger WARNING, retourne CrawlResult avec empty list (pas d'exception) | Vérifie dégradation gracieuse |
 | 18 | `test_crawl_captcha_detection_unchanged` | Captcha detection fonctionne toujours | Mock HTML avec captcha pattern | Lève `CaptchaDetectedError` (comportement Story 4 inchangé) | Vérifie compatibilité captcha detection |
 
-**Total tests unitaires** : 6 (NetworkResponseFilter) + 7 (FlightParser) + 5 (CrawlerService) = **18 tests**
+### ResourceBlockingHook (4 tests)
+
+| # | Nom test | Scénario | Input | Output attendu | Vérification |
+|---|----------|----------|-------|----------------|--------------|
+| 19 | `test_hook_blocks_gstatic_domain` | Blocage domaine fonts.gstatic.com | Mock route avec URL `fonts.gstatic.com/s/roboto/...` | `route.abort()` appelé | Vérifie blocage domaine Google Fonts |
+| 20 | `test_hook_blocks_image_resource_type` | Blocage resource_type image | Mock route avec `resource_type="image"` | `route.abort()` appelé | Vérifie blocage images (logos, photos) |
+| 21 | `test_hook_allows_xhr_requests` | XHR API calls non bloqués | Mock route avec `resource_type="xhr"`, URL Google Flights API | `route.continue_()` appelé | Vérifie données vols passent (essentiel) |
+| 22 | `test_hook_allows_script_requests` | Scripts JavaScript non bloqués | Mock route avec `resource_type="script"`, URL `google.com` | `route.continue_()` appelé | Vérifie JS exécuté (nécessaire API calls) |
+
+**Total tests unitaires** : 6 (NetworkResponseFilter) + 7 (FlightParser) + 5 (CrawlerService) + 4 (ResourceBlockingHook) = **22 tests**
 
 ---
 
@@ -431,12 +530,13 @@ def validate_flights_length(cls, v: list[GoogleFlightDTO], info: ValidationInfo)
 | 4 | `test_integration_json_parsing_error_fallback` | Mock network events avec JSON structure invalide (clés manquantes) | Appeler `search_service.search_flights(SearchRequest)` | Logger ERROR parsing failed, skip combinaison (pas d'exception bloquante), retourne résultats partiels autres combinaisons |
 | 5 | `test_integration_validation_flights_length` | Mock FlightParser retournant 2 flights pour 3 segment_dates (données incohérentes) | Créer `FlightCombinationResult` avec données incohérentes | Lève `ValidationError` Pydantic avec message clair "flights length != segment_dates length" |
 | 6 | `test_integration_end_to_end_complete_data` | Application FastAPI TestClient avec network capture activé, mock 3 segments multi-city | POST `/api/v1/search-flights` avec body 3 segments | Status 200, JSON response conforme schema avec `results[i].flights` length=3 pour chaque result, total_results=10 |
+| 7 | `test_integration_resource_blocking_reduces_requests` | Mock Playwright avec tracking requêtes bloquées, hook ResourceBlocking activé | Crawl page Google Flights mock avec 50 requêtes (20 images, 10 fonts, 20 essentielles) | ≥30 requêtes bloquées (images + fonts), 20 requêtes passent (xhr, scripts), logs DEBUG montrent blocage |
 
-**Total tests intégration** : 6 tests
+**Total tests intégration** : 7 tests
 
 ---
 
-**TOTAL TESTS** : 18 unitaires + 6 intégration = **24 tests**
+**TOTAL TESTS** : 22 unitaires + 7 intégration = **29 tests**
 
 ---
 
@@ -702,52 +802,60 @@ def validate_flights_length(cls, v: list[GoogleFlightDTO], info: ValidationInfo)
 
 10. **Ranking modifié** : Top 10 ranking trie par `total_price` croissant (nouveau champ racine), pas `flights[0].price` (vérifié results[0].total_price ≤ results[1].total_price)
 
+11. **Resource blocking activé** : Hook `on_page_context_created` enregistré dans `CrawlerRunConfig.hooks` avec fonction `optimize_google_flights_bandwidth` (vérifié config object)
+
+12. **Domaines non essentiels bloqués** : Requêtes vers `fonts.gstatic.com`, `fonts.googleapis.com`, `*.doubleclick.net` bloquées via `route.abort()` (vérifié logs DEBUG blocage)
+
+13. **Resource types lourds bloqués** : Requêtes `resource_type in ["image", "font", "media"]` bloquées, XHR/Fetch/Script autorisées (vérifié route filter logic)
+
 ## Critères techniques
 
-11. **Type hints PEP 695** : NetworkResponseFilter, FlightParser.parse_api_responses annotés avec type hints modernes (`list[dict]`, `tuple[float, list[GoogleFlightDTO]]`)
+14. **Type hints PEP 695** : NetworkResponseFilter, FlightParser.parse_api_responses, ResourceBlockingHook annotés avec type hints modernes (`list[dict]`, `tuple[float, list[GoogleFlightDTO]]`, `Page`, `BrowserContext`)
 
-12. **Async/Await cohérent** : CrawlerService.crawl_google_flights reste async, utilise `await crawler.arun()`, compatibilité Story 7 retry logic préservée
+15. **Async/Await cohérent** : CrawlerService.crawl_google_flights reste async, utilise `await crawler.arun()`, compatibilité Story 7 retry logic préservée
 
-13. **Configuration centralisée** : CrawlerRunConfig créée avec params network capture groupés (capture_network_requests, wait_until, delay), réutilisable tests
+16. **Configuration centralisée** : CrawlerRunConfig créée avec params network capture + hooks groupés (capture_network_requests, wait_until, delay, hooks), réutilisable tests
 
-14. **Pydantic v2 validations** : FlightCombinationResult.flights validator `mode='after'` avec accès `ValidationInfo` pour comparaison `segment_dates` length, validator `total_price` vérifie ≥ 0
+17. **Pydantic v2 validations** : FlightCombinationResult.flights validator `mode='after'` avec accès `ValidationInfo` pour comparaison `segment_dates` length, validator `total_price` vérifie ≥ 0
 
-15. **JSON parsing résilient** : FlightParser gère `json.JSONDecodeError` avec try/except, lève `ParsingError` custom avec message clair (pas crash)
+18. **JSON parsing résilient** : FlightParser gère `json.JSONDecodeError` avec try/except, lève `ParsingError` custom avec message clair (pas crash)
 
-16. **Fallback gracieux** : Si `network_requests=[]` vide → Logger WARNING, retourne résultats partiels disponibles (pas d'exception bloquante)
+19. **Fallback gracieux** : Si `network_requests=[]` vide → Logger WARNING, retourne résultats partiels disponibles (pas d'exception bloquante)
 
-17. **Logging structuré JSON complet** : Logs network capture incluent : events_captured_count, api_responses_filtered_count, segments_parsed_count, total_price_extracted, parsing_errors
+20. **Logging structuré JSON complet** : Logs network capture incluent : events_captured_count, api_responses_filtered_count, segments_parsed_count, total_price_extracted, resources_blocked_count
 
-18. **Extraction clés JSON robuste** : Parser utilise `.get()` avec defaults pour clés optionnelles (ex: `segment.get("duration", 0)`), évite KeyError
+21. **Extraction clés JSON robuste** : Parser utilise `.get()` avec defaults pour clés optionnelles (ex: `segment.get("duration", 0)`), évite KeyError
 
-19. **Séparation prix/segments** : FlightParser retourne tuple `(total_price, flights)` pas seulement `list[GoogleFlightDTO]`, caller gère construction FlightCombinationResult avec prix séparé
+22. **Séparation prix/segments** : FlightParser retourne tuple `(total_price, flights)` pas seulement `list[GoogleFlightDTO]`, caller gère construction FlightCombinationResult avec prix séparé
+
+23. **Hook async compatible** : ResourceBlockingHook fonction async avec signature `(Page, BrowserContext, **kwargs) -> Page`, compatible Crawl4AI hooks system
 
 ## Critères qualité
 
-20. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% code NetworkResponseFilter, FlightParser JSON parsing, CrawlerService network config (pytest-cov)
+24. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% code NetworkResponseFilter, FlightParser JSON parsing, ResourceBlockingHook, CrawlerService network config (pytest-cov)
 
-21. **24 tests passent** : 18 tests unitaires (6 NetworkResponseFilter + 7 FlightParser + 5 CrawlerService) + 6 tests intégration tous verts (pytest -v)
+25. **29 tests passent** : 22 tests unitaires (6 NetworkResponseFilter + 7 FlightParser + 5 CrawlerService + 4 ResourceBlockingHook) + 7 tests intégration tous verts (pytest -v)
 
-22. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type
+26. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type
 
-23. **Tests TDD format AAA** : Tests unitaires suivent strictement Arrange/Act/Assert, tableaux specs complétés avec 6 colonnes (N°, Nom, Scénario, Input, Output, Vérification)
+27. **Tests TDD format AAA** : Tests unitaires suivent strictement Arrange/Act/Assert, tableaux specs complétés avec 6 colonnes (N°, Nom, Scénario, Input, Output, Vérification)
 
-24. **Tests intégration format Given/When/Then** : Tests intégration suivent BDD avec 5 colonnes (N°, Nom, Prérequis, Action, Résultat), mocks AsyncWebCrawler network events configurés
+28. **Tests intégration format Given/When/Then** : Tests intégration suivent BDD avec 5 colonnes (N°, Nom, Prérequis, Action, Résultat), mocks AsyncWebCrawler network events configurés
 
-25. **Docstrings 1 ligne** : NetworkResponseFilter et FlightParser avec docstring descriptive, méthodes principales documentées, focus POURQUOI pas QUOI
+29. **Docstrings 1 ligne** : NetworkResponseFilter, FlightParser et ResourceBlockingHook avec docstring descriptive, méthodes principales documentées, focus POURQUOI pas QUOI
 
-26. **Aucun code production dans specs** : Ce document contient uniquement signatures, tableaux tests, descriptions comportements, exemples JSON, structures API (pas d'implémentation complète méthodes)
+30. **Aucun code production dans specs** : Ce document contient uniquement signatures, tableaux tests, descriptions comportements, exemples JSON, structures API (pas d'implémentation complète méthodes)
 
-27. **Commits conventional** : Story 8 committée avec message `feat(crawler): add network capture for complete multi-city data` conforme Conventional Commits
+31. **Commits conventional** : Story 8 committée avec message `feat(crawler): add network capture for complete multi-city data` conforme Conventional Commits
 
 ---
 
-**Note importante** : Story complexité élevée (8 story points) → 27 critères couvrent exhaustivement migration CSS→Network capture (10 fonctionnels incluant architecture prix corrigée), architecture parsing JSON résilient (10 techniques), qualité tests TDD (7 qualité).
+**Note importante** : Story complexité élevée (8 story points) → 31 critères couvrent exhaustivement migration CSS→Network capture (13 fonctionnels incluant architecture prix corrigée + bandwidth optimization), architecture parsing JSON résilient + hooks (10 techniques), qualité tests TDD (8 qualité).
 
-**Principe SMART** : Chaque critère est **S**pécifique (3 flights parsés, validation length), **M**esurable (24 tests passent, coverage ≥80%), **A**tteignable (Crawl4AI 0.7.7+ network capture mature), **R**elevant (données 3x plus complètes pour UX multi-city), **T**emporel (MVP Phase 5-6, après CrawlerService/FlightParser Story 4-6 déjà implémentés).
+**Principe SMART** : Chaque critère est **S**pécifique (3 flights parsés, validation length, ~40-60% bandwidth réduit), **M**esurable (29 tests passent, coverage ≥80%), **A**tteignable (Crawl4AI 0.7.7+ network capture + hooks mature), **R**elevant (données 3x plus complètes pour UX multi-city + coûts Decodo optimisés), **T**emporel (MVP Phase 5-6, après CrawlerService/FlightParser Story 4-6 déjà implémentés).
 
 **Migration Impact** : ⚠️ **2 Breaking changes API response structure** :
 1. `flights` length passe de 1 à N segments (clients doivent itérer liste complète)
 2. **ARCHITECTURE CORRIGÉE** : `total_price` déplacé au niveau racine `FlightCombinationResult`, plus dans `flights[i].price` (clients doivent accéder `result.total_price` au lieu de `result.flights[0].price`)
 
-Nécessite coordination clients API pour adapter parsing responses. **Avantage** : Architecture logique (prix total = niveau itinéraire, pas segment individuel) + gain données 300% sans coût bandwidth additionnel.
+Nécessite coordination clients API pour adapter parsing responses. **Avantages** : Architecture logique (prix total = niveau itinéraire, pas segment individuel) + gain données 300% + réduction bandwidth ~40-60% via resource blocking.
