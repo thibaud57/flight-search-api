@@ -3,7 +3,7 @@ title: "Story 8: Network Capture pour Multi-City Complet"
 epic: "Epic 3: Production Ready"
 story_points: 8
 dependencies: ["epic-2/story-6", "epic-3/story-7"]
-date: "2025-23-11"
+date: "2025-11-23"
 keywords: ["network-capture", "crawl4ai", "xhr-interception", "api-response", "multi-segment", "json-parsing", "complete-data", "google-flights-api", "resource-blocking", "bandwidth-optimization", "playwright-hooks"]
 scope: ["specs"]
 technologies: ["Crawl4AI", "asyncio", "Python", "Pydantic v2", "JSON", "Playwright"]

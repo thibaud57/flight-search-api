@@ -1,10 +1,10 @@
 ---
 title: "REFERENCES - Index Références Techniques"
-description: "Index centralisé des références techniques modulaires (FastAPI, Pydantic v2, Crawl4AI, Decodo, Tenacity, etc.). Consulter pour naviguer vers documentation spécifique par technologie."
-date: "2025-16-11"
-keywords: ["references", "index", "documentation", "fastapi", "pydantic", "crawl4ai", "decodo", "proxies", "tenacity", "anti-detection", "captcha", "github-actions", "dokploy", "google-flights", "scraping"]
+description: "Index centralisé des références techniques modulaires (FastAPI, Pydantic v2, Crawl4AI, Decodo, Tenacity, Google Flights, Kayak, etc.). Consulter pour naviguer vers documentation spécifique par technologie."
+date: "2025-25-11"
+keywords: ["references", "index", "documentation", "fastapi", "pydantic", "crawl4ai", "decodo", "proxies", "tenacity", "anti-detection", "captcha", "github-actions", "dokploy", "google-flights", "kayak", "scraping", "multi-provider"]
 scope: ["docs"]
-technologies: ["python", "fastapi", "pydantic", "crawl4ai", "tenacity", "github-actions"]
+technologies: ["python", "fastapi", "pydantic", "crawl4ai", "tenacity", "github-actions", "kayak"]
 ---
 
 # Index Références Techniques
@@ -50,29 +50,36 @@ La documentation technique est organisée en fichiers séparés pour optimiser l
    - Paramètres Multi-City
    - Localisation & Devise (France/EUR)
 
-6. **[Techniques Anti-Détection](references/anti-detection.md)** - Contournement des protections
+6. **[Kayak](references/kayak.md)** - Comparateur de vols (scraping)
+   - Structure URL Simple (`/flights/PAR-SLZ/date`)
+   - JSON API Interne (segments, legs, results)
+   - Polling Strategy & Timing (30-45s)
+   - Bandwidth Optimization
+   - Différences vs Google Flights
+
+7. **[Techniques Anti-Détection](references/anti-detection.md)** - Contournement des protections
    - Stealth Mode Crawl4AI
    - Undetected Browser Mode
    - User-Agent Rotation
    - Proxy Rotation
    - Stratégie Complète Combinée
 
-7. **[Détection de Captchas](references/captcha-detection.md)** - Identification et gestion
+8. **[Détection de Captchas](references/captcha-detection.md)** - Identification et gestion
    - Patterns HTML reCAPTCHA
    - Patterns HTML hCaptcha
    - Code de Détection Python
    - Stratégie de Retry avec Rotation IP
    - Configuration Optimale de Retry
 
-8. **[Tenacity](references/tenacity.md)** - Retry et résilience
+9. **[Tenacity](references/tenacity.md)** - Retry et résilience
    - @retry Decorator
    - Wait Strategies (Exponential Backoff, Jitter)
    - Async Support
 
-9. **[Dokploy](references/dokploy.md)** - Déploiement et hébergement
-   - Dockerfile Best Practices
-   - Gestion des Variables d'Environnement
-   - Deployment Workflow
+10. **[Dokploy](references/dokploy.md)** - Déploiement et hébergement
+    - Dockerfile Best Practices
+    - Gestion des Variables d'Environnement
+    - Deployment Workflow
 
 ---
 
@@ -98,5 +105,6 @@ Cette organisation modulaire permet :
 - **Pydantic v2** : https://docs.pydantic.dev/latest/
 - **Crawl4AI** : https://docs.crawl4ai.com/
 - **Decodo** : https://help.decodo.com/docs
+- **Kayak** : https://www.kayak.fr (pas d'API officielle)
 - **Tenacity** : https://tenacity.readthedocs.io/
 - **Dokploy** : https://docs.dokploy.com/

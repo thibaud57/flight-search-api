@@ -565,6 +565,7 @@
 
 **Branche** : `feature/story-8-network-capture`
 
+- [ ] **Renommer** : `flight_parser.py` → `google_flight_parser.py` (prépare multi-provider)
 - [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-8-network-capture.md
 - [ ] **Validation manuelle** : Vérifier capture network events, parsing JSON 3 segments, total_price au niveau racine
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
@@ -573,9 +574,25 @@
 
 📝 **Output** : Story 8 complétée (8 story points)
 
+### 5.11 Story 9: Per-Segment Filters
+
+**Branche** : `feature/story-9-segment-filters`
+
+- [ ] **Créer specs** : `docs/specs/epic-3-production-ready/story-9-segment-filters.md`
+- [ ] **Implémentation TDD** :
+  - [ ] SegmentFilter : filtres par segment (max_stops, max_duration, max_layover)
+  - [ ] Interface API : `segment_filters: dict[int, FilterConfig]`
+  - [ ] Post-processing Python après parsing, avant ranking
+- [ ] **Validation manuelle** : Filtres appliqués correctement sur tous providers
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(filters): add per-segment filtering`
+- [ ] **PR** : feature/story-9 → develop
+
+📝 **Output** : Story 9 complétée (5 story points)
+
 ---
 
-### 5.11 Validation Epic 3 et mise à jour CHANGELOG
+### 5.13 Validation Epic 3 et mise à jour CHANGELOG
 
 **🔍 Validation qualité** :
 
@@ -585,13 +602,13 @@
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit si refactor** : `chore(epic-3): refactor for standards compliance`
 
-📝 **Output** : Epic 3 validé - stories 7-8 conformes aux standards
+📝 **Output** : Epic 3 validé - stories 7-9 conformes aux standards
 
 **📝 Mise à jour version** :
 
 - [ ] Ajouter entrée v0.7.0 dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="0.7.0"`
-- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 5.11)
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 5.13)
 - [ ] **Commit** : `chore: bump version to 0.7.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
@@ -600,13 +617,110 @@
 
 ---
 
-### 5.12 Validation complète MVP et CHANGELOG
+## Epic 4: Kayak Integration
+
+**Objectif** : Ajouter Kayak comme second comparateur avec architecture multi-provider
+
+**Documentation** : `docs/references/kayak.md`
+
+### 5.14 Story 10: KayakUrlBuilder + Consent Handler
+
+**Branche** : `feature/story-10-kayak-url`
+
+- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-10-url-builder.md`
+- [ ] **Implémentation TDD** :
+  - [ ] KayakUrlBuilder : URL simple `/flights/PAR-SLZ/date`
+  - [ ] ConsentHandler : Fermer popup cookies Kayak
+- [ ] **Validation manuelle** : URL générées correctes, consent fermé
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(kayak): add URL builder and consent handler`
+- [ ] **PR** : feature/story-10 → develop
+
+📝 **Output** : Story 10 complétée (5 story points)
+
+### 5.15 Story 11: KayakFlightParser (JSON Extraction)
+
+**Branche** : `feature/story-11-kayak-parser`
+
+- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-11-flight-parser.md`
+- [ ] **Implémentation TDD** :
+  - [ ] Parser JSON direct (segments, legs, results)
+  - [ ] Conversion vers GoogleFlightDTO (format unifié)
+  - [ ] Gestion structure dénormalisée (results → legs → segments)
+- [ ] **Validation manuelle** : Parsing exemple.json réussi
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(kayak): add flight parser for JSON extraction`
+- [ ] **PR** : feature/story-11 → develop
+
+📝 **Output** : Story 11 complétée (5 story points)
+
+### 5.16 Story 12: Polling Mechanism + Timeout
+
+**Branche** : `feature/story-12-kayak-polling`
+
+- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-12-polling.md`
+- [ ] **Implémentation TDD** :
+  - [ ] PollingService : max 45s, interval 4-8s randomisé
+  - [ ] Détection `status: "complete"` OU timeout gracieux
+  - [ ] Premiers résultats OK (pas besoin attendre completion)
+- [ ] **Validation manuelle** : Polling fonctionne, résultats partiels acceptés
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(kayak): add polling mechanism with smart timeout`
+- [ ] **PR** : feature/story-12 → develop
+
+📝 **Output** : Story 12 complétée (5 story points)
+
+### 5.17 Story 13: Multi-Provider Orchestration
+
+**Branche** : `feature/story-13-multi-provider`
+
+- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-13-orchestration.md`
+- [ ] **Implémentation TDD** :
+  - [ ] Abstract FlightProvider base class
+  - [ ] GoogleFlightsProvider (refactor existant)
+  - [ ] KayakProvider implementation
+  - [ ] SearchService avec provider selection
+- [ ] **Validation manuelle** : Recherche Google ET Kayak fonctionnent
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(providers): add multi-provider architecture`
+- [ ] **PR** : feature/story-13 → develop
+
+📝 **Output** : Story 13 complétée (8 story points)
+
+---
+
+### 5.18 Validation Epic 4 et mise à jour CHANGELOG
+
+**🔍 Validation qualité** :
+
+- [ ] Lancer agent `reviewer` avec paramètres :
+  - `epic_number`: "4"
+  - `previous_version_tag`: "v0.7.0"
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit si refactor** : `chore(epic-4): refactor for standards compliance`
+
+📝 **Output** : Epic 4 validé - stories 10-13 conformes aux standards
+
+**📝 Mise à jour version** :
+
+- [ ] Ajouter entrée v0.8.0 dans `docs/CHANGELOG.md`
+- [ ] Mettre à jour version dans `app/main.py` : `version="0.8.0"`
+- [ ] Cocher phase complétée dans `.claude/PLAN.md`
+- [ ] **Commit** : `chore: bump version to 0.8.0 and update changelog`
+
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
+
+**Fin Epic 4** : Merge develop→master → Tag v0.8.0 → GitHub Release
+
+---
+
+### 5.19 Validation complète MVP + Kayak et CHANGELOG
 
 **🔍 Validation qualité automatique** :
 
 - [ ] Lancer agent `reviewer` avec paramètres :
-  - `epic_number`: "1-2-3"
-  - `previous_version_tag`: "v0.7.0"
+  - `epic_number`: "1-2-3-4"
+  - `previous_version_tag`: "v0.8.0"
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit si refactor** : `chore(mvp): refactor for standards compliance`
 
@@ -635,8 +749,8 @@
   - [ ] Structured JSON logs avec contexte (search_id, destinations, proxy_used)
 
 - [ ] **Validation Docker** :
-  - [ ] `docker build -t flight-search-api:v0.7.0 .` → Succès
-  - [ ] `docker run -p 8000:8000 --env-file .env flight-search-api:v0.7.0` → App démarre
+  - [ ] `docker build -t flight-search-api:v0.8.0 .` → Succès
+  - [ ] `docker run -p 8000:8000 --env-file .env flight-search-api:v0.8.0` → App démarre
   - [ ] Health check : `curl http://localhost:8000/health` → `{"status": "ok"}`
   - [ ] Search endpoint : `curl -X POST http://localhost:8000/api/v1/search-flights` → 10 résultats
 
@@ -654,18 +768,18 @@
 
 **📚 Documentation synchronisée** :
 
-- [ ] **CHANGELOG.md** : Entrées v0.5.0, v0.6.0, v0.7.0 complètes
+- [ ] **CHANGELOG.md** : Entrées v0.5.0, v0.6.0, v0.7.0, v0.8.0 complètes
 - [ ] **ARCHITECTURE.md** : ADRs à jour avec implémentation réelle
 - [ ] **SPECS.md** : Index complet (stories 1-6)
-- [ ] **REFERENCES.md** : Index à jour (10 fichiers références techniques)
+- [ ] **REFERENCES.md** : Index à jour (11 fichiers références techniques incluant Kayak)
 - [ ] **VERSIONS.md** : Matrice compatibilité conforme dépendances installées
 
 **✅ Décision Phase 6** :
 
-- **Si v0.7.0 OK sans bugs critiques** : ✅ Passer à Phase 6 (Documentation + Release v1.0.0)
-- **Si bugs critiques trouvés** : ❌ Fix via hotfix → Nouveau tag v0.7.1 → Revalider
+- **Si v0.9.0 OK sans bugs critiques** : ✅ Passer à Phase 6 (Documentation + Release v1.0.0)
+- **Si bugs critiques trouvés** : ❌ Fix via hotfix → Nouveau tag v0.8.1 → Revalider
 
-📝 **Output** : v0.7.0 validé, prêt pour Phase 6 (Documentation finale)
+📝 **Output** : v0.8.0 validé, prêt pour Phase 6 (Documentation finale)
 
 **Note** : Cette checklist exhaustive sert aussi de modèle pour validation futures versions majeures (v2.0.0, v3.0.0, etc.)
 
@@ -677,7 +791,7 @@
 
 **Branche** : `feature/documentation`
 
-**Prérequis** : v0.7.0 validé en Phase 5.11 ✅
+**Prérequis** : v0.8.0 validé en Phase 5.11 ✅
 
 ---
 
@@ -698,7 +812,7 @@
 ---
 
 ### 6.2 CHANGELOG consolidé v1.0.0, version
-- [ ] Vérifier entrées v0.5.0, v0.6.0, v0.7.0 complètes dans CHANGELOG.md
+- [ ] Vérifier entrées v0.5.0, v0.6.0, v0.7.0, v0.8.0 complètes dans CHANGELOG.md
 - [ ] Créer section v1.0.0 avec résumé features MVP complètes
 - [ ] Enrichir SPECS.md section Statistiques avec timeline releases
 - [ ] Mettre à jour version dans `app/main.py` : `version="1.0.0"`
@@ -1003,9 +1117,10 @@ flight-search-api/
 │   │   ├── fastapi.md
 │   │   ├── github-actions.md
 │   │   ├── google-flights.md
+│   │   ├── kayak.md
 │   │   ├── pydantic-v2.md
 │   │   └── tenacity.md
-│   ├── specs/          # Spécifications détaillées par story (Phase 4)
+│   ├── specs/          # Spécifications détaillées par story
 │   │   ├── epic-1-api-foundation/
 │   │   │   ├── story-1-health-check.md
 │   │   │   ├── story-2-config-logging.md
@@ -1014,9 +1129,15 @@ flight-search-api/
 │   │   │   ├── story-4-crawler-parser.md
 │   │   │   ├── story-5-proxies.md
 │   │   │   └── story-6-multi-city-search.md
-│   │   └── epic-3-production-ready/
-│   │       ├── story-7-retry.md
-│   │       └── story-8-network-capture.md
+│   │   ├── epic-3-production-ready/
+│   │   │   ├── story-7-retry.md
+│   │   │   ├── story-8-network-capture.md
+│   │   │   └── story-9-segment-filters.md
+│   │   └── epic-4-kayak/
+│   │       ├── story-10-url-builder.md
+│   │       ├── story-11-flight-parser.md
+│   │       ├── story-12-polling.md
+│   │       └── story-13-orchestration.md
 │   ├── ARCHITECTURE.md
 │   ├── CHANGELOG.md
 │   ├── SPECS.md        # Index specs (liens vers stories)
@@ -1034,11 +1155,25 @@ flight-search-api/
 │   ├── services/
 │   │   ├── combination_generator.py
 │   │   ├── crawler_service.py
-│   │   ├── flight_parser.py
+│   │   ├── google_flight_parser.py
+│   │   ├── kayak_flight_parser.py
+│   │   ├── network_response_filter.py
+│   │   ├── polling_service.py
 │   │   ├── proxy_service.py
+│   │   ├── retry_strategy.py
 │   │   ├── search_service.py
-│   │   └── (captcha_solver.py - Phase 7 optionnelle)
+│   │   ├── segment_filter.py
+│   │   ├── providers/
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py
+│   │   │   ├── google_flights.py
+│   │   │   └── kayak.py
+│   │   └── captcha_solver.py
 │   ├── utils/
+│   │   ├── browser_fingerprint.py
+│   │   ├── google_flights_url.py
+│   │   ├── kayak_url.py
+│   │   └── resource_blocking.py
 │   └── main.py
 ├── tests/
 │   ├── integration/
@@ -1048,11 +1183,12 @@ flight-search-api/
 │       ├── test_combination_generator.py
 │       ├── test_config.py
 │       ├── test_crawler_service.py
-│       ├── test_flight_parser.py
+│       ├── test_google_flight_parser.py
+│       ├── test_kayak_flight_parser.py
 │       ├── test_models.py
 │       ├── test_proxy_service.py
 │       ├── test_search_service.py
-│       └── (test_captcha_solver.py - Phase 7)
+│       └── test_captcha_solver.py
 ├── .dockerignore
 ├── .env.example
 ├── .gitignore
