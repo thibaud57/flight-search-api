@@ -1,27 +1,33 @@
-"""Constructeur d'URLs Kayak multi-city."""
+"""Générateur d'URLs Kayak avec remplacement dynamique des dates."""
 
-from app.models import KayakSegment
+from __future__ import annotations
+
+import re
 
 
-class KayakUrlBuilder:
-    """Constructeur d'URLs Kayak multi-city."""
+class KayakUrlError(Exception):
+    """Erreur lors de la génération d'URL Kayak."""
 
-    def __init__(self, base_url: str = "https://www.kayak.fr") -> None:
-        """Initialise builder avec URL de base."""
-        self.base_url = base_url
 
-    def build_url(self, segments: list[KayakSegment]) -> str:
-        """Construit URL Kayak complete depuis segments."""
-        if len(segments) == 0:
-            raise ValueError("At least 1 segment required")
+def generate_kayak_url(template_url: str, new_dates: list[str]) -> str:
+    """Génère une URL Kayak en remplaçant les dates dans le path."""
+    date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+    for date in new_dates:
+        if not date_pattern.match(date):
+            msg = f"Date invalide '{date}'. Format attendu : YYYY-MM-DD"
+            raise KayakUrlError(msg)
 
-        if len(segments) > 6:
-            raise ValueError("Maximum 6 segments allowed (Kayak limit)")
+    current_dates = re.findall(r"20\d{2}-\d{2}-\d{2}", template_url)
 
-        path_parts = []
-        for segment in segments:
-            path_parts.append(f"{segment.origin}-{segment.destination}")
-            path_parts.append(segment.date)
+    if len(current_dates) != len(new_dates):
+        msg = (
+            f"Nombre de dates incorrect. Template contient {len(current_dates)} dates, "
+            f"mais {len(new_dates)} nouvelles dates fournies"
+        )
+        raise KayakUrlError(msg)
 
-        path = "/".join(path_parts)
-        return f"{self.base_url}/flights/{path}?sort=bestflight_a"
+    result_url = template_url
+    for old_date, new_date in zip(current_dates, new_dates, strict=True):
+        result_url = result_url.replace(old_date, new_date, 1)
+
+    return result_url

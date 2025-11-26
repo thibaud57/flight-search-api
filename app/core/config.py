@@ -29,18 +29,6 @@ class CrawlerTimeouts(BaseModel):
     crawl_global_timeout_s: float = 40.0
 
 
-class KayakConfig(BaseSettings):
-    """Configuration Kayak crawling."""
-
-    model_config = SettingsConfigDict(env_prefix="KAYAK_", extra="forbid")
-
-    consent_timeout: int = 5000
-    wait_for_results_timeout: int = 60000
-    delay_before_return: float = 45.0
-    results_selector: str = "[data-resultid]"
-    progress_bar_selector: str = '[role="progressbar"]'
-
-
 class Settings(BaseSettings):
     """Configuration application chargee depuis variables d'environnement."""
 

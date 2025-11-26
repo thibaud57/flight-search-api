@@ -5,6 +5,8 @@ from app.models.request import (
     CombinationResult,
     DateCombination,
     DateRange,
+    GoogleSearchRequest,
+    KayakSearchRequest,
     SearchRequest,
 )
 from app.models.response import (
@@ -20,7 +22,9 @@ __all__ = [
     "DateRange",
     "FlightCombinationResult",
     "GoogleFlightDTO",
+    "GoogleSearchRequest",
     "HealthResponse",
+    "KayakSearchRequest",
     "KayakSegment",
     "ProxyConfig",
     "SearchRequest",

@@ -67,25 +67,27 @@ def get_base_browser_config(
 
 def build_browser_config_from_fingerprint(
     url: str,
-    headers_dict: dict[str, str],
     cookies: list[Cookie],
     proxy_config: dict[str, str] | None = None,
+    headers_dict: dict[str, str] | None = None,
 ) -> BrowserConfig:
     """Construit BrowserConfig depuis session Google capturée."""
+    base_headers = headers_dict or get_static_headers()
+
     headers = {
-        "Accept": headers_dict.get("Accept", "*/*"),
-        "Accept-Language": headers_dict.get("Accept-Language", "fr-FR,fr;q=0.9"),
-        "Accept-Encoding": headers_dict.get(
+        "Accept": base_headers.get("Accept", "*/*"),
+        "Accept-Language": base_headers.get("Accept-Language", "fr-FR,fr;q=0.9"),
+        "Accept-Encoding": base_headers.get(
             "Accept-Encoding", "gzip, deflate, br, zstd"
         ),
-        "User-Agent": headers_dict.get("User-Agent", ""),
+        "User-Agent": base_headers.get("User-Agent", ""),
         "Referer": url,
         "Origin": "https://www.google.com",
     }
 
     client_hints = {
         k: v
-        for k, v in headers_dict.items()
+        for k, v in base_headers.items()
         if k.startswith("sec-ch-ua") or k.startswith("sec-fetch")
     }
     headers.update(client_hints)

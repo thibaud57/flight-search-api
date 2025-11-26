@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.core import Settings
-from app.models import DateRange, GoogleFlightDTO, ProxyConfig, SearchRequest
+from app.models import DateRange, GoogleFlightDTO, GoogleSearchRequest, ProxyConfig
 from app.services import GoogleFlightParser
 from tests.fixtures.helpers import (
     GOOGLE_FLIGHT_TEMPLATE_URL,
@@ -43,7 +43,7 @@ def search_request_factory():
                 ],
             }
 
-        return SearchRequest(
+        return GoogleSearchRequest(
             template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
             segments_date_ranges=segments,
         )

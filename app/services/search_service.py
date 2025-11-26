@@ -18,7 +18,7 @@ from app.models import (
     SearchStats,
 )
 from app.types import CrawlResultTuple
-from app.utils import generate_google_flights_url
+from app.utils import generate_google_flights_url, generate_kayak_url
 
 if TYPE_CHECKING:
     from app.services.combination_generator import CombinationGenerator
@@ -36,31 +36,44 @@ class SearchService:
         combination_generator: CombinationGenerator,
         crawler_service: CrawlerService,
         google_flight_parser: GoogleFlightParser,
+        # TODO: kayak_flight_parser: KayakFlightParser,
     ) -> None:
         """Initialise service avec dependances injectees."""
         self._combination_generator = combination_generator
         self._crawler_service = crawler_service
         self._google_flight_parser = google_flight_parser
+        # TODO: self._kayak_flight_parser = kayak_flight_parser
         self._settings = get_settings()
+
+    def _detect_provider(self, url: str) -> str:
+        """Detecte le provider depuis l'URL."""
+        return "google" if "google" in url else "kayak"
 
     async def search_flights(self, request: SearchRequest) -> SearchResponse:
         """Orchestre recherche complete multi-city avec ranking Top 10."""
         start_time = time.time()
 
+        provider = self._detect_provider(request.template_url)
+
         logger.info(
             "Search started",
-            extra={"segments_count": len(request.segments_date_ranges)},
+            extra={
+                "provider": provider,
+                "segments_count": len(request.segments_date_ranges),
+            },
         )
+
+        await self._crawler_service.get_session(provider)
 
         combinations = self._combination_generator.generate_combinations(
             request.segments_date_ranges
         )
 
-        await self._crawler_service.get_google_session()
+        crawl_results = await self._crawl_all_combinations(
+            request, combinations, provider=provider
+        )
 
-        crawl_results = await self._crawl_all_combinations(request, combinations)
-
-        combination_results = self._parse_all_results(crawl_results)
+        combination_results = self._parse_all_results(crawl_results, provider=provider)
 
         top_results = self._rank_and_select_top_10(combination_results)
 
@@ -71,6 +84,7 @@ class SearchService:
         logger.info(
             "Search completed",
             extra={
+                "provider": provider,
                 "total_results": len(flight_results),
                 "search_time_ms": search_time_ms,
             },
@@ -89,6 +103,8 @@ class SearchService:
         self,
         request: SearchRequest,
         combinations: list[DateCombination],
+        *,
+        provider: str,
     ) -> list[CrawlResultTuple]:
         """Crawle toutes les combinaisons en parallele avec TaskGroup."""
         semaphore = asyncio.Semaphore(self._settings.MAX_CONCURRENCY)
@@ -96,11 +112,10 @@ class SearchService:
 
         async def crawl_with_limit(combo: DateCombination) -> None:
             async with semaphore:
-                url = self._build_google_flights_url(request, combo)
+                url = self._build_url(request, combo, provider=provider)
                 try:
-                    result = await self._crawler_service.crawl_google_flights(
-                        url,
-                        use_proxy=True,
+                    result = await self._crawler_service.crawl_flights(
+                        url, provider, use_proxy=True
                     )
                     results.append((combo, result))
                 except (CaptchaDetectedError, NetworkError) as e:
@@ -116,17 +131,25 @@ class SearchService:
 
         return results
 
-    def _build_google_flights_url(
-        self, request: SearchRequest, combination: DateCombination
+    def _build_url(
+        self,
+        request: SearchRequest,
+        combination: DateCombination,
+        *,
+        provider: str,
     ) -> str:
-        """Genere URL Google Flights en remplacant dates dans template."""
-        return generate_google_flights_url(
-            request.template_url, combination.segment_dates
-        )
+        """Genere URL en remplacant dates dans template."""
+        if provider == "google":
+            return generate_google_flights_url(
+                request.template_url, combination.segment_dates
+            )
+        return generate_kayak_url(request.template_url, combination.segment_dates)
 
     def _parse_all_results(
         self,
         crawl_results: list[CrawlResultTuple],
+        *,
+        provider: str,
     ) -> list[CombinationResult]:
         """Parse tous les resultats de crawl."""
         combination_results: list[CombinationResult] = []
@@ -139,7 +162,11 @@ class SearchService:
                 continue
 
             try:
-                flights = self._google_flight_parser.parse(result.html)
+                if provider == "google":
+                    flights = self._google_flight_parser.parse(result.html)
+                else:
+                    # TODO: flights = self._kayak_flight_parser.parse(result.html)
+                    flights = []
 
                 if not flights:
                     crawls_failed += 1
