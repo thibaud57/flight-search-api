@@ -43,7 +43,7 @@ def test_search_google_flights_returns_422_empty_segments(
 ) -> None:
     """Segments vide retourne 422."""
     request_data = {
-        "template_url": TEMPLATE_URL,
+        "template_url": GOOGLE_FLIGHT_COMPLETE_URL,
         "segments_date_ranges": [],
     }
 
@@ -60,7 +60,7 @@ def test_search_google_flights_returns_422_invalid_dates(
 ) -> None:
     """Dates invalides retourne 422."""
     request_data = {
-        "template_url": TEMPLATE_URL,
+        "template_url": GOOGLE_FLIGHT_COMPLETE_URL,
         "segments_date_ranges": [
             date_range_factory(start_offset=10, duration=-10, as_dict=True),
             date_range_factory(start_offset=14, duration=5, as_dict=True),
@@ -80,7 +80,7 @@ def test_search_google_flights_returns_422_too_many_segments(
 ) -> None:
     """Plus de 5 segments retourne 422."""
     request_data = {
-        "template_url": TEMPLATE_URL,
+        "template_url": GOOGLE_FLIGHT_COMPLETE_URL,
         "segments_date_ranges": [
             date_range_factory(start_offset=1 + i * 10, duration=2, as_dict=True)
             for i in range(6)
@@ -100,7 +100,7 @@ def test_search_google_flights_exact_dates_accepted(
 ) -> None:
     """Request avec dates exactes (start=end) retourne 200."""
     request_data = {
-        "template_url": TEMPLATE_URL,
+        "template_url": GOOGLE_FLIGHT_COMPLETE_URL,
         "segments_date_ranges": [
             date_range_factory(start_offset=1, duration=0, as_dict=True),
             date_range_factory(start_offset=6, duration=0, as_dict=True),

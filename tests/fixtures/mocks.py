@@ -152,5 +152,5 @@ def mock_generate_google_flights_url():
     with patch(
         "app.services.search_service.generate_google_flights_url"
     ) as mock_url_gen:
-        mock_url_gen.return_value = BASE_URL
+        mock_url_gen.return_value = GOOGLE_FLIGHT_BASE_URL
         yield mock_url_gen

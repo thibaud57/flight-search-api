@@ -455,7 +455,7 @@ async def test_search_with_real_generator_five_segments_asymmetric(
 ):
     """5 segments asymetriques avec CombinationGenerator reel (15x2x2x2x2=240 combinaisons)."""
     request = SearchRequest(
-        template_url=TEMPLATE_URL,
+        template_url=GOOGLE_FLIGHT_COMPLETE_URL,
         segments_date_ranges=[
             date_range_factory(start_offset=1, duration=14),
             date_range_factory(start_offset=20, duration=1),

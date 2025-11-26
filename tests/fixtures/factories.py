@@ -37,14 +37,14 @@ def search_request_factory():
 
         if as_dict:
             return {
-                "template_url": TEMPLATE_URL,
+                "template_url": GOOGLE_FLIGHT_COMPLETE_URL,
                 "segments_date_ranges": [
                     {"start": seg.start, "end": seg.end} for seg in segments
                 ],
             }
 
         return SearchRequest(
-            template_url=TEMPLATE_URL,
+            template_url=GOOGLE_FLIGHT_COMPLETE_URL,
             segments_date_ranges=segments,
         )
 
