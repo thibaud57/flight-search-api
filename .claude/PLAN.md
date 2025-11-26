@@ -549,25 +549,9 @@
 
 📝 **Output** : Story 7 complétée (5 story points)
 
-### 5.11 Story 9: Per-Segment Filters
-
-**Branche** : `feature/story-9-segment-filters`
-
-- [ ] **Créer specs** : `docs/specs/epic-3-production-ready/story-9-segment-filters.md`
-- [ ] **Implémentation TDD** :
-  - [ ] SegmentFilter : filtres par segment (max_stops, max_duration, max_layover)
-  - [ ] Interface API : `segment_filters: dict[int, FilterConfig]`
-  - [ ] Post-processing Python après parsing, avant ranking
-- [ ] **Validation manuelle** : Filtres appliqués correctement sur tous providers
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(filters): add per-segment filtering`
-- [ ] **PR** : feature/story-9 → develop
-
-📝 **Output** : Story 9 complétée (5 story points)
-
 ---
 
-### 5.13 Validation Epic 3 et mise à jour CHANGELOG
+### 5.10 Validation Epic 3 et mise à jour CHANGELOG
 
 **🔍 Validation qualité** :
 
@@ -577,13 +561,13 @@
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit si refactor** : `chore(epic-3): refactor for standards compliance`
 
-📝 **Output** : Epic 3 validé - stories 7-9 conformes aux standards
+📝 **Output** : Epic 3 validé - story 7 conforme aux standards
 
 **📝 Mise à jour version** :
 
 - [ ] Ajouter entrée v0.7.0 dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="0.7.0"`
-- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 5.13)
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 5.10)
 - [ ] **Commit** : `chore: bump version to 0.7.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
@@ -598,73 +582,78 @@
 
 **Documentation** : `docs/references/kayak.md`
 
-### 5.14 Story 10: KayakUrlBuilder + Consent Handler
+### 5.11 Story 9: Routes Distinctes + KayakUrlBuilder + Renommages
 
-**Branche** : `feature/story-10-kayak-url`
+**Branche** : `feature/story-9-routes-url`
 
-- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-10-url-builder.md`
+- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-9-routes-url.md`
 - [ ] **Implémentation TDD** :
+  - [ ] Renommer `FlightParser` → `GoogleFlightParser` (fichiers, imports, tests, fixtures)
+  - [ ] Renommer route `/search-flights` → `/search-google-flights`
+  - [ ] Créer route `/search-kayak` (mock initial)
   - [ ] KayakUrlBuilder : URL simple `/flights/PAR-SLZ/date`
-  - [ ] ConsentHandler : Fermer popup cookies Kayak
-- [ ] **Validation manuelle** : URL générées correctes, consent fermé
+  - [ ] KayakSegment : Validation IATA stricte
+- [ ] **Validation manuelle** : Routes accessibles, renommages complets
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(kayak): add URL builder and consent handler`
+- [ ] **Commit** : `feat(kayak): add routes, URL builder and rename FlightParser`
+- [ ] **PR** : feature/story-9 → develop
+
+📝 **Output** : Story 9 complétée (8 story points)
+
+### 5.12 Story 10: CrawlerService Kayak + Session Consent
+
+**Branche** : `feature/story-10-crawler-kayak`
+
+- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-10-crawler-kayak.md`
+- [ ] **Implémentation TDD** :
+  - [ ] `get_kayak_session()` : Similaire pattern `get_google_session()`
+  - [ ] `crawl_kayak()` : Avec `capture_network_requests=True`
+  - [ ] `_handle_kayak_consent()` : Gestion popup RGPD Kayak
+  - [ ] Hook routing : `_after_goto_hook` route selon provider
+  - [ ] KayakConfig : Settings timeouts et sélecteurs
+- [ ] **Validation manuelle** : Session établie, consent géré, network capture actif
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(kayak): add crawler service with session and consent handling`
 - [ ] **PR** : feature/story-10 → develop
 
 📝 **Output** : Story 10 complétée (5 story points)
 
-### 5.15 Story 11: KayakFlightParser (JSON Extraction)
+### 5.13 Story 11: KayakFlightParser (JSON Extraction)
 
 **Branche** : `feature/story-11-kayak-parser`
 
-- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-11-flight-parser.md`
+- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-11-kayak-parser.md`
 - [ ] **Implémentation TDD** :
   - [ ] Parser JSON direct (segments, legs, results)
   - [ ] Conversion vers GoogleFlightDTO (format unifié)
   - [ ] Gestion structure dénormalisée (results → legs → segments)
-- [ ] **Validation manuelle** : Parsing exemple.json réussi
+  - [ ] Wiring route : `/search-kayak` connectée avec parser
+- [ ] **Validation manuelle** : Parsing JSON réussi, recherche Kayak end-to-end
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit** : `feat(kayak): add flight parser for JSON extraction`
 - [ ] **PR** : feature/story-11 → develop
 
 📝 **Output** : Story 11 complétée (5 story points)
 
-### 5.16 Story 12: Polling Mechanism + Timeout
+### 5.14 Story 12: Per-Segment Filters (Kayak only)
 
-**Branche** : `feature/story-12-kayak-polling`
+**Branche** : `feature/story-12-segment-filters`
 
-- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-12-polling.md`
+- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-12-segment-filters.md`
 - [ ] **Implémentation TDD** :
-  - [ ] PollingService : max 45s, interval 4-8s randomisé
-  - [ ] Détection `status: "complete"` OU timeout gracieux
-  - [ ] Premiers résultats OK (pas besoin attendre completion)
-- [ ] **Validation manuelle** : Polling fonctionne, résultats partiels acceptés
+  - [ ] SegmentFilters model : max_duration, max_stops, min_layover
+  - [ ] FilterService : Applique filtres per-segment sur résultats Kayak
+  - [ ] Integration route `/search-kayak` uniquement (pas `/search-google-flights`)
+- [ ] **Validation manuelle** : Filtres appliqués correctement sur route Kayak
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(kayak): add polling mechanism with smart timeout`
+- [ ] **Commit** : `feat(kayak): add per-segment filtering for Kayak route`
 - [ ] **PR** : feature/story-12 → develop
 
-📝 **Output** : Story 12 complétée (5 story points)
-
-### 5.17 Story 13: Multi-Provider Orchestration
-
-**Branche** : `feature/story-13-multi-provider`
-
-- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-13-orchestration.md`
-- [ ] **Implémentation TDD** :
-  - [ ] Abstract FlightProvider base class
-  - [ ] GoogleFlightsProvider (refactor existant)
-  - [ ] KayakProvider implementation
-  - [ ] SearchService avec provider selection
-- [ ] **Validation manuelle** : Recherche Google ET Kayak fonctionnent
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(providers): add multi-provider architecture`
-- [ ] **PR** : feature/story-13 → develop
-
-📝 **Output** : Story 13 complétée (8 story points)
+📝 **Output** : Story 12 complétée (5 story points) - Dernière story Epic 4
 
 ---
 
-### 5.18 Validation Epic 4 et mise à jour CHANGELOG
+### 5.15 Validation Epic 4 et mise à jour CHANGELOG
 
 **🔍 Validation qualité** :
 
@@ -674,7 +663,7 @@
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit si refactor** : `chore(epic-4): refactor for standards compliance`
 
-📝 **Output** : Epic 4 validé - stories 10-13 conformes aux standards
+📝 **Output** : Epic 4 validé - stories 9-12 conformes aux standards
 
 **📝 Mise à jour version** :
 
@@ -689,7 +678,7 @@
 
 ---
 
-### 5.19 Validation complète MVP + Kayak et CHANGELOG
+### 5.16 Validation complète MVP + Kayak et CHANGELOG
 
 **🔍 Validation qualité automatique** :
 
@@ -1105,14 +1094,12 @@ flight-search-api/
 │   │   │   ├── story-5-proxies.md
 │   │   │   └── story-6-multi-city-search.md
 │   │   ├── epic-3-production-ready/
-│   │   │   ├── story-7-retry.md
-│   │   │   ├── story-8-network-capture.md
-│   │   │   └── story-9-segment-filters.md
+│   │   │   └── story-7-retry.md
 │   │   └── epic-4-kayak/
-│   │       ├── story-10-url-builder.md
-│   │       ├── story-11-flight-parser.md
-│   │       ├── story-12-polling.md
-│   │       └── story-13-orchestration.md
+│   │       ├── story-9-routes-url.md
+│   │       ├── story-10-crawler-kayak.md
+│   │       ├── story-11-kayak-parser.md
+│   │       └── story-12-segment-filters.md
 │   ├── ARCHITECTURE.md
 │   ├── CHANGELOG.md
 │   ├── SPECS.md        # Index specs (liens vers stories)

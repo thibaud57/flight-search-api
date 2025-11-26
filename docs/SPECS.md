@@ -65,41 +65,39 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 
 **Stories** :
 - [Story 7: Retry + Error handling](specs/epic-3-production-ready/story-7-retry.md) - 5 pts
-- [Story 8: Network Capture Multi-City](specs/epic-3-production-ready/story-8-network-capture.md) - 8 pts
-- [Story 9: Per-Segment Filters](specs/epic-3-production-ready/story-9-segment-filters.md) - 5 pts
 
-**Total** : 18 story points
+**Total** : 5 story points
 
-**Valeur business** : SLA production, données complètes 3 segments, filtres avancés
+**Valeur business** : SLA production avec gestion erreurs robuste
 
-**Déployable** : ✅ Production-ready avec données multi-city complètes
+**Déployable** : ✅ Production-ready avec retry logic
 
 ---
 
 ## Epic 4: Kayak Integration (v0.8.0)
 
-**Objectif** : Ajouter Kayak comme second comparateur
+**Objectif** : Ajouter Kayak comme second comparateur avec 2 routes distinctes
 
 **Documentation** : [kayak.md](references/kayak.md)
 
 **Stories** :
-- [Story 10: KayakUrlBuilder + Consent](specs/epic-4-kayak/story-10-url-builder.md) - 5 pts
-- [Story 11: KayakFlightParser](specs/epic-4-kayak/story-11-flight-parser.md) - 5 pts
-- [Story 12: Polling Mechanism](specs/epic-4-kayak/story-12-polling.md) - 5 pts
-- [Story 13: Multi-Provider Orchestration](specs/epic-4-kayak/story-13-orchestration.md) - 8 pts
+- [Story 9: Routes Distinctes + KayakUrlBuilder + Renommages](specs/epic-4-kayak/story-9-routes-url.md) - 8 pts
+- [Story 10: CrawlerService Kayak + Session Consent](specs/epic-4-kayak/story-10-crawler-kayak.md) - 5 pts
+- [Story 11: KayakFlightParser](specs/epic-4-kayak/story-11-kayak-parser.md) - 5 pts
+- [Story 12: Per-Segment Filters (Kayak only)](specs/epic-4-kayak/story-12-segment-filters.md) - 5 pts
 
 **Total** : 23 story points
 
-**Valeur business** : Comparaison multi-sources, architecture extensible
+**Valeur business** : Comparaison multi-sources (2 routes distinctes), filtres per-segment Kayak
 
-**Déployable** : ✅ Recherche Google Flights + Kayak
+**Déployable** : ✅ Recherche Google Flights + Kayak avec filtres avancés
 
 ---
 
 ## 📊 Statistiques
 
-- **Total stories** : 13
-- **Total story points** : 72
+- **Total stories** : 10
+- **Total story points** : 56
 - **Epics** : 4
 - **Releases** : v0.5.0, v0.6.0, v0.7.0, v0.8.0 → v1.0.0
 
@@ -116,8 +114,8 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 - Par Epic : Implémenter stories → CHANGELOG → Release
 - Epic 1 (Stories 1-3) → CHANGELOG → v0.5.0
 - Epic 2 (Stories 4-6) → CHANGELOG → v0.6.0
-- Epic 3 (Stories 7-9) → CHANGELOG → v0.7.0
-- Epic 4 (Stories 10-13) → CHANGELOG → v0.8.0
+- Epic 3 (Story 7) → CHANGELOG → v0.7.0
+- Epic 4 (Stories 9-12) → CHANGELOG → v0.8.0
 
 **Phase 6 : Documentation & Production**
 - 6.1 : Documentation utilisateur (README, API docs)

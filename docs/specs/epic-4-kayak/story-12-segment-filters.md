@@ -1,9 +1,9 @@
 ---
-title: "Story 9: Per-Segment Filters"
-epic: "Epic 3: Production Ready"
+title: "Story 12: Per-Segment Filters (Kayak only)"
+epic: "Epic 4: Kayak Integration"
 story_points: 5
-dependencies: ["epic-3/story-7"]
-date: "2025-11-25"
+dependencies: ["epic-4/story-11"]
+date: "2025-11-26"
 keywords: ["filters", "per-segment", "max-duration", "max-stops", "min-layover", "duration-parsing", "filter-service", "segment-model", "pydantic-validation", "user-preferences"]
 scope: ["specs"]
 technologies: ["Pydantic v2", "Python", "regex"]
@@ -15,15 +15,16 @@ technologies: ["Pydantic v2", "Python", "regex"]
 
 - **Filtres personnalisés par segment** : Utilisateurs recherchant vols multi-city (ex: Paris→Tokyo→Kyoto→Paris) veulent appliquer filtres différents par segment selon contraintes voyage (ex: segment 1 max 12h car travail lendemain, segment 2 accepte escales pour économiser, segment 3 min 1h30 layover pour confort)
 - **Contrôle granulaire itinéraire** : Planification voyage complexe nécessite flexibilité filtres : segment business direct sans escale, segment loisir accepte vols longs économiques, segment retour évite layovers courts stressants (<1h30)
-- **Format durée intuitif** : Utilisateurs grand public attendent format durée humain-lisible "12h", "1h30" (pas 720 minutes format technique), similaire affichage Google Flights UI
+- **Format durée intuitif** : Utilisateurs grand public attendent format durée humain-lisible "12h", "1h30" (pas 720 minutes format technique), similaire affichage Kayak UI
 - **Filtres optionnels** : Utilisateurs débutants ne veulent pas complexité, filtres doivent être optionnels avec comportement par défaut permissif (sans filtres = tous vols retournés)
 
 ## Contraintes métier
 
+- **Route Kayak uniquement** : Les filtres per-segment ne sont implémentés que sur `/search-kayak` (pas `/search-google-flights`) car l'extraction des données nécessaires (durée exacte, stops, layover) n'est fiable que via API interne Kayak
 - **Validation format durée stricte** : Regex `^\d{1,2}h(\d{2})?$` doit accepter uniquement formats valides ("12h", "1h30") et rejeter formats ambigus ("1h3", "72", "12h60") pour éviter erreurs parsing silencieuses
-- **Limites escales réalistes** : Google Flights affiche maximum 3 escales par segment, filtrer au-delà (ex: `max_stops=5`) inutile et confus pour utilisateurs
+- **Limites escales réalistes** : Kayak affiche maximum 3 escales par segment, filtrer au-delà (ex: `max_stops=5`) inutile et confus pour utilisateurs
 - **Pas de validation cross-segment** : Filtres appliqués indépendamment par segment (pas de règles globales "total escales <5" ou "durée totale itinéraire <30h"), simplicité MVP prioritaire
-- **Breaking change acceptable** : Remplacement `segments_date_ranges: list[DateRange]` par `segments: list[Segment]` dans SearchRequest = breaking change API, acceptable car MVP sans clients production existants
+- **Paramètre optionnel SearchRequest** : Champ `segments_filters` optionnel ajouté uniquement pour `/search-kayak`, `/search-google-flights` ignore ce paramètre
 
 ## Valeur business
 
@@ -207,7 +208,7 @@ class SearchRequest(BaseModel):
     segments_date_ranges: list[DateRange]  # ⚠️ ANCIEN champ
 ```
 
-**Interface modifiée (Story 9)** :
+**Interface modifiée (cette Story 12)** :
 ```python
 class SearchRequest(BaseModel):
     """Requête recherche vols multi-city avec URL template + filtres per-segment."""
@@ -253,7 +254,7 @@ def validate_segments_count(cls, v: list[Segment]) -> list[Segment]:
 }
 ```
 
-**Nouveau format (Story 9)** :
+**Nouveau format (cette Story 12)** :
 ```json
 {
   "template_url": "https://...",
@@ -418,7 +419,7 @@ class FilterService:
 **Étape 4 : Filtrage min_layover**
 5. Si `filters.min_layover is not None` :
    - **Note** : GoogleFlightDTO ne contient pas champ `layover_duration` (données Google Flights limitées)
-   - **Comportement Story 9 MVP** : Skip filtrage min_layover (log WARNING feature non implémentée)
+   - **Comportement Story 12 MVP** : Skip filtrage min_layover (log WARNING feature non implémentée)
    - **Future Story** : Requiert parsing détaillé escales depuis network API responses (field GoogleFlightDTO extended)
 
 **Étape 5 : Retour liste filtrée**
@@ -539,7 +540,7 @@ class FilterService:
 
 ## Exemples JSON
 
-**Exemple 1 : SearchRequest avec Per-Segment Filters (Nouveau Format Story 9)**
+**Exemple 1 : SearchRequest avec Per-Segment Filters (Nouveau Format Story 12)**
 
 ```json
 {
@@ -738,15 +739,15 @@ class FilterService:
 
 28. **Aucun code production dans specs** : Ce document contient uniquement signatures, tableaux tests, descriptions comportements, exemples JSON (pas d'implémentation complète)
 
-29. **Documentation migration** : CHANGELOG.md contient section migration Story 8→9 avec exemples conversion ancien format → nouveau format, breaking change explicité
+29. **Documentation migration** : CHANGELOG.md contient section migration `segments_date_ranges` → `segments` avec exemples conversion ancien format → nouveau format, breaking change explicité
 
-30. **Commits conventional** : Story 9 committée avec message `feat(filters): add per-segment filters (max_duration, max_stops, min_layover)` conforme Conventional Commits
+30. **Commits conventional** : Story 12 committée avec message `feat(filters): add per-segment filters (max_duration, max_stops, min_layover)` conforme Conventional Commits
 
 ---
 
 **Note importante** : Story complexité moyenne (5 story points) → 30 critères couvrent exhaustivement architecture per-segment filters (12 fonctionnels incluant breaking change + min_layover feature flag), parsing durée résilient + validation Pydantic v2 (9 techniques), qualité tests TDD (9 qualité).
 
-**Principe SMART** : Chaque critère est **S**pécifique (regex format, limites 24h/12h/3 stops, breaking change rejection), **M**esurable (27 tests passent, coverage ≥80%, filtrage réduit ~20-40% vols), **A**tteignable (Pydantic v2 validation mature, regex standard Python), **R**elevant (filtres granulaires = valeur UX premium, foundation préférences utilisateur), **T**emporel (MVP Phase 5, après SearchRequest/GoogleFlightDTO Story 2-8 déjà implémentés).
+**Principe SMART** : Chaque critère est **S**pécifique (regex format, limites 24h/12h/3 stops, breaking change rejection), **M**esurable (27 tests passent, coverage ≥80%, filtrage réduit ~20-40% vols), **A**tteignable (Pydantic v2 validation mature, regex standard Python), **R**elevant (filtres granulaires = valeur UX premium, foundation préférences utilisateur), **T**emporel (MVP Phase 5, après Epics 1-3 déjà implémentés).
 
 **Breaking Change Impact** : ⚠️ **Remplacement `segments_date_ranges` → `segments`** nécessite coordination clients API pour migration :
 1. Wrapper chaque `DateRange` dans objet `Segment` avec `date_range` key
