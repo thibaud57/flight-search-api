@@ -3,7 +3,7 @@
 from fastapi.testclient import TestClient
 
 from tests.fixtures.helpers import (
-    SEARCH_FLIGHTS_ENDPOINT,
+    SEARCH_GOOGLE_FLIGHTS_ENDPOINT,
     TEMPLATE_URL,
 )
 
@@ -15,7 +15,9 @@ def test_end_to_end_search_request_valid(
     request_data = search_request_factory(
         days_segment1=6, days_segment2=5, as_dict=True
     )
-    response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
+    response = client_with_mock_search.post(
+        SEARCH_GOOGLE_FLIGHTS_ENDPOINT, json=request_data
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -42,7 +44,9 @@ def test_end_to_end_validation_error_empty_segments(
         "template_url": TEMPLATE_URL,
         "segments_date_ranges": [],
     }
-    response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
+    response = client_with_mock_search.post(
+        SEARCH_GOOGLE_FLIGHTS_ENDPOINT, json=request_data
+    )
 
     assert response.status_code == 422
     assert "detail" in response.json()
@@ -59,7 +63,9 @@ def test_end_to_end_validation_error_invalid_dates(
             date_range_factory(start_offset=14, duration=5, as_dict=True),
         ],
     }
-    response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
+    response = client_with_mock_search.post(
+        SEARCH_GOOGLE_FLIGHTS_ENDPOINT, json=request_data
+    )
 
     assert response.status_code == 422
     assert "detail" in response.json()
@@ -76,7 +82,9 @@ def test_end_to_end_search_request_exact_dates(
             date_range_factory(start_offset=6, duration=0, as_dict=True),
         ],
     }
-    response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
+    response = client_with_mock_search.post(
+        SEARCH_GOOGLE_FLIGHTS_ENDPOINT, json=request_data
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -97,7 +105,9 @@ def test_end_to_end_validation_error_too_many_segments(
             for i in range(6)
         ],
     }
-    response = client_with_mock_search.post(SEARCH_FLIGHTS_ENDPOINT, json=request_data)
+    response = client_with_mock_search.post(
+        SEARCH_GOOGLE_FLIGHTS_ENDPOINT, json=request_data
+    )
 
     assert response.status_code == 422
     assert "detail" in response.json()
@@ -113,9 +123,9 @@ def test_end_to_end_openapi_schema_includes_endpoint(
     schema = response.json()
 
     assert "paths" in schema
-    assert SEARCH_FLIGHTS_ENDPOINT in schema["paths"]
+    assert SEARCH_GOOGLE_FLIGHTS_ENDPOINT in schema["paths"]
 
-    endpoint = schema["paths"][SEARCH_FLIGHTS_ENDPOINT]
+    endpoint = schema["paths"][SEARCH_GOOGLE_FLIGHTS_ENDPOINT]
     assert "post" in endpoint
 
     post_spec = endpoint["post"]

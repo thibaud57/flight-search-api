@@ -13,8 +13,9 @@ from app.models import FlightCombinationResult, GoogleFlightDTO
 TEMPLATE_URL = "https://www.google.com/travel/flights?tfs=CBwQAhooagwIAxIIL20vMDVxdGpyDAgDEggvbS8wN2RmayIKMjAyNS0wNi0wMXIKMjAyNS0wNi0xNXABggELCP___________wFAAUgBmAEB"
 BASE_URL = "https://www.google.com/travel/flights"
 
-# URL API endpoint pour tests
-SEARCH_FLIGHTS_ENDPOINT = "/api/v1/search-flights"
+# URL API endpoints pour tests
+SEARCH_GOOGLE_FLIGHTS_ENDPOINT = "/api/v1/search-google-flights"
+SEARCH_KAYAK_ENDPOINT = "/api/v1/search-kayak"
 
 
 def get_future_date(days_offset: int = 1) -> date:

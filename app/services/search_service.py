@@ -23,7 +23,7 @@ from app.utils import generate_google_flights_url
 if TYPE_CHECKING:
     from app.services.combination_generator import CombinationGenerator
     from app.services.crawler_service import CrawlerService
-    from app.services.flight_parser import FlightParser
+    from app.services.google_flight_parser import GoogleFlightParser
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class SearchService:
         self,
         combination_generator: CombinationGenerator,
         crawler_service: CrawlerService,
-        flight_parser: FlightParser,
+        flight_parser: GoogleFlightParser,
     ) -> None:
         """Initialise service avec dependances injectees."""
         self._combination_generator = combination_generator

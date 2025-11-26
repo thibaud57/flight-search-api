@@ -1,4 +1,5 @@
 from app.models.google_flight_dto import GoogleFlightDTO
+from app.models.kayak_segment import KayakSegment
 from app.models.proxy import ProxyConfig
 from app.models.request import (
     CombinationResult,
@@ -20,6 +21,7 @@ __all__ = [
     "FlightCombinationResult",
     "GoogleFlightDTO",
     "HealthResponse",
+    "KayakSegment",
     "ProxyConfig",
     "SearchRequest",
     "SearchResponse",

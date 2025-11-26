@@ -10,9 +10,11 @@ from app.utils.google_flights_url import (
     GoogleFlightsUrlError,
     generate_google_flights_url,
 )
+from app.utils.kayak_url import KayakUrlBuilder
 
 __all__ = [
     "GoogleFlightsUrlError",
+    "KayakUrlBuilder",
     "build_browser_config_from_fingerprint",
     "generate_google_flights_url",
     "get_base_browser_config",

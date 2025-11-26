@@ -586,17 +586,17 @@
 
 **Branche** : `feature/story-9-routes-url`
 
-- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-9-routes-url.md`
-- [ ] **Implémentation TDD** :
-  - [ ] Renommer `FlightParser` → `GoogleFlightParser` (fichiers, imports, tests, fixtures)
-  - [ ] Renommer route `/search-flights` → `/search-google-flights`
-  - [ ] Créer route `/search-kayak` (mock initial)
-  - [ ] KayakUrlBuilder : URL simple `/flights/PAR-SLZ/date`
-  - [ ] KayakSegment : Validation IATA stricte
-- [ ] **Validation manuelle** : Routes accessibles, renommages complets
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(kayak): add routes, URL builder and rename FlightParser`
-- [ ] **PR** : feature/story-9 → develop
+- [x] **Specs complètes** : `docs/specs/epic-4-kayak/story-9-routes-url.md`
+- [x] **Implémentation TDD** :
+  - [x] Renommer `FlightParser` → `GoogleFlightParser` (fichiers, imports, tests, fixtures)
+  - [x] Renommer route `/search-flights` → `/search-google-flights`
+  - [x] Créer route `/search-kayak` (mock initial)
+  - [x] KayakUrlBuilder : URL simple `/flights/PAR-SLZ/date`
+  - [x] KayakSegment : Validation IATA stricte
+- [x] **Validation manuelle** : Routes accessibles, renommages complets
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(kayak): add routes, URL builder and rename FlightParser`
+- [x] **PR** : feature/story-9 → develop
 
 📝 **Output** : Story 9 complétée (8 story points)
 

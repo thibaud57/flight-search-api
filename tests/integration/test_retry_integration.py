@@ -97,7 +97,7 @@ async def _patch_crawler_and_search(crawler, proxy_pool, flight_parser):
 @pytest.mark.asyncio
 async def test_integration_search_with_transient_errors(
     mock_crawler_with_errors_factory,
-    flight_parser_mock_single_factory,
+    google_flight_parser_mock_single_factory,
     mock_proxy_pool,
     search_request_factory,
 ) -> None:
@@ -105,7 +105,7 @@ async def test_integration_search_with_transient_errors(
     crawler = mock_crawler_with_errors_factory(error_calls=[2, 5], error_type="network")
 
     async with _patch_crawler_and_search(
-        crawler, mock_proxy_pool, flight_parser_mock_single_factory
+        crawler, mock_proxy_pool, google_flight_parser_mock_single_factory
     ) as search_service:
         request = search_request_factory(days_segment1=2, days_segment2=2)
 
@@ -120,7 +120,7 @@ async def test_integration_search_with_transient_errors(
 @pytest.mark.asyncio
 async def test_integration_retry_exhaustion_graceful_degradation(
     mock_crawler_with_errors_factory,
-    flight_parser_mock_single_factory,
+    google_flight_parser_mock_single_factory,
     mock_proxy_pool,
     search_request_factory,
 ) -> None:
@@ -130,7 +130,7 @@ async def test_integration_retry_exhaustion_graceful_degradation(
     )
 
     async with _patch_crawler_and_search(
-        crawler, mock_proxy_pool, flight_parser_mock_single_factory
+        crawler, mock_proxy_pool, google_flight_parser_mock_single_factory
     ) as search_service:
         request = search_request_factory(
             days_segment1=5, days_segment2=3, offset_segment2=12
@@ -146,7 +146,7 @@ async def test_integration_retry_exhaustion_graceful_degradation(
 @pytest.mark.asyncio
 async def test_integration_partial_retry_success(
     mock_crawler_with_errors_factory,
-    flight_parser_mock_single_factory,
+    google_flight_parser_mock_single_factory,
     mock_proxy_pool,
     search_request_factory,
 ) -> None:
@@ -156,7 +156,7 @@ async def test_integration_partial_retry_success(
     )
 
     async with _patch_crawler_and_search(
-        crawler, mock_proxy_pool, flight_parser_mock_single_factory
+        crawler, mock_proxy_pool, google_flight_parser_mock_single_factory
     ) as search_service:
         request = search_request_factory(days_segment1=4, days_segment2=4)
 
@@ -170,7 +170,7 @@ async def test_integration_partial_retry_success(
 @pytest.mark.asyncio
 async def test_integration_no_retry_on_client_errors(
     mock_crawler_with_errors_factory,
-    flight_parser_mock_single_factory,
+    google_flight_parser_mock_single_factory,
     mock_proxy_pool,
     search_request_factory,
 ) -> None:
@@ -178,7 +178,7 @@ async def test_integration_no_retry_on_client_errors(
     crawler = mock_crawler_with_errors_factory(status_404_calls=[3, 7, 11, 15])
 
     async with _patch_crawler_and_search(
-        crawler, mock_proxy_pool, flight_parser_mock_single_factory
+        crawler, mock_proxy_pool, google_flight_parser_mock_single_factory
     ) as search_service:
         request = search_request_factory(days_segment1=4, days_segment2=4)
 
@@ -192,7 +192,7 @@ async def test_integration_no_retry_on_client_errors(
 @pytest.mark.asyncio
 async def test_integration_end_to_end_retry_metrics_logging(
     mock_crawler_with_errors_factory,
-    flight_parser_mock_single_factory,
+    google_flight_parser_mock_single_factory,
     mock_proxy_pool,
     search_request_factory,
     caplog,
@@ -203,7 +203,7 @@ async def test_integration_end_to_end_retry_metrics_logging(
     )
 
     async with _patch_crawler_and_search(
-        crawler, mock_proxy_pool, flight_parser_mock_single_factory
+        crawler, mock_proxy_pool, google_flight_parser_mock_single_factory
     ) as search_service:
         request = search_request_factory(days_segment1=4, days_segment2=4)
 

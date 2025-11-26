@@ -16,7 +16,7 @@ from tests.fixtures.helpers import (
 @pytest.mark.asyncio
 async def test_integration_search_two_segments_success(
     mock_crawler_success,
-    flight_parser_mock_10_flights_factory,
+    google_flight_parser_mock_10_flights_factory,
     search_request_factory,
     mock_generate_google_flights_url,
 ):
@@ -25,7 +25,7 @@ async def test_integration_search_two_segments_success(
     service = SearchService(
         combination_generator=CombinationGenerator(),
         crawler_service=mock_crawler_success,
-        flight_parser=flight_parser_mock_10_flights_factory,
+        flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     response = await service.search_flights(request)
@@ -38,7 +38,7 @@ async def test_integration_search_two_segments_success(
 @pytest.mark.asyncio
 async def test_integration_search_five_segments_asymmetric(
     mock_crawler_success,
-    flight_parser_mock_10_flights_factory,
+    google_flight_parser_mock_10_flights_factory,
     date_range_factory,
     mock_generate_google_flights_url,
 ):
@@ -56,7 +56,7 @@ async def test_integration_search_five_segments_asymmetric(
     service = SearchService(
         combination_generator=CombinationGenerator(),
         crawler_service=mock_crawler_success,
-        flight_parser=flight_parser_mock_10_flights_factory,
+        flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     response = await service.search_flights(request)
@@ -67,7 +67,7 @@ async def test_integration_search_five_segments_asymmetric(
 
 @pytest.mark.asyncio
 async def test_integration_search_with_captcha_partial_failures(
-    flight_parser_mock_10_flights_factory,
+    google_flight_parser_mock_10_flights_factory,
     search_request_factory,
     mock_generate_google_flights_url,
 ):
@@ -87,7 +87,7 @@ async def test_integration_search_with_captcha_partial_failures(
     service = SearchService(
         combination_generator=CombinationGenerator(),
         crawler_service=mock_crawler,
-        flight_parser=flight_parser_mock_10_flights_factory,
+        flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     response = await service.search_flights(request)
@@ -101,13 +101,13 @@ async def test_integration_search_dates_ranking(
     mock_crawler_success,
     search_request_factory,
     flight_dto_factory,
-    flight_parser_mock_factory,
+    google_flight_parser_mock_factory,
     mock_generate_google_flights_url,
 ):
     """Ranking par prix avec dates differentes."""
     request = search_request_factory(days_segment1=6, days_segment2=5)
     call_count = [0]
-    mock_parser = flight_parser_mock_factory(num_flights=1)
+    mock_parser = google_flight_parser_mock_factory(num_flights=1)
 
     def mock_parse(html):
         idx = call_count[0]
