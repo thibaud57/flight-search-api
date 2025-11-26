@@ -467,10 +467,12 @@ async def test_crawl_proxy_logging_no_password(
     crawler_service = CrawlerService(proxy_service=proxy_service_single)
     crawler = mock_async_web_crawler(mock_result=mock_crawl_result)
 
-    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        with caplog.at_level(logging.INFO):
-            for _ in range(3):
-                await crawler_service.crawl_google_flights(BASE_URL, use_proxy=True)
+    with (
+        patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler),
+        caplog.at_level(logging.INFO),
+    ):
+        for _ in range(3):
+            await crawler_service.crawl_google_flights(BASE_URL, use_proxy=True)
 
     log_text = " ".join(record.message for record in caplog.records)
     assert "password" not in log_text.lower()
