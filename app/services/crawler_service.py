@@ -12,9 +12,9 @@ from crawl4ai import AsyncWebCrawler, CacheMode, CrawlerRunConfig
 from playwright.async_api import BrowserContext, Cookie, Page, Response
 from tenacity import retry
 
-from app.core.config import get_settings
+from app.core import get_settings
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.models.proxy import ProxyConfig
+from app.models import ProxyConfig
 from app.services.retry_strategy import RetryStrategy
 from app.utils import (
     build_browser_config_from_fingerprint,
@@ -241,7 +241,8 @@ class CrawlerService:
                 status_code=result.status_code,
             )
 
-        return await _crawl_with_retry()
+        result: CrawlResult = await _crawl_with_retry()
+        return result
 
     async def _after_goto_hook(
         self,

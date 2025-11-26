@@ -7,7 +7,7 @@ from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 from pydantic import ValidationError
 
 from app.exceptions import ParsingError
-from app.models.google_flight_dto import GoogleFlightDTO
+from app.models import GoogleFlightDTO
 
 logger = logging.getLogger(__name__)
 

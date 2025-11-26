@@ -6,12 +6,14 @@ from unittest.mock import patch
 import pytest
 
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.models.response import SearchResponse
-from app.services.combination_generator import CombinationGenerator
-from app.services.crawler_service import CrawlerService
-from app.services.proxy_service import ProxyService
-from app.services.search_service import SearchService
-from tests.fixtures.helpers import MOCK_URL
+from app.models import SearchResponse
+from app.services import (
+    CombinationGenerator,
+    CrawlerService,
+    ProxyService,
+    SearchService,
+)
+from tests.fixtures.helpers import BASE_URL
 
 
 @pytest.fixture
@@ -33,9 +35,9 @@ def mock_crawler_with_errors_factory(mock_async_web_crawler, mock_crawl_result):
 
             if error_calls and current_call in error_calls:
                 if error_type == "network":
-                    raise NetworkError(url=MOCK_URL, status_code=None, attempts=1)
+                    raise NetworkError(url=BASE_URL, status_code=None, attempts=1)
                 elif error_type == "network_persistent":
-                    raise NetworkError(url=MOCK_URL, status_code=503, attempts=3)
+                    raise NetworkError(url=BASE_URL, status_code=503, attempts=3)
 
             if (
                 error_type == "captcha"
@@ -44,11 +46,11 @@ def mock_crawler_with_errors_factory(mock_async_web_crawler, mock_crawl_result):
                 and current_call not in captcha_triggered
             ):
                 captcha_triggered.add(current_call)
-                raise CaptchaDetectedError(url=MOCK_URL, captcha_type="recaptcha_v2")
+                raise CaptchaDetectedError(url=BASE_URL, captcha_type="recaptcha_v2")
 
             if error_type == "mixed":
                 if error_calls and current_call in error_calls:
-                    raise NetworkError(url=MOCK_URL, status_code=None, attempts=1)
+                    raise NetworkError(url=BASE_URL, status_code=None, attempts=1)
                 if (
                     captcha_calls
                     and current_call in captcha_calls
@@ -56,7 +58,7 @@ def mock_crawler_with_errors_factory(mock_async_web_crawler, mock_crawl_result):
                 ):
                     captcha_triggered.add(current_call)
                     raise CaptchaDetectedError(
-                        url=MOCK_URL, captcha_type="recaptcha_v2"
+                        url=BASE_URL, captcha_type="recaptcha_v2"
                     )
 
             if status_404_calls and current_call in status_404_calls:

@@ -4,16 +4,25 @@ import logging
 from functools import lru_cache
 from typing import Literal, Self
 
-from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SecretStr,
+    field_validator,
+    model_validator,
+)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.models.proxy import ProxyConfig
+from app.models import ProxyConfig
 
 logger = logging.getLogger(__name__)
 
 
 class CrawlerTimeouts(BaseModel):
     """Timeouts crawler (constantes techniques optimisées Google Flights)."""
+
+    model_config = ConfigDict(extra="forbid")
 
     crawl_page_timeout_ms: int = 30000
     crawl_delay_s: float = 5.0
@@ -27,7 +36,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore",  # Ignore unknown fields from .env
+        extra="ignore",
     )
 
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"

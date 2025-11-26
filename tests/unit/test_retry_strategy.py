@@ -9,8 +9,8 @@ import pytest
 from tenacity import retry
 
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.services.retry_strategy import RetryStrategy
-from tests.fixtures.helpers import MOCK_URL
+from app.services import RetryStrategy
+from tests.fixtures.helpers import BASE_URL
 
 
 def test_retry_on_network_error():
@@ -22,7 +22,7 @@ def test_retry_on_network_error():
         nonlocal call_count
         call_count += 1
         if call_count <= 2:
-            raise NetworkError(url=MOCK_URL, status_code=503)
+            raise NetworkError(url=BASE_URL, status_code=503)
         return "success"
 
     with patch("asyncio.sleep"):
@@ -41,7 +41,7 @@ def test_retry_on_captcha_detected():
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            raise CaptchaDetectedError(url=MOCK_URL, captcha_type="recaptcha_v2")
+            raise CaptchaDetectedError(url=BASE_URL, captcha_type="recaptcha_v2")
         return "success"
 
     with patch("asyncio.sleep"):
@@ -81,7 +81,7 @@ def test_exponential_backoff_timing():
     def mock_function():
         nonlocal call_count
         call_count += 1
-        raise NetworkError(url=MOCK_URL, status_code=503)
+        raise NetworkError(url=BASE_URL, status_code=503)
 
     original_sleep = time.sleep
     time.sleep = capture_sleep
@@ -106,7 +106,7 @@ def test_max_retries_exceeded():
     def mock_function():
         nonlocal call_count
         call_count += 1
-        raise NetworkError(url=MOCK_URL, status_code=503)
+        raise NetworkError(url=BASE_URL, status_code=503)
 
     with patch("tenacity.nap.sleep"), pytest.raises(NetworkError):
         mock_function()
@@ -123,7 +123,7 @@ def test_jitter_randomness():
 
     @retry(**RetryStrategy.get_crawler_retry())
     def mock_function():
-        raise NetworkError(url=MOCK_URL, status_code=503)
+        raise NetworkError(url=BASE_URL, status_code=503)
 
     original_sleep = time.sleep
     time.sleep = capture_sleep
@@ -153,7 +153,7 @@ def test_before_sleep_callback_logging(caplog):
         return "success"
 
     with patch("tenacity.nap.sleep"):
-        mock_function(MOCK_URL)
+        mock_function(BASE_URL)
 
     assert call_count == 3
     warning_logs = [
@@ -173,7 +173,7 @@ def test_retry_success_after_failures():
         nonlocal call_count
         call_count += 1
         if call_count <= 2:
-            raise NetworkError(url=MOCK_URL, status_code=503)
+            raise NetworkError(url=BASE_URL, status_code=503)
         return "success"
 
     with patch("tenacity.nap.sleep"):

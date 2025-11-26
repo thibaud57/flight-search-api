@@ -1,8 +1,13 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.request import DateRange, SearchRequest
-from app.models.response import FlightCombinationResult, SearchResponse, SearchStats
+from app.models import (
+    DateRange,
+    FlightCombinationResult,
+    SearchRequest,
+    SearchResponse,
+    SearchStats,
+)
 from tests.fixtures.helpers import TEMPLATE_URL, get_date_range, get_future_date
 
 

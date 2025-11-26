@@ -5,11 +5,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.core.config import Settings
-from app.models.google_flight_dto import GoogleFlightDTO
-from app.models.proxy import ProxyConfig
-from app.models.request import DateRange, SearchRequest
-from app.services.flight_parser import FlightParser
+from app.core import Settings
+from app.models import DateRange, GoogleFlightDTO, ProxyConfig, SearchRequest
+from app.services import FlightParser
 from tests.fixtures.helpers import TEMPLATE_URL, get_date_range, get_future_date
 
 

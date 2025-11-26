@@ -555,20 +555,20 @@
 
 **🔍 Validation qualité** :
 
-- [ ] Lancer agent `reviewer` avec paramètres :
+- [x] Lancer agent `reviewer` avec paramètres :
   - `epic_number`: "3"
   - `previous_version_tag`: "v0.6.0"
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit si refactor** : `chore(epic-3): refactor for standards compliance`
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit si refactor** : `chore(epic-3): refactor for standards compliance`
 
 📝 **Output** : Epic 3 validé - story 7 conforme aux standards
 
 **📝 Mise à jour version** :
 
-- [ ] Ajouter entrée v0.7.0 dans `docs/CHANGELOG.md`
-- [ ] Mettre à jour version dans `app/main.py` : `version="0.7.0"`
-- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 5.10)
-- [ ] **Commit** : `chore: bump version to 0.7.0 and update changelog`
+- [x] Ajouter entrée v0.7.0 dans `docs/CHANGELOG.md`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.7.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 5.10)
+- [x] **Commit** : `chore: bump version to 0.7.0 and update changelog`
 
 📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 

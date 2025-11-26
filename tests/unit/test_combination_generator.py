@@ -5,8 +5,8 @@ from datetime import date
 
 import pytest
 
-from app.models.request import DateCombination, DateRange
-from app.services.combination_generator import CombinationGenerator
+from app.models import DateCombination, DateRange
+from app.services import CombinationGenerator
 from tests.fixtures.helpers import get_future_date
 
 

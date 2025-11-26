@@ -397,6 +397,84 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [v0.7.0] - 2025-11-26
+
+### Added
+
+**Epic 3 : Production Ready - 8 story points**
+
+- **Story 7 : Retry Strategy + Error Handling** :
+  - RetryStrategy : Configuration Tenacity centralisée (`app/services/retry_strategy.py`)
+    - Exponential backoff avec jitter (wait_random_exponential min 1s → max 10s)
+    - Max 3 tentatives (stop_after_attempt)
+    - Retry uniquement sur exceptions transitoires (NetworkError, CaptchaDetectedError)
+    - Pas de retry sur erreurs client (ValidationError, 404)
+  - before_sleep callback : Logging structuré des tentatives retry
+  - Integration CrawlerService : Décorateur @retry sur méthode crawl
+  - Tests unitaires RetryStrategy : 8 tests (retry logic, timing, callbacks)
+  - Tests intégration : 5 tests (transient errors, exhaustion, partial success)
+
+- **Story 9 : Session Capture Google** :
+  - Méthode `get_google_session()` pour capture initiale session Google
+  - Auto-click consent popup (Accept All / Tout accepter)
+  - Hooks Crawl4AI : `after_goto`, `before_return_html` pour extraction cookies
+  - Réutilisation cookies capturés dans requêtes subsequentes
+  - Tests unitaires : 3 tests (session capture, auto-click, no popup)
+
+- **Story 10 : Timeouts Configurables** :
+  - Settings : `crawl_page_timeout_ms`, `crawl_delay_s`, `crawl_global_timeout_s`
+  - CrawlerRunConfig : Paramètres timeout propagés depuis Settings
+  - asyncio.wait_for : Timeout global pour éviter hangs
+  - Tests unitaires : 1 test validation timeouts configurables
+
+### Changed
+
+- **Modèles Response** : Ajout `model_config = ConfigDict(extra="forbid")` sur 4 classes
+  - HealthResponse, FlightCombinationResult, SearchStats, SearchResponse
+  - Conformité stricte CLAUDE.md (rejette champs inconnus)
+
+- **Configuration Mypy** : Ajout `playwright.*` dans overrides ignore_missing_imports
+  - Support types Playwright pour hooks CrawlerService
+
+- **Formatage Code** : Ruff format appliqué sur `tests/fixtures/helpers.py`
+  - Assertions multi-lignes reformatées
+
+### Technical Details
+
+**Audit Conformité Epic 3** :
+- ✅ Fixtures/Mocks/Helpers/Factories : DRY respecté, factory pattern, constantes centralisées
+- ✅ Séparation tests : unitaires (11 fichiers) vs intégration (8 fichiers) stricte
+- ✅ Placement méthodes : services (logique métier) vs utils (helpers génériques) correct
+- ✅ Exports __init__.py : Tous modules app/ exportent via __all__
+- ✅ Type hints PEP 695 : Conformes sur 100% des signatures
+
+**Tests Epic 3** :
+- Tests unitaires : 23 tests (RetryStrategy, CrawlerService session, timeouts)
+- Tests intégration : 5 tests (retry scenarios end-to-end)
+- Total projet : **152 tests** (tous passent)
+- Coverage global : **91%** (seuil 80% atteint)
+
+**Quality Checks Finaux** :
+- Ruff lint : ✅ All checks passed
+- Ruff format : ✅ 51 files already formatted
+- Mypy : ✅ Success: no issues found in 25 source files
+- pytest : ✅ 152 passed in 125s
+
+### Notes
+
+**Phase** : Implémentation TDD Epic 3 + Validation
+**Objectif** : Robustesse production avec retry logic, error handling, session capture
+
+**Corrections appliquées (audit v0.7.0)** :
+1. Ruff format helpers.py (formatage assertions multi-lignes)
+2. ConfigDict sur 4 models response.py (conformité Pydantic v2)
+3. Playwright dans mypy overrides (support types hooks)
+4. Type ignore justifié sur décorateur @retry (tenacity)
+
+**Prochaine étape** : Phase 8 - Epic 4 Kayak Integration (optionnel) ou Release v1.0.0 Production
+
+---
+
 # Ressources
 
 ## Documentation Officielle

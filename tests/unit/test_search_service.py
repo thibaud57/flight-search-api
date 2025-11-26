@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.models.response import SearchResponse
-from app.services.search_service import SearchService
+from app.models import SearchResponse
+from app.services import SearchService
 from tests.fixtures.helpers import (
     assert_results_sorted_by_price,
     create_date_combinations,
@@ -360,7 +360,6 @@ async def test_search_flights_logging_structured(
 
     assert len(caplog.records) > 0
 
-    # Verify structured logging fields in extra
     all_extra_fields = set()
     for record in caplog.records:
         if hasattr(record, "crawls_success"):
@@ -372,7 +371,6 @@ async def test_search_flights_logging_structured(
         if hasattr(record, "top_price_max"):
             all_extra_fields.add("top_price_max")
 
-    # Verify key structured fields are present
     assert "crawls_success" in all_extra_fields
     assert "top_price_min" in all_extra_fields or "top_price_max" in all_extra_fields
 

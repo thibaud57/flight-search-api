@@ -7,10 +7,16 @@ import logging
 import time
 from typing import TYPE_CHECKING
 
-from app.core.config import get_settings
+from app.core import get_settings
 from app.exceptions import CaptchaDetectedError, NetworkError, ParsingError
-from app.models.request import CombinationResult, DateCombination, SearchRequest
-from app.models.response import FlightCombinationResult, SearchResponse, SearchStats
+from app.models import (
+    CombinationResult,
+    DateCombination,
+    FlightCombinationResult,
+    SearchRequest,
+    SearchResponse,
+    SearchStats,
+)
 from app.types import CrawlResultTuple
 from app.utils import generate_google_flights_url
 

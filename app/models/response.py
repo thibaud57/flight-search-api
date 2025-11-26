@@ -1,6 +1,6 @@
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from app.models.google_flight_dto import GoogleFlightDTO
 
@@ -8,11 +8,15 @@ from app.models.google_flight_dto import GoogleFlightDTO
 class HealthResponse(BaseModel):
     """Schéma response endpoint health check."""
 
+    model_config = ConfigDict(extra="forbid")
+
     status: Literal["ok", "error"]
 
 
 class FlightCombinationResult(BaseModel):
     """Résultat pour une combinaison de dates de segments (1 sur 10 retournés)."""
+
+    model_config = ConfigDict(extra="forbid")
 
     segment_dates: Annotated[list[str], "Dates par segment (ISO 8601)"]
     flights: Annotated[
@@ -42,6 +46,8 @@ class FlightCombinationResult(BaseModel):
 class SearchStats(BaseModel):
     """Statistiques métadonnées recherche."""
 
+    model_config = ConfigDict(extra="forbid")
+
     total_results: int
     search_time_ms: int
     segments_count: int
@@ -49,6 +55,8 @@ class SearchStats(BaseModel):
 
 class SearchResponse(BaseModel):
     """Réponse API contenant top 10 résultats + stats."""
+
+    model_config = ConfigDict(extra="forbid")
 
     results: Annotated[
         list[FlightCombinationResult], "Top 10 résultats triés par prix croissant"
