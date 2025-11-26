@@ -5,10 +5,12 @@ from unittest.mock import AsyncMock
 import pytest
 
 from app.exceptions import CaptchaDetectedError
-from app.models.request import SearchRequest
-from app.services.combination_generator import CombinationGenerator
-from app.services.crawler_service import CrawlResult
-from app.services.search_service import SearchService
+from app.models import SearchRequest
+from app.services import (
+    CombinationGenerator,
+    CrawlResult,
+    SearchService,
+)
 from tests.fixtures.helpers import (
     TEMPLATE_URL,
     assert_results_sorted_by_price,

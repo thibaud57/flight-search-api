@@ -7,7 +7,7 @@ from typing import Literal, Self
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.models.proxy import ProxyConfig
+from app.models import ProxyConfig
 
 logger = logging.getLogger(__name__)
 

@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.models.response import SearchResponse
-from app.services.search_service import SearchService
+from app.models import SearchResponse
+from app.services import SearchService
 from tests.fixtures.helpers import (
     assert_results_sorted_by_price,
     create_date_combinations,

@@ -14,7 +14,7 @@ from tenacity import retry
 
 from app.core.config import get_settings
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.models.proxy import ProxyConfig
+from app.models import ProxyConfig
 from app.services.retry_strategy import RetryStrategy
 from app.utils import (
     build_browser_config_from_fingerprint,
@@ -23,7 +23,7 @@ from app.utils import (
 )
 
 if TYPE_CHECKING:
-    from app.services.proxy_service import ProxyService
+    from app.services import ProxyService
 
 logger = logging.getLogger(__name__)
 

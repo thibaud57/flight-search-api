@@ -6,11 +6,13 @@ from unittest.mock import patch
 import pytest
 
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.models.response import SearchResponse
-from app.services.combination_generator import CombinationGenerator
-from app.services.crawler_service import CrawlerService
-from app.services.proxy_service import ProxyService
-from app.services.search_service import SearchService
+from app.models import SearchResponse
+from app.services import (
+    CombinationGenerator,
+    CrawlerService,
+    ProxyService,
+    SearchService,
+)
 from tests.fixtures.helpers import MOCK_URL
 
 

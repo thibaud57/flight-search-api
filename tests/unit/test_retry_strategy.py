@@ -9,7 +9,7 @@ import pytest
 from tenacity import retry
 
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.services.retry_strategy import RetryStrategy
+from app.services import RetryStrategy
 from tests.fixtures.helpers import MOCK_URL
 
 

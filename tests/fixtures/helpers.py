@@ -7,8 +7,7 @@ from typing import Any
 
 import pytest
 
-from app.models.google_flight_dto import GoogleFlightDTO
-from app.models.response import FlightCombinationResult
+from app.models import FlightCombinationResult, GoogleFlightDTO
 
 # URLs Google Flights pour tests
 TEMPLATE_URL = "https://www.google.com/travel/flights?tfs=CBwQAhooagwIAxIIL20vMDVxdGpyDAgDEggvbS8wN2RmayIKMjAyNS0wNi0wMXIKMjAyNS0wNi0xNXABggELCP___________wFAAUgBmAEB"  # Template avec placeholders valides

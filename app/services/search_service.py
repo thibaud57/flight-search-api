@@ -9,17 +9,23 @@ from typing import TYPE_CHECKING
 
 from app.core.config import get_settings
 from app.exceptions import CaptchaDetectedError, NetworkError, ParsingError
-from app.models.request import CombinationResult, DateCombination, SearchRequest
-from app.models.response import FlightCombinationResult, SearchResponse, SearchStats
+from app.models import (
+    DateCombination,
+    FlightCombinationResult,
+    SearchRequest,
+    SearchResponse,
+    SearchStats,
+)
 from app.types import CrawlResultTuple
 from app.utils import generate_google_flights_url
 
 if TYPE_CHECKING:
-    from app.services.combination_generator import CombinationGenerator
-    from app.services.crawler_service import CrawlerService
-    from app.services.flight_parser import FlightParser
+    from app.services import CombinationGenerator, CrawlerService, FlightParser
 
 logger = logging.getLogger(__name__)
+
+# Type alias pour compatibilité
+CombinationResult = FlightCombinationResult
 
 
 class SearchService:

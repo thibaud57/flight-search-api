@@ -3,7 +3,7 @@
 import itertools
 import logging
 
-from app.models.proxy import ProxyConfig
+from app.models import ProxyConfig
 
 logger = logging.getLogger(__name__)
 

@@ -4,8 +4,8 @@ import logging
 
 import pytest
 
-from app.models.proxy import ProxyConfig
-from app.services.proxy_service import ProxyService
+from app.models import ProxyConfig
+from app.services import ProxyService
 
 
 def test_proxy_service_round_robin_rotation(mock_proxy_pool: list[ProxyConfig]) -> None:

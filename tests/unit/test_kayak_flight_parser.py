@@ -4,7 +4,7 @@ import logging
 
 import pytest
 
-from app.services.kayak import KayakFlightParser, format_duration
+from app.services.kayak_flight_parser import KayakFlightParser, format_duration
 
 
 class TestFormatDuration:

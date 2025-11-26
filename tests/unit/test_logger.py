@@ -8,7 +8,7 @@ from typing import Protocol
 import pytest
 from pythonjsonlogger import jsonlogger
 
-from app.core.logger import SensitiveDataFilter, setup_logger
+from app.core import SensitiveDataFilter, setup_logger
 from tests.fixtures.helpers import (
     assert_log_captured,
     assert_log_contains_fields,

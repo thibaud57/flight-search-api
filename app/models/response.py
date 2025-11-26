@@ -2,7 +2,7 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, field_validator, model_validator
 
-from app.models.google_flight_dto import GoogleFlightDTO
+from app.models import GoogleFlightDTO
 
 
 class HealthResponse(BaseModel):

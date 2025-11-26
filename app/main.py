@@ -4,14 +4,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.routes import router
+from app.api import router
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    from app.core.logger import get_logger
+    from app.core import get_logger
 
     get_logger()
     yield

@@ -4,10 +4,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.models.proxy import ProxyConfig
-from app.models.request import DateCombination
-from app.models.response import FlightCombinationResult, SearchResponse, SearchStats
-from app.services.combination_generator import CombinationGenerator
+from app.models import (
+    DateCombination,
+    FlightCombinationResult,
+    ProxyConfig,
+    SearchResponse,
+    SearchStats,
+)
+from app.services import CombinationGenerator
 from tests.fixtures.helpers import MOCKED_URL, get_future_date
 
 
@@ -133,7 +137,7 @@ def mock_proxy_pool():
 @pytest.fixture
 def mock_crawler_success():
     """Mock CrawlerService async avec HTML valide (partagé tests integration)."""
-    from app.services.crawler_service import CrawlResult
+    from app.services import CrawlResult
 
     crawler = AsyncMock()
     crawler.crawl_google_flights.return_value = CrawlResult(

@@ -4,8 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api.routes import get_search_service
-from app.core.config import Settings, get_settings
-from app.core.logger import get_logger, setup_logger
+from app.core import Settings, get_logger, get_settings, setup_logger
 from app.main import app
 
 # Load fixtures modules

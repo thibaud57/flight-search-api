@@ -7,7 +7,7 @@ import pytest
 from pydantic import ValidationError
 from pythonjsonlogger import jsonlogger
 
-from app.core.logger import setup_logger
+from app.core import setup_logger
 from tests.fixtures.helpers import (
     assert_log_captured,
     assert_log_contains_fields,

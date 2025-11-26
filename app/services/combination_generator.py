@@ -4,7 +4,7 @@ import itertools
 import logging
 from datetime import date, timedelta
 
-from app.models.request import DateCombination, DateRange
+from app.models import DateCombination, DateRange
 
 logger = logging.getLogger(__name__)
 

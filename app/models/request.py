@@ -4,7 +4,7 @@ from typing import Annotated, Self
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-from app.models.google_flight_dto import GoogleFlightDTO
+from app.models import GoogleFlightDTO
 
 
 def validate_iso_date(value: str) -> str:

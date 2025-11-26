@@ -6,9 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.models.proxy import ProxyConfig
-from app.services.crawler_service import CrawlerService
-from app.services.proxy_service import ProxyService
+from app.models import ProxyConfig
+from app.services import CrawlerService, ProxyService
 from tests.fixtures.helpers import BASE_URL
 
 
