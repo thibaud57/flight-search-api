@@ -8,7 +8,11 @@ from app.models import (
     SearchResponse,
     SearchStats,
 )
-from tests.fixtures.helpers import TEMPLATE_URL, get_date_range, get_future_date
+from tests.fixtures.helpers import (
+    GOOGLE_FLIGHT_COMPLETE_URL,
+    get_date_range,
+    get_future_date,
+)
 
 
 def test_date_range_valid_dates(date_range_factory):

@@ -3,9 +3,9 @@
 from fastapi.testclient import TestClient
 
 from tests.fixtures.helpers import (
+    GOOGLE_FLIGHT_COMPLETE_URL,
     SEARCH_GOOGLE_FLIGHTS_ENDPOINT,
     SEARCH_KAYAK_ENDPOINT,
-    TEMPLATE_URL,
 )
 
 

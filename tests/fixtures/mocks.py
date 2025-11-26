@@ -12,7 +12,7 @@ from app.models import (
     SearchStats,
 )
 from app.services import CombinationGenerator
-from tests.fixtures.helpers import BASE_URL, get_future_date
+from tests.fixtures.helpers import GOOGLE_FLIGHT_BASE_URL, get_future_date
 
 
 @pytest.fixture

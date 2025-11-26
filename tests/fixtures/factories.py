@@ -8,7 +8,11 @@ import pytest
 from app.core import Settings
 from app.models import DateRange, GoogleFlightDTO, ProxyConfig, SearchRequest
 from app.services import GoogleFlightParser
-from tests.fixtures.helpers import TEMPLATE_URL, get_date_range, get_future_date
+from tests.fixtures.helpers import (
+    GOOGLE_FLIGHT_COMPLETE_URL,
+    get_date_range,
+    get_future_date,
+)
 
 
 @pytest.fixture

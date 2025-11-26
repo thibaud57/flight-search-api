@@ -7,7 +7,7 @@ import pytest
 
 from app.exceptions import CaptchaDetectedError, NetworkError
 from app.services import CrawlerService, ProxyService
-from tests.fixtures.helpers import BASE_URL
+from tests.fixtures.helpers import GOOGLE_FLIGHT_BASE_URL
 
 
 @pytest.fixture(autouse=True)

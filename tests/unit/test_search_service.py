@@ -9,7 +9,7 @@ from app.exceptions import CaptchaDetectedError, NetworkError
 from app.models import SearchRequest, SearchResponse
 from app.services import CombinationGenerator, SearchService
 from tests.fixtures.helpers import (
-    TEMPLATE_URL,
+    GOOGLE_FLIGHT_COMPLETE_URL,
     assert_results_sorted_by_price,
     create_date_combinations,
 )
