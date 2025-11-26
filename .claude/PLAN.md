@@ -565,12 +565,12 @@
 
 **Branche** : `feature/story-8-network-capture`
 
-- [ ] **Renommer** : `flight_parser.py` → `google_flight_parser.py` (prépare multi-provider)
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-8-network-capture.md
-- [ ] **Validation manuelle** : Vérifier capture network events, parsing JSON 3 segments, total_price au niveau racine
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(crawler): add network capture for complete multi-city data`
-- [ ] **PR** : feature/story-8 → develop
+- [x] **Renommer** : `flight_parser.py` → `google_flight_parser.py` (prépare multi-provider)
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-8-network-capture.md
+- [x] **Validation manuelle** : Vérifier capture network events, parsing JSON 3 segments, total_price au niveau racine
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(crawler): add network capture for complete multi-city data`
+- [x] **PR** : feature/story-8 → develop
 
 📝 **Output** : Story 8 complétée (8 story points)
 

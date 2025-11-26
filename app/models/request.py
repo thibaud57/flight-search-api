@@ -161,4 +161,5 @@ class CombinationResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     date_combination: DateCombination
-    best_flight: GoogleFlightDTO
+    flights: list[GoogleFlightDTO]
+    total_price: float

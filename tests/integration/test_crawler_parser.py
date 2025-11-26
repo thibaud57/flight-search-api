@@ -6,7 +6,7 @@ import pytest
 
 from app.exceptions import ParsingError
 from app.services.crawler_service import CrawlerService
-from app.services.flight_parser import FlightParser
+from app.services.google_flight_parser import FlightParser
 from tests.fixtures.helpers import BASE_URL, assert_flight_dto_valid
 
 EMPTY_HTML = "<html><body><div class='no-results'>Aucun vol trouvé</div></body></html>"

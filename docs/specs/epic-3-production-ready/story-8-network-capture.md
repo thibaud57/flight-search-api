@@ -3,7 +3,7 @@ title: "Story 8: Network Capture pour Multi-City Complet"
 epic: "Epic 3: Production Ready"
 story_points: 8
 dependencies: ["epic-2/story-6", "epic-3/story-7"]
-date: "2025-11-23"
+date: "2025-23-11"
 keywords: ["network-capture", "crawl4ai", "xhr-interception", "api-response", "multi-segment", "json-parsing", "complete-data", "google-flights-api", "resource-blocking", "bandwidth-optimization", "playwright-hooks"]
 scope: ["specs"]
 technologies: ["Crawl4AI", "asyncio", "Python", "Pydantic v2", "JSON", "Playwright"]
@@ -20,8 +20,10 @@ technologies: ["Crawl4AI", "asyncio", "Python", "Pydantic v2", "JSON", "Playwrig
 
 ## Contraintes métier
 
+- **Migration complète CSS → Network** : ⚠️ **Remplacement total de l'extraction CSS** par network capture (pas de fallback permanent). CSS extraction sera supprimée après validation network capture fonctionnel (tests passent, données complètes capturées)
 - **Limitation CSS extraction actuelle** : `JsonCssExtractionStrategy` de Crawl4AI parse uniquement HTML DOM visible, or Google Flights charge résultats via API calls JavaScript → seulement premier vol visible statiquement dans HTML, segments 2-3 chargés dynamiquement
-- **API Google Flights non documentée** : Responses API internes Google Flights format JSON propriétaire non stable (peut changer), nécessite parsing résilient avec fallback si structure change
+- **API Google Flights non documentée** : Responses API internes Google Flights format JSON propriétaire non stable (peut changer), nécessite parsing résilient pour identifier structure correcte parmi network events capturés
+- **Références développement disponibles** : `text.txt` (extraction brute JSON network Google Flights) et `screenshot.png` (rendu UI Google Flights) fournis comme exemples réels pour comprendre structure données et mapping vers modèles
 - **Coûts bandwidth optimisables** : Network capture n'augmente pas consommation bandwidth Decodo, et permet blocage ressources non essentielles (images, fonts, gstatic.com) pour réduction ~40-60% bandwidth via hooks Playwright
 - **Compatibilité Crawl4AI 0.7.7+** : Feature `capture_network_requests` disponible depuis Crawl4AI 0.7.7, nécessite configuration `CrawlerRunConfig` avec `capture_network_requests=True`
 - **Performance parsing JSON** : Parsing JSON API responses plus rapide que CSS selectors (~10-20ms vs ~50-100ms per page) mais nécessite identifier correct API endpoint parmi tous network events capturés
@@ -93,11 +95,11 @@ class CrawlerService:
 
 **Étape 3 : Récupération network events**
 1. Accéder `result.network_requests` (liste événements capturés par Crawl4AI)
-2. Si `result.network_requests` vide → Logger WARNING, fallback parsing HTML classique (dégradation gracieuse)
+2. Si `result.network_requests` vide → Logger WARNING + skip combination (pas de fallback CSS, migration complète Network-only)
 3. Retourner `CrawlResult` avec `network_requests` rempli
 
 **Edge cases** :
-- **Aucun network event capturé** : Peut arriver si Google Flights change architecture (pas d'API call XHR), fallback HTML parsing
+- **Aucun network event capturé** : Logger WARNING, skip cette combinaison, retourner résultats partiels des autres combinaisons qui ont réussi (pas de fallback CSS)
 - **Timeout networkidle dépassé** : Si API calls infinies (bug Google), timeout max 10s puis retour forcé (éviter hang)
 - **Captcha détecté** : Vérification captcha inchangée (inspect HTML), si captcha → lève `CaptchaDetectedError` (retry Story 7)
 
@@ -108,7 +110,7 @@ class CrawlerService:
 **Logging structuré** :
 - INFO : Début crawl avec network capture enabled
 - DEBUG : Nombre network events capturés après crawl
-- WARNING : Aucun network event capturé (fallback HTML)
+- WARNING : Aucun network event capturé, combinaison skippée
 
 ---
 
@@ -167,7 +169,7 @@ class NetworkResponseFilter:
 **Edge cases** :
 - **Multiples API endpoints** : Google Flights peut appeler plusieurs APIs (`/search`, `/filters`, `/metadata`), garder tous endpoints puis parser chacun
 - **URL encodée base64** : URLs peuvent contenir params encodés, pattern matching flexible nécessaire
-- **Aucune response matching** : Si 0 responses après filtrage → Logger WARNING, retourner liste vide (caller gère fallback)
+- **Aucune response matching** : Si 0 responses après filtrage → Logger WARNING, retourner liste vide (caller skip combination, pas de fallback CSS)
 
 **Erreurs levées** :
 - Aucune exception levée (méthode pure filtrage, retourne liste vide si aucun match)
@@ -293,10 +295,10 @@ class FlightParser:
 13. Ordre flights respecte ordre segments itinéraire (index 0 = Paris→Tokyo, index 1 = Tokyo→Kyoto, index 2 = Kyoto→Paris)
 
 **Edge cases** :
-- **Structure JSON différente** : Si clés attendues absentes (`data.flights` manquant) → Logger ERROR, lève `ParsingError` avec message explicite
+- **Structure JSON différente** : Si clés attendues absentes (`data.flights` manquant) → Logger ERROR, lève `ParsingError` avec message explicite (combinaison skippée)
 - **Segments incomplets** : Si segment manque champs obligatoires (ex: `duration` absent) → Utiliser valeurs par défaut (`duration="Unknown"`, `stops=0`)
-- **Prix manquant** : Si `price.total` absent → Utiliser premier segment price comme fallback (peut être prix partiel)
-- **Aucune flight option** : Si `len(data.flights) == 0` → Retourner liste vide (pas d'exception, caller gère)
+- **Prix manquant** : Si `price.total` absent → Lève `ParsingError` (prix total requis pour ranking, combinaison skippée)
+- **Aucune flight option** : Si `len(data.flights) == 0` → Retourner tuple `(0.0, [])` (pas d'exception, caller skip combination)
 
 **Erreurs levées** :
 - `ParsingError` : Si JSON structure invalide ou clés critiques absentes
@@ -309,7 +311,143 @@ class FlightParser:
 
 ---
 
-## 4. FlightCombinationResult (Modification Modèle)
+## 4. GoogleFlightDTO (Modification Modèle)
+
+**Rôle** : Rendre champ `price` optionnel pour supporter extraction CSS (avec price) ET network capture (sans price par segment).
+
+**Interface actuelle** :
+```python
+class GoogleFlightDTO(BaseModel):
+    """DTO vol Google Flights avec prix requis (CSS extraction)."""
+
+    price: float  # ← Actuellement requis
+    airline: str
+    departure_time: str
+    arrival_time: str
+    duration: str
+    stops: int = 0
+    departure_airport: str | None = None
+    arrival_airport: str | None = None
+```
+
+**Interface modifiée (Story 8)** :
+```python
+class GoogleFlightDTO(BaseModel):
+    """DTO vol Google Flights avec prix optionnel (CSS ou Network)."""
+
+    model_config = ConfigDict(extra="forbid", exclude_none=True)
+
+    price: float | None = None  # ✅ Optionnel: rempli par CSS, None par Network
+    airline: str
+    departure_time: str
+    arrival_time: str
+    duration: str
+    stops: int = 0
+    departure_airport: str | None = None
+    arrival_airport: str | None = None
+```
+
+**Champs** :
+
+| Champ | Type Actuel | Type Modifié | Justification |
+|-------|-------------|--------------|---------------|
+| `price` | `float` (requis) | `float \| None = None` | CSS extraction remplit price (backward compat), Network capture laisse None (pas de prix par segment) |
+
+**Configuration Pydantic** :
+
+- `exclude_none=True` : Champs None **exclus automatiquement** du JSON serialization → `price` n'apparaît PAS dans response si None (JSON propre sans `"price": null`)
+
+**Comportement** :
+
+**CSS parsing (actuel)** :
+```python
+GoogleFlightDTO(
+    price=1250.0,  # ← Rempli depuis HTML
+    airline="Air France",
+    ...
+)
+# JSON output: {"price": 1250.0, "airline": "Air France", ...}
+```
+
+**Network parsing (nouveau)** :
+```python
+GoogleFlightDTO(
+    price=None,  # ← Non rempli (pas disponible par segment)
+    airline="Air France",
+    ...
+)
+# JSON output: {"airline": "Air France", ...}  ← price absent (exclude_none)
+```
+
+**Migration Impact** :
+
+- ✅ **Backward compatible** : Tests CSS actuels continuent de fonctionner (price rempli)
+- ✅ **Forward compatible** : Network capture JSON propre (pas de `"price": null`)
+- ❌ **Breaking change mineur** : Clients API doivent gérer `price` absent dans `flights[i]` (utiliser `total_price` racine à la place)
+
+---
+
+## 5. CombinationResult (Modification Modèle)
+
+**Rôle** : Modifier modèle intermédiaire `CombinationResult` pour supporter ranking par `total_price` + stocker TOUS les flights (pas seulement best_flight).
+
+**Interface actuelle** :
+```python
+class CombinationResult(BaseModel):
+    """Resultat intermediaire pour une combinaison dates."""
+
+    date_combination: DateCombination
+    best_flight: GoogleFlightDTO  # ← 1 seul flight avec price
+```
+
+**Interface modifiée (Story 8)** :
+```python
+class CombinationResult(BaseModel):
+    """Resultat intermediaire pour une combinaison dates."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    date_combination: DateCombination
+    flights: list[GoogleFlightDTO]  # ✅ CHANGE: liste complète au lieu de best_flight
+    total_price: float  # ✅ NOUVEAU: Prix total itinéraire pour ranking
+```
+
+**Champs** :
+
+| Champ | Type Actuel | Type Modifié | Justification |
+|-------|-------------|--------------|---------------|
+| `best_flight` | `GoogleFlightDTO` | ❌ Supprimé | Remplacé par `flights` liste complète |
+| `flights` | ❌ N'existe pas | `list[GoogleFlightDTO]` | Stocker TOUS les segments (N flights) pour conversion finale |
+| `total_price` | ❌ N'existe pas | `float` | Prix total itinéraire pour ranking (remplace `best_flight.price`) |
+
+**Comportement** :
+
+**CSS parsing (actuel - après migration)** :
+```python
+CombinationResult(
+    date_combination=combo,
+    flights=[flights[0]],  # ← Liste 1 élément (segment 1 seulement)
+    total_price=flights[0].price  # ← Prix du premier vol
+)
+```
+
+**Network parsing (nouveau)** :
+```python
+CombinationResult(
+    date_combination=combo,
+    flights=flights,  # ← Liste N éléments (tous segments)
+    total_price=total_price  # ← Prix total réseau
+)
+```
+
+**Migration Impact** :
+
+- ⚠️ **Breaking change interne** : `SearchService._rank_and_select_top_10()` doit changer clé tri `r.best_flight.price` → `r.total_price`
+- ⚠️ **Breaking change interne** : `SearchService._convert_to_flight_results()` doit changer `[combo_result.best_flight]` → `combo_result.flights`
+
+---
+
+## 6. FlightCombinationResult (Modification Modèle)
 
 **Rôle** : Modifier modèle `FlightCombinationResult` pour supporter liste complète flights multi-segments au lieu de flight unique segment 1.
 
@@ -363,7 +501,7 @@ def validate_flights_length(cls, v: list[GoogleFlightDTO], info: ValidationInfo)
 |--------|-------------------------|--------------------------|------------------|
 | **FlightCombinationResult.flights** | Always `len(flights) == 1` | `len(flights) == len(segment_dates)` (2-5) | ⚠️ Breaking change API response structure |
 | **SearchResponse JSON** | `results[i].flights[0]` = segment 1 | `results[i].flights[0,1,2]` = tous segments | Clients API doivent adapter parsing (itérer liste au lieu d'accéder index 0) |
-| **Ranking logic** | Tri par `flights[0].price` | ❌ Inchangé, tri par `flights[0].price` (prix total itinéraire dans premier flight) | Pas d'impact ranking |
+| **Ranking logic** | Tri par `best_flight.price` (CSS) | ✅ Modifié: tri par `total_price` (nouveau champ racine) | SearchService._rank_and_select_top_10() doit changer clé tri |
 
 **Edge cases** :
 - **Segments inégaux** : Si `segment_dates` length=3 mais FlightParser retourne seulement 2 flights → ValidationError levée (empêche données incohérentes)
@@ -466,6 +604,177 @@ CrawlerRunConfig(
 
 ---
 
+## 7. SearchService (Modifications Méthodes)
+
+**Rôle** : Adapter 3 méthodes `SearchService` pour utiliser network capture, `total_price` ranking, et conversion flights complète.
+
+### 7.1 _parse_all_results() - Network Parsing
+
+**Comportement actuel (CSS)** :
+```python
+def _parse_all_results(
+    self,
+    crawl_results: list[CrawlResultTuple],
+) -> list[CombinationResult]:
+    for combo, result in crawl_results:
+        if result is None or not result.success:
+            crawls_failed += 1
+            continue
+
+        try:
+            flights = self._flight_parser.parse(result.html)  # ← CSS parsing
+
+            if not flights:
+                crawls_failed += 1
+                continue
+
+            combination_results.append(
+                CombinationResult(
+                    date_combination=combo,
+                    best_flight=flights[0],  # ← 1 seul flight
+                )
+            )
+```
+
+**Comportement modifié (Network)** :
+```python
+def _parse_all_results(
+    self,
+    crawl_results: list[CrawlResultTuple],
+) -> list[CombinationResult]:
+    for combo, result in crawl_results:
+        if result is None or not result.success:
+            crawls_failed += 1
+            continue
+
+        try:
+            # ✅ NOUVEAU: Filtrer network events
+            api_responses = self._network_filter.filter_flight_api_responses(
+                result.network_requests
+            )
+
+            if not api_responses:
+                logger.warning("No API responses found")
+                crawls_failed += 1
+                continue
+
+            # ✅ NOUVEAU: Parser JSON API (retourne tuple)
+            total_price, flights = self._flight_parser.parse_api_responses(
+                api_responses
+            )
+
+            if not flights:
+                crawls_failed += 1
+                continue
+
+            # ✅ MODIFIÉ: CombinationResult avec flights + total_price
+            combination_results.append(
+                CombinationResult(
+                    date_combination=combo,
+                    flights=flights,  # ← Liste N flights
+                    total_price=total_price,  # ← Prix total
+                )
+            )
+```
+
+**Modifications** :
+1. Ajouter `self._network_filter: NetworkResponseFilter` dans `__init__()` (injection dépendance)
+2. Filtrer `result.network_requests` au lieu de parser `result.html`
+3. Appeler `parse_api_responses()` au lieu de `parse()`
+4. Récupérer tuple `(total_price, flights)` au lieu de `list[GoogleFlightDTO]`
+5. Créer `CombinationResult` avec `flights + total_price` au lieu de `best_flight`
+
+### 7.2 _rank_and_select_top_10() - Total Price Ranking
+
+**Comportement actuel (CSS)** :
+```python
+def _rank_and_select_top_10(
+    self, results: list[CombinationResult]
+) -> list[CombinationResult]:
+    if not results:
+        return []
+
+    sorted_results = sorted(results, key=lambda r: r.best_flight.price)  # ← Prix segment 1
+
+    top_10 = sorted_results[:10]
+
+    if top_10:
+        logger.info(
+            "Ranking completed",
+            extra={
+                "top_price_min": top_10[0].best_flight.price,
+                "top_price_max": top_10[-1].best_flight.price,
+            },
+        )
+
+    return top_10
+```
+
+**Comportement modifié (Network)** :
+```python
+def _rank_and_select_top_10(
+    self, results: list[CombinationResult]
+) -> list[CombinationResult]:
+    if not results:
+        return []
+
+    sorted_results = sorted(results, key=lambda r: r.total_price)  # ✅ MODIFIÉ: Prix total
+
+    top_10 = sorted_results[:10]
+
+    if top_10:
+        logger.info(
+            "Ranking completed",
+            extra={
+                "top_price_min": top_10[0].total_price,  # ✅ MODIFIÉ
+                "top_price_max": top_10[-1].total_price,  # ✅ MODIFIÉ
+            },
+        )
+
+    return top_10
+```
+
+**Modifications** :
+1. Changer clé tri `r.best_flight.price` → `r.total_price`
+2. Logger `total_price` au lieu de `best_flight.price`
+
+### 7.3 _convert_to_flight_results() - Flights Complets
+
+**Comportement actuel (CSS)** :
+```python
+def _convert_to_flight_results(
+    self, combination_results: list[CombinationResult]
+) -> list[FlightCombinationResult]:
+    return [
+        FlightCombinationResult(
+            segment_dates=combo_result.date_combination.segment_dates,
+            flights=[combo_result.best_flight],  # ← Liste 1 élément
+        )
+        for combo_result in combination_results
+    ]
+```
+
+**Comportement modifié (Network)** :
+```python
+def _convert_to_flight_results(
+    self, combination_results: list[CombinationResult]
+) -> list[FlightCombinationResult]:
+    return [
+        FlightCombinationResult(
+            segment_dates=combo_result.date_combination.segment_dates,
+            total_price=combo_result.total_price,  # ✅ NOUVEAU
+            flights=combo_result.flights,  # ✅ MODIFIÉ: Liste N éléments
+        )
+        for combo_result in combination_results
+    ]
+```
+
+**Modifications** :
+1. Ajouter `total_price=combo_result.total_price`
+2. Passer `combo_result.flights` (liste complète) au lieu de `[combo_result.best_flight]`
+
+---
+
 # 🧪 Tests
 
 ## Tests unitaires (TDD)
@@ -526,7 +835,7 @@ CrawlerRunConfig(
 |---|----------|-------------------|---------------|-------------------------|
 | 1 | `test_integration_network_capture_three_segments` | Mock AsyncWebCrawler avec network events contenant JSON API 3 segments, SearchRequest 2 dates × 3 segments = 6 combinaisons | Appeler `search_service.search_flights(SearchRequest)` | `SearchResponse.results[0].flights` length=3 (tous segments capturés), chaque flight contient airline, times, duration valides |
 | 2 | `test_integration_css_vs_network_comparison` | Même SearchRequest exécuté avec CSS extraction (baseline) puis network capture | Comparer nombre champs non-null entre CSS result vs Network result | Network capture retourne 3x plus données (flights[0,1,2] vs seulement flights[0]), aucune perte données segment 1 |
-| 3 | `test_integration_ranking_with_complete_flights` | Mock 10 combinaisons avec 3 segments chacune, prix variés | Appeler `search_service.search_flights(SearchRequest)` | Top 10 ranking fonctionne correctement, trié par `flights[0].price`, chaque result contient 3 flights complets |
+| 3 | `test_integration_ranking_with_complete_flights` | Mock 10 combinaisons avec 3 segments chacune, prix variés | Appeler `search_service.search_flights(SearchRequest)` | Top 10 ranking fonctionne correctement, trié par `total_price` croissant, chaque result contient 3 flights complets |
 | 4 | `test_integration_json_parsing_error_fallback` | Mock network events avec JSON structure invalide (clés manquantes) | Appeler `search_service.search_flights(SearchRequest)` | Logger ERROR parsing failed, skip combinaison (pas d'exception bloquante), retourne résultats partiels autres combinaisons |
 | 5 | `test_integration_validation_flights_length` | Mock FlightParser retournant 2 flights pour 3 segment_dates (données incohérentes) | Créer `FlightCombinationResult` avec données incohérentes | Lève `ValidationError` Pydantic avec message clair "flights length != segment_dates length" |
 | 6 | `test_integration_end_to_end_complete_data` | Application FastAPI TestClient avec network capture activé, mock 3 segments multi-city | POST `/api/v1/search-flights` avec body 3 segments | Status 200, JSON response conforme schema avec `results[i].flights` length=3 pour chaque result, total_results=10 |
@@ -689,7 +998,7 @@ CrawlerRunConfig(
 - `segment_dates` : 3 dates départ segments itinéraire multi-city
 - `total_price` : ✅ **Prix total itinéraire complet (1270€) au niveau racine** - représente somme prix 3 segments combinés
 - `flights` : Liste 3 flights (1 par segment), validation Pydantic vérifie `len(flights) == len(segment_dates)`
-- `flights[i]` : ❌ **SANS champ price individuel** - Google Flights API ne fournit pas prix par segment isolé, seulement prix total itinéraire
+- `flights[i]` : ❌ **SANS champ `price`** - Champ `price` absent du JSON (exclude_none=True, Google Flights API ne fournit pas prix par segment)
 - `departure_airport` / `arrival_airport` : Noms villes (pas codes IATA) pour lisibilité user
 
 ---
@@ -774,7 +1083,74 @@ CrawlerRunConfig(
 }
 ```
 
-**Contexte** : Response complète top 10 résultats multi-city après migration Story 8, chaque result contient `total_price` au niveau racine + 3 flights (tous segments SANS price individuel), triés par `total_price` croissant (1270€ < 1320€).
+**Contexte** : Response complète top 10 résultats multi-city après migration Story 8, chaque result contient `total_price` au niveau racine + 3 flights (tous segments sans champ `price`, exclude_none=True), triés par `total_price` croissant (1270€ < 1320€).
+
+---
+
+# 🔄 Migration Path : CSS → Network
+
+## Approche Migration
+
+⚠️ **Remplacement total** : Story 8 effectue une **migration complète** de l'extraction CSS vers network capture. Pas de fallback CSS permanent.
+
+## Références Développement
+
+**Fichiers fournis** pour comprendre structure données Google Flights :
+
+| Fichier | Contenu | Utilité |
+|---------|---------|---------|
+| `text.txt` | Extraction brute JSON network Google Flights (123KB, ~72k tokens) | Identifier structure réelle API responses, clés JSON à parser, format prix/segments |
+| `screenshot.png` | Rendu UI Google Flights multi-city (3 segments LUX→WAW→KRK→ORY) | Visualiser mapping données JSON → UI affichée, valider cohérence extraction |
+
+**Structure JSON observée** (extraits `text.txt`) :
+- Prix : Format `[[null,768]]` → 768 EUR
+- Compagnies : `"LO"` (code), `["LOT"]` (nom)
+- Horaires : Arrays imbriqués `[19,20]` = 19:20
+- Durées : Minutes `110`, `55`, `145`
+- Segments : Arrays imbriqués avec WAW, KRK, ORY codes aéroports
+- Escales : Valeur numérique directe (non array)
+
+## Étapes Migration
+
+**Phase 1 : Implémentation Network Capture** (Story 8 complète)
+1. ✅ Modifier GoogleFlightDTO (price optionnel + exclude_none=True)
+2. ✅ Modifier CombinationResult (flights liste + total_price)
+3. ✅ Implémenter NetworkResponseFilter (filtrage events XHR/Fetch)
+4. ✅ Implémenter FlightParser.parse_api_responses() (parsing JSON structure `text.txt`)
+5. ✅ Modifier CrawlerService (network capture activé)
+6. ✅ Modifier FlightCombinationResult (total_price au niveau racine)
+7. ✅ Modifier SearchService (3 méthodes : _parse_all_results, _rank_and_select_top_10, _convert_to_flight_results)
+8. ✅ Implémenter ResourceBlockingHook (bandwidth optimization)
+9. ✅ Écrire 29 tests (22 unitaires + 7 intégration)
+10. ✅ Valider tous tests passent + coverage ≥80%
+
+**Phase 2 : Validation Fonctionnelle** (fin Story 8)
+1. ✅ Tests E2E manuels avec vraie URL Google Flights
+2. ✅ Vérifier network capture retourne données complètes (3 segments parsés)
+3. ✅ Comparer cohérence données network vs screenshot.png
+4. ✅ Valider prix + horaires + compagnies identiques à UI Google Flights
+
+**Phase 3 : Cleanup CSS Code** (après Story 8 validée)
+1. ⏳ Identifier code CSS obsolète à supprimer :
+   - `FlightParser.parse()` méthode CSS HTML parsing
+   - Tests CSS extraction (lignes 1-228 dans `test_flight_parser.py`)
+   - Fixtures HTML (`single_flight_html`, `google_flights_html_factory`)
+   - Imports BeautifulSoup/lxml (si plus utilisés ailleurs)
+2. ⏳ Supprimer code identifié (après validation phase 2)
+3. ⏳ Vérifier tous tests network passent après suppression CSS
+4. ⏳ Commit cleanup : `refactor(parser): remove deprecated CSS extraction strategy`
+
+## Edge Cases Migration
+
+| Scénario | Comportement Network-Only | Action |
+|----------|---------------------------|--------|
+| **Network capture vide** | Logger WARNING, skip combination | Retourner résultats partiels autres combinaisons réussies |
+| **JSON structure invalide** | Lève `ParsingError` | Skip combination, logger ERROR avec détails structure |
+| **Prix total manquant** | Lève `ParsingError` | Skip combination (prix requis pour ranking) |
+| **Timeout networkidle** | Timeout 10s max | Retour forcé, logger WARNING |
+| **Captcha détecté** | Lève `CaptchaDetectedError` | Retry logic Story 7 (proxy rotation) |
+
+**Pas de fallback CSS** : Si network capture échoue → combinaison skippée, pas de parsing HTML CSS en secours.
 
 ---
 
@@ -800,57 +1176,69 @@ CrawlerRunConfig(
 
 9. **Ordre segments respecté** : `flights[0]` = segment 1 (Paris→Tokyo), `flights[1]` = segment 2 (Tokyo→Kyoto), `flights[2]` = segment 3 (Kyoto→Paris) (vérifié departure/arrival airports ordonnés)
 
-10. **Ranking modifié** : Top 10 ranking trie par `total_price` croissant (nouveau champ racine), pas `flights[0].price` (vérifié results[0].total_price ≤ results[1].total_price)
+10. **GoogleFlightDTO price optionnel** : Champ `price` de `GoogleFlightDTO` est `float | None = None` avec `exclude_none=True` dans model_config (vérifié type annotation + config Pydantic)
 
-11. **Resource blocking activé** : Hook `on_page_context_created` enregistré dans `CrawlerRunConfig.hooks` avec fonction `optimize_google_flights_bandwidth` (vérifié config object)
+11. **GoogleFlightDTO JSON propre** : Lors serialization JSON, flights network capture ne contiennent PAS champ `price` (exclude_none automatique, vérifié response JSON)
 
-12. **Domaines non essentiels bloqués** : Requêtes vers `fonts.gstatic.com`, `fonts.googleapis.com`, `*.doubleclick.net` bloquées via `route.abort()` (vérifié logs DEBUG blocage)
+12. **CombinationResult modifié** : `CombinationResult` contient `flights: list[GoogleFlightDTO]` + `total_price: float` au lieu de `best_flight` (vérifié structure modèle)
 
-13. **Resource types lourds bloqués** : Requêtes `resource_type in ["image", "font", "media"]` bloquées, XHR/Fetch/Script autorisées (vérifié route filter logic)
+13. **Ranking par total_price** : Top 10 ranking trie par `r.total_price` croissant (changé de `r.best_flight.price`), vérifié results[0].total_price ≤ results[1].total_price
+
+14. **SearchService._parse_all_results modifié** : Méthode appelle `parse_api_responses()` avec filtrage network events, crée `CombinationResult` avec `flights + total_price` (vérifié implémentation)
+
+15. **SearchService._convert_to_flight_results modifié** : Méthode passe `combo_result.flights` (liste complète) et `total_price` à `FlightCombinationResult` (vérifié implémentation)
+
+16. **Resource blocking activé** : Hook `on_page_context_created` enregistré dans `CrawlerRunConfig.hooks` avec fonction `optimize_google_flights_bandwidth` (vérifié config object)
+
+17. **Domaines non essentiels bloqués** : Requêtes vers `fonts.gstatic.com`, `fonts.googleapis.com`, `*.doubleclick.net` bloquées via `route.abort()` (vérifié logs DEBUG blocage)
+
+18. **Resource types lourds bloqués** : Requêtes `resource_type in ["image", "font", "media"]` bloquées, XHR/Fetch/Script autorisées (vérifié route filter logic)
 
 ## Critères techniques
 
-14. **Type hints PEP 695** : NetworkResponseFilter, FlightParser.parse_api_responses, ResourceBlockingHook annotés avec type hints modernes (`list[dict]`, `tuple[float, list[GoogleFlightDTO]]`, `Page`, `BrowserContext`)
+19. **Type hints PEP 695** : NetworkResponseFilter, FlightParser.parse_api_responses, ResourceBlockingHook, GoogleFlightDTO, CombinationResult annotés avec type hints modernes (`list[dict]`, `tuple[float, list[GoogleFlightDTO]]`, `float | None`, `Page`, `BrowserContext`)
 
-15. **Async/Await cohérent** : CrawlerService.crawl_google_flights reste async, utilise `await crawler.arun()`, compatibilité Story 7 retry logic préservée
+20. **Async/Await cohérent** : CrawlerService.crawl_google_flights reste async, utilise `await crawler.arun()`, compatibilité Story 7 retry logic préservée
 
-16. **Configuration centralisée** : CrawlerRunConfig créée avec params network capture + hooks groupés (capture_network_requests, wait_until, delay, hooks), réutilisable tests
+21. **Configuration centralisée** : CrawlerRunConfig créée avec params network capture + hooks groupés (capture_network_requests, wait_until, delay, hooks), réutilisable tests
 
-17. **Pydantic v2 validations** : FlightCombinationResult.flights validator `mode='after'` avec accès `ValidationInfo` pour comparaison `segment_dates` length, validator `total_price` vérifie ≥ 0
+22. **Pydantic v2 validations** : FlightCombinationResult.flights validator `mode='after'` avec accès `ValidationInfo` pour comparaison `segment_dates` length, validator `total_price` vérifie ≥ 0
 
-18. **JSON parsing résilient** : FlightParser gère `json.JSONDecodeError` avec try/except, lève `ParsingError` custom avec message clair (pas crash)
+23. **Pydantic exclude_none** : GoogleFlightDTO config `exclude_none=True` pour retirer champs None du JSON serialization (vérifié model_config)
 
-19. **Fallback gracieux** : Si `network_requests=[]` vide → Logger WARNING, retourne résultats partiels disponibles (pas d'exception bloquante)
+24. **JSON parsing résilient** : FlightParser gère `json.JSONDecodeError` avec try/except, lève `ParsingError` custom avec message clair (pas crash)
 
-20. **Logging structuré JSON complet** : Logs network capture incluent : events_captured_count, api_responses_filtered_count, segments_parsed_count, total_price_extracted, resources_blocked_count
+25. **Fallback gracieux** : Si `network_requests=[]` vide → Logger WARNING, retourne résultats partiels disponibles (pas d'exception bloquante)
 
-21. **Extraction clés JSON robuste** : Parser utilise `.get()` avec defaults pour clés optionnelles (ex: `segment.get("duration", 0)`), évite KeyError
+26. **Logging structuré JSON complet** : Logs network capture incluent : events_captured_count, api_responses_filtered_count, segments_parsed_count, total_price_extracted, resources_blocked_count
 
-22. **Séparation prix/segments** : FlightParser retourne tuple `(total_price, flights)` pas seulement `list[GoogleFlightDTO]`, caller gère construction FlightCombinationResult avec prix séparé
+27. **Extraction clés JSON robuste** : Parser utilise `.get()` avec defaults pour clés optionnelles (ex: `segment.get("duration", 0)`), évite KeyError
 
-23. **Hook async compatible** : ResourceBlockingHook fonction async avec signature `(Page, BrowserContext, **kwargs) -> Page`, compatible Crawl4AI hooks system
+28. **Séparation prix/segments** : FlightParser retourne tuple `(total_price, flights)` pas seulement `list[GoogleFlightDTO]`, caller gère construction FlightCombinationResult avec prix séparé
+
+29. **Hook async compatible** : ResourceBlockingHook fonction async avec signature `(Page, BrowserContext, **kwargs) -> Page`, compatible Crawl4AI hooks system
 
 ## Critères qualité
 
-24. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% code NetworkResponseFilter, FlightParser JSON parsing, ResourceBlockingHook, CrawlerService network config (pytest-cov)
+30. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% code NetworkResponseFilter, FlightParser JSON parsing, ResourceBlockingHook, CrawlerService network config (pytest-cov)
 
-25. **29 tests passent** : 22 tests unitaires (6 NetworkResponseFilter + 7 FlightParser + 5 CrawlerService + 4 ResourceBlockingHook) + 7 tests intégration tous verts (pytest -v)
+31. **29 tests passent** : 22 tests unitaires (6 NetworkResponseFilter + 7 FlightParser + 5 CrawlerService + 4 ResourceBlockingHook) + 7 tests intégration tous verts (pytest -v)
 
-26. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type
+32. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type
 
-27. **Tests TDD format AAA** : Tests unitaires suivent strictement Arrange/Act/Assert, tableaux specs complétés avec 6 colonnes (N°, Nom, Scénario, Input, Output, Vérification)
+33. **Tests TDD format AAA** : Tests unitaires suivent strictement Arrange/Act/Assert, tableaux specs complétés avec 6 colonnes (N°, Nom, Scénario, Input, Output, Vérification)
 
-28. **Tests intégration format Given/When/Then** : Tests intégration suivent BDD avec 5 colonnes (N°, Nom, Prérequis, Action, Résultat), mocks AsyncWebCrawler network events configurés
+34. **Tests intégration format Given/When/Then** : Tests intégration suivent BDD avec 5 colonnes (N°, Nom, Prérequis, Action, Résultat), mocks AsyncWebCrawler network events configurés
 
-29. **Docstrings 1 ligne** : NetworkResponseFilter, FlightParser et ResourceBlockingHook avec docstring descriptive, méthodes principales documentées, focus POURQUOI pas QUOI
+35. **Docstrings 1 ligne** : NetworkResponseFilter, FlightParser et ResourceBlockingHook avec docstring descriptive, méthodes principales documentées, focus POURQUOI pas QUOI
 
-30. **Aucun code production dans specs** : Ce document contient uniquement signatures, tableaux tests, descriptions comportements, exemples JSON, structures API (pas d'implémentation complète méthodes)
+36. **Aucun code production dans specs** : Ce document contient uniquement signatures, tableaux tests, descriptions comportements, exemples JSON, structures API (pas d'implémentation complète méthodes)
 
-31. **Commits conventional** : Story 8 committée avec message `feat(crawler): add network capture for complete multi-city data` conforme Conventional Commits
+37. **Commits conventional** : Story 8 committée avec message `feat(crawler): add network capture for complete multi-city data` conforme Conventional Commits
 
 ---
 
-**Note importante** : Story complexité élevée (8 story points) → 31 critères couvrent exhaustivement migration CSS→Network capture (13 fonctionnels incluant architecture prix corrigée + bandwidth optimization), architecture parsing JSON résilient + hooks (10 techniques), qualité tests TDD (8 qualité).
+**Note importante** : Story complexité élevée (8 story points) → 37 critères couvrent exhaustivement migration CSS→Network capture (18 fonctionnels incluant architecture prix corrigée + bandwidth optimization), architecture parsing JSON résilient + hooks (11 techniques), qualité tests TDD (8 qualité).
 
 **Principe SMART** : Chaque critère est **S**pécifique (3 flights parsés, validation length, ~40-60% bandwidth réduit), **M**esurable (29 tests passent, coverage ≥80%), **A**tteignable (Crawl4AI 0.7.7+ network capture + hooks mature), **R**elevant (données 3x plus complètes pour UX multi-city + coûts Decodo optimisés), **T**emporel (MVP Phase 5-6, après CrawlerService/FlightParser Story 4-6 déjà implémentés).
 

@@ -3,7 +3,7 @@ title: "Story 9: Per-Segment Filters"
 epic: "Epic 3: Production Ready"
 story_points: 5
 dependencies: ["epic-3/story-7"]
-date: "2025-11-25"
+date: "2025-25-11"
 keywords: ["filters", "per-segment", "max-duration", "max-stops", "min-layover", "duration-parsing", "filter-service", "segment-model", "pydantic-validation", "user-preferences"]
 scope: ["specs"]
 technologies: ["Pydantic v2", "Python", "regex"]

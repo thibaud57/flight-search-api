@@ -1,6 +1,12 @@
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from app.models.google_flight_dto import GoogleFlightDTO
 
@@ -14,10 +20,13 @@ class HealthResponse(BaseModel):
 class FlightCombinationResult(BaseModel):
     """Résultat pour une combinaison de dates de segments (1 sur 10 retournés)."""
 
+    model_config = ConfigDict(extra="forbid")
+
     segment_dates: Annotated[list[str], "Dates par segment (ISO 8601)"]
+    total_price: Annotated[float, "Prix total itinéraire complet"]
     flights: Annotated[
         list[GoogleFlightDTO],
-        "Meilleurs vols pour cette combinaison (pour l'instant juste le segment 1)",
+        "Vols complets pour cette combinaison (tous segments)",
     ]
 
     @field_validator("segment_dates", mode="after")
@@ -36,6 +45,19 @@ class FlightCombinationResult(BaseModel):
         """Valide au moins 1 vol."""
         if len(v) == 0:
             raise ValueError("At least 1 flight required")
+        return v
+
+    @field_validator("flights", mode="after")
+    @classmethod
+    def validate_flights_length(
+        cls, v: list[GoogleFlightDTO], info: ValidationInfo
+    ) -> list[GoogleFlightDTO]:
+        """Valide nombre flights égal nombre segment_dates."""
+        segment_dates = info.data.get("segment_dates", [])
+        if len(v) != len(segment_dates):
+            raise ValueError(
+                f"Flights length ({len(v)}) must equal segment_dates length ({len(segment_dates)})"
+            )
         return v
 
 
@@ -67,9 +89,9 @@ class SearchResponse(BaseModel):
 
     @model_validator(mode="after")
     def validate_results_sorted(self) -> Self:
-        """Valide results triés par prix croissant (basé sur premier vol de chaque combinaison)."""
+        """Valide results triés par prix croissant (basé sur total_price de chaque combinaison)."""
         if not all(
-            a.flights[0].price <= b.flights[0].price
+            a.total_price <= b.total_price
             for a, b in zip(self.results, self.results[1:], strict=False)
         ):
             raise ValueError("Results must be sorted by price (ascending order)")

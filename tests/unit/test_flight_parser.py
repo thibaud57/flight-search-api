@@ -3,7 +3,7 @@
 import pytest
 
 from app.exceptions import ParsingError
-from app.services.flight_parser import FlightParser
+from app.services.google_flight_parser import FlightParser
 from tests.fixtures.helpers import assert_flight_dto_valid
 
 

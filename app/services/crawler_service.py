@@ -6,7 +6,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from crawl4ai import AsyncWebCrawler, CacheMode, CrawlerRunConfig
 from playwright.async_api import BrowserContext, Cookie, Page, Response
@@ -40,6 +40,7 @@ class CrawlResult:
 
     success: bool
     html: str
+    network_requests: list[dict[str, Any]] | None = None
     status_code: int | None = None
 
 
@@ -191,6 +192,7 @@ class CrawlerService:
                 return CrawlResult(
                     success=False,
                     html="",
+                    network_requests=[],
                     status_code=404,
                 )
 
@@ -225,19 +227,29 @@ class CrawlerService:
             html = result.html or ""
             self._detect_captcha(html, url)
 
+            network_requests = result.network_requests or []
+
             logger.info(
                 "Crawl successful",
                 extra={
                     "status_code": result.status_code,
                     "html_size": len(html),
+                    "network_events_captured": len(network_requests),
                     "response_time_ms": response_time_ms,
                     "proxy_host": proxy.host if proxy else "no_proxy",
                 },
             )
 
+            if not network_requests:
+                logger.warning(
+                    "No network events captured",
+                    extra={"url": url},
+                )
+
             return CrawlResult(
                 success=True,
                 html=html,
+                network_requests=network_requests,
                 status_code=result.status_code,
             )
 
@@ -308,7 +320,9 @@ class CrawlerService:
             override_navigator=True,
             wait_for=wait_for_selector,
             page_timeout=self._settings.crawler.crawl_page_timeout_ms,
-            delay_before_return_html=self._settings.crawler.crawl_delay_s,
+            delay_before_return_html=2.0,
+            capture_network_requests=True,
+            wait_until="networkidle",
         )
 
     def _detect_captcha(self, html: str, url: str) -> None:

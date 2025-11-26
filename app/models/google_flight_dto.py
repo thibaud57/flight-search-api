@@ -8,9 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field
 class GoogleFlightDTO(BaseModel):
     """Modèle Pydantic d'un vol extrait depuis Google Flights."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", exclude_none=True)
 
-    price: Annotated[float, Field(gt=0)]
+    price: Annotated[float | None, Field(gt=0)] = None
     airline: Annotated[str, Field(min_length=2, max_length=100)]
     departure_time: str
     arrival_time: str

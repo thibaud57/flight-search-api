@@ -3,7 +3,7 @@ title: "Story 12: Polling Mechanism + Timeout"
 epic: "Epic 4: Kayak Integration"
 story_points: 5
 dependencies: ["epic-4/story-11"]
-date: "2025-11-25"
+date: "2025-25-11"
 keywords: ["kayak", "polling", "timeout", "async", "status", "network-capture", "xhr-interception", "timing-optimization"]
 scope: ["specs"]
 technologies: ["Python", "asyncio", "Crawl4AI", "Playwright"]

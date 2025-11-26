@@ -17,7 +17,7 @@ from app.utils import generate_google_flights_url
 if TYPE_CHECKING:
     from app.services.combination_generator import CombinationGenerator
     from app.services.crawler_service import CrawlerService
-    from app.services.flight_parser import FlightParser
+    from app.services.google_flight_parser import FlightParser
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,10 @@ class SearchService:
         self._crawler_service = crawler_service
         self._flight_parser = flight_parser
         self._settings = get_settings()
+
+        from app.services.network_response_filter import NetworkResponseFilter
+
+        self._network_filter = NetworkResponseFilter()
 
     async def search_flights(self, request: SearchRequest) -> SearchResponse:
         """Orchestre recherche complete multi-city avec ranking Top 10."""
@@ -133,7 +137,20 @@ class SearchService:
                 continue
 
             try:
-                flights = self._flight_parser.parse(result.html)
+                network_requests = result.network_requests or []
+
+                api_responses = self._network_filter.filter_flight_api_responses(
+                    network_requests
+                )
+
+                if not api_responses:
+                    logger.warning("No API responses found")
+                    crawls_failed += 1
+                    continue
+
+                total_price, flights = self._flight_parser.parse_api_responses(
+                    api_responses
+                )
 
                 if not flights:
                     crawls_failed += 1
@@ -142,7 +159,8 @@ class SearchService:
                 combination_results.append(
                     CombinationResult(
                         date_combination=combo,
-                        best_flight=flights[0],
+                        flights=flights,
+                        total_price=total_price,
                     )
                 )
                 crawls_success += 1
@@ -167,7 +185,7 @@ class SearchService:
         if not results:
             return []
 
-        sorted_results = sorted(results, key=lambda r: r.best_flight.price)
+        sorted_results = sorted(results, key=lambda r: r.total_price)
 
         top_10 = sorted_results[:10]
 
@@ -175,10 +193,10 @@ class SearchService:
             logger.info(
                 "Ranking completed",
                 extra={
-                    "top_price_min": top_10[0].best_flight.price,
-                    "top_price_max": top_10[-1].best_flight.price
+                    "top_price_min": top_10[0].total_price,
+                    "top_price_max": top_10[-1].total_price
                     if len(top_10) > 1
-                    else top_10[0].best_flight.price,
+                    else top_10[0].total_price,
                 },
             )
 
@@ -191,7 +209,8 @@ class SearchService:
         return [
             FlightCombinationResult(
                 segment_dates=combo_result.date_combination.segment_dates,
-                flights=[combo_result.best_flight],
+                total_price=combo_result.total_price,
+                flights=combo_result.flights,
             )
             for combo_result in combination_results
         ]

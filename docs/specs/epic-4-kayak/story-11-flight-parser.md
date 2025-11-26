@@ -3,7 +3,7 @@ title: "Story 11: KayakFlightParser"
 epic: "Epic 4: Kayak Integration"
 story_points: 5
 dependencies: ["epic-4/story-10"]
-date: "2025-11-25"
+date: "2025-25-11"
 keywords: ["kayak", "parser", "json", "segments", "legs", "results", "denormalization", "GoogleFlightDTO"]
 scope: ["specs"]
 technologies: ["Python", "Pydantic v2", "JSON"]

@@ -3,7 +3,7 @@ title: "Story 10: KayakUrlBuilder + Consent Handler"
 epic: "Epic 4: Kayak Integration"
 story_points: 5
 dependencies: ["epic-3/story-9"]
-date: "2025-11-25"
+date: "2025-25-11"
 keywords: ["kayak", "url", "builder", "consent", "cookies", "rgpd", "playwright", "validation", "iata"]
 scope: ["specs"]
 technologies: ["kayak", "pydantic", "playwright", "crawl4ai"]

@@ -1,7 +1,9 @@
 """Parser de vols Google Flights avec JsonCssExtractionStrategy + aria-label."""
 
+import json
 import logging
 import re
+from typing import Any
 
 from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 from pydantic import ValidationError
@@ -175,3 +177,148 @@ class FlightParser:
         """Extrait aéroport depuis aria-label avec pattern donné."""
         match = pattern.search(text)
         return match.group(1).strip() if match else None
+
+    def parse_api_responses(
+        self, api_responses: list[dict[str, Any]]
+    ) -> tuple[float, list[GoogleFlightDTO]]:
+        """Parse JSON API responses pour extraire tous segments vols."""
+        for response in api_responses:
+            try:
+                body = response.get("response_data") or response.get("body")
+                if not body:
+                    continue
+
+                data = json.loads(body)
+
+                if "data" not in data or "flights" not in data["data"]:
+                    continue
+
+                flights_data = data["data"]["flights"]
+                if not flights_data or len(flights_data) == 0:
+                    continue
+
+                best_flight = flights_data[0]
+
+                total_price = best_flight.get("price", {}).get("total")
+                if total_price is None:
+                    logger.error(
+                        "Missing total price in JSON",
+                        extra={"flight_id": best_flight.get("id")},
+                    )
+                    raise ParsingError("Missing total price in flight combination")
+
+                segments = best_flight.get("segments", [])
+                if not segments:
+                    continue
+
+                flights = []
+                for segment in segments:
+                    flight_dto = self._parse_segment(segment)
+                    if flight_dto:
+                        flights.append(flight_dto)
+
+                if flights:
+                    logger.info(
+                        "Segments parsed from JSON",
+                        extra={"segments_count": len(flights)},
+                    )
+                    logger.debug(
+                        "First and last flight DTO",
+                        extra={
+                            "first_flight": {
+                                "airline": flights[0].airline,
+                                "departure": flights[0].departure_time,
+                            },
+                            "last_flight": {
+                                "airline": flights[-1].airline,
+                                "departure": flights[-1].departure_time,
+                            }
+                            if len(flights) > 1
+                            else None,
+                        },
+                    )
+                    return (total_price, flights)
+
+            except json.JSONDecodeError as e:
+                logger.error(
+                    "JSON decode error",
+                    extra={"error": str(e), "response_preview": str(body)[:100]},
+                )
+                continue
+            except Exception as e:
+                logger.error(
+                    "Unexpected parsing error",
+                    extra={"error": str(e), "error_type": type(e).__name__},
+                )
+                continue
+
+        raise ParsingError("No valid flight data found in API responses")
+
+    def _parse_segment(self, segment: dict[str, Any]) -> GoogleFlightDTO | None:
+        """Parse un segment JSON vers GoogleFlightDTO."""
+        try:
+            carrier = segment.get("carrier", {})
+            airline = carrier.get("name", "Unknown")
+
+            departure = segment.get("departure", {})
+            arrival = segment.get("arrival", {})
+
+            departure_time = self._format_time(departure.get("time", ""))
+            arrival_time = self._format_time(arrival.get("time", ""))
+
+            duration_minutes = segment.get("duration_minutes", 0)
+            duration = self._format_duration(duration_minutes)
+
+            stops = segment.get("stops", 0)
+
+            departure_airport = departure.get("city") or departure.get("airport")
+            arrival_airport = arrival.get("city") or arrival.get("airport")
+
+            return GoogleFlightDTO(
+                price=None,
+                airline=airline,
+                departure_time=departure_time,
+                arrival_time=arrival_time,
+                duration=duration,
+                stops=stops,
+                departure_airport=departure_airport,
+                arrival_airport=arrival_airport,
+            )
+        except ValidationError as e:
+            logger.warning(
+                "Pydantic validation failed for segment", extra={"error": str(e)}
+            )
+            return None
+        except Exception as e:
+            logger.warning("Segment parsing failed", extra={"error": str(e)})
+            return None
+
+    def _format_time(self, iso_time: str) -> str:
+        """Convertit ISO 8601 timestamp en HH:MM."""
+        if not iso_time:
+            return "Unknown"
+
+        try:
+            if "T" in iso_time:
+                time_part = iso_time.split("T")[1]
+                if ":" in time_part:
+                    return time_part[:5]
+        except Exception:
+            pass
+
+        return iso_time
+
+    def _format_duration(self, duration_minutes: int) -> str:
+        """Convertit minutes en format 'Xh XXmin'."""
+        if duration_minutes == 0:
+            return "Unknown"
+
+        hours = duration_minutes // 60
+        minutes = duration_minutes % 60
+
+        if hours > 0 and minutes > 0:
+            return f"{hours}h {minutes:02d}min"
+        elif hours > 0:
+            return f"{hours}h"
+        else:
+            return f"{minutes}min"
