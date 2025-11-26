@@ -36,7 +36,7 @@ FLIGHT_SCHEMA = {
 }
 
 
-class FlightParser:
+class GoogleFlightParser:
     """Parser de vols Google Flights avec JsonCssExtractionStrategy + aria-label."""
 
     def __init__(self) -> None:

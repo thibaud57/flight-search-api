@@ -9,7 +9,7 @@ from app.core.config import Settings
 from app.models.google_flight_dto import GoogleFlightDTO
 from app.models.proxy import ProxyConfig
 from app.models.request import DateRange, SearchRequest
-from app.services.google_flight_parser import FlightParser
+from app.services.google_flight_parser import GoogleFlightParser
 from tests.fixtures.helpers import TEMPLATE_URL, get_date_range, get_future_date
 
 
@@ -129,10 +129,10 @@ def settings_env_factory(monkeypatch):
 
 @pytest.fixture
 def flight_parser_mock_factory():
-    """Factory pour mocker FlightParser avec nombre configurable de vols."""
+    """Factory pour mocker GoogleFlightParser avec nombre configurable de vols."""
 
     def _create(num_flights=1, base_price=500.0, price_increment=100.0):
-        parser = MagicMock(spec=FlightParser)
+        parser = MagicMock(spec=GoogleFlightParser)
         parser.parse.return_value = [
             GoogleFlightDTO(
                 price=float(base_price + i * price_increment),

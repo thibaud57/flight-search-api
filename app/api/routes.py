@@ -9,11 +9,13 @@ from app.core import get_logger
 from app.core.config import get_settings
 from app.models.request import SearchRequest
 from app.models.response import HealthResponse, SearchResponse
-from app.services.combination_generator import CombinationGenerator
-from app.services.crawler_service import CrawlerService
-from app.services.google_flight_parser import FlightParser
-from app.services.proxy_service import ProxyService
-from app.services.search_service import SearchService
+from app.services import (
+    CombinationGenerator,
+    CrawlerService,
+    GoogleFlightParser,
+    ProxyService,
+    SearchService,
+)
 
 router = APIRouter()
 
@@ -27,7 +29,7 @@ def get_search_service() -> SearchService:
     return SearchService(
         combination_generator=CombinationGenerator(),
         crawler_service=CrawlerService(proxy_service=proxy_service),
-        flight_parser=FlightParser(),
+        flight_parser=GoogleFlightParser(),
     )
 
 

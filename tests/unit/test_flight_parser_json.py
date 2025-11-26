@@ -5,13 +5,13 @@ import json
 import pytest
 
 from app.exceptions import ParsingError
-from app.services.google_flight_parser import FlightParser
+from app.services.google_flight_parser import GoogleFlightParser
 
 
 @pytest.fixture
 def flight_parser():
     """FlightParser instance."""
-    return FlightParser()
+    return GoogleFlightParser()
 
 
 @pytest.fixture

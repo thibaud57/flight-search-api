@@ -11,13 +11,14 @@ from app.core.config import get_settings
 from app.exceptions import CaptchaDetectedError, NetworkError, ParsingError
 from app.models.request import CombinationResult, DateCombination, SearchRequest
 from app.models.response import FlightCombinationResult, SearchResponse, SearchStats
+from app.services.network_response_filter import NetworkResponseFilter
 from app.types import CrawlResultTuple
 from app.utils import generate_google_flights_url
 
 if TYPE_CHECKING:
     from app.services.combination_generator import CombinationGenerator
     from app.services.crawler_service import CrawlerService
-    from app.services.google_flight_parser import FlightParser
+    from app.services.google_flight_parser import GoogleFlightParser
 
 logger = logging.getLogger(__name__)
 
@@ -29,16 +30,13 @@ class SearchService:
         self,
         combination_generator: CombinationGenerator,
         crawler_service: CrawlerService,
-        flight_parser: FlightParser,
+        flight_parser: GoogleFlightParser,
     ) -> None:
         """Initialise service avec dependances injectees."""
         self._combination_generator = combination_generator
         self._crawler_service = crawler_service
         self._flight_parser = flight_parser
         self._settings = get_settings()
-
-        from app.services.network_response_filter import NetworkResponseFilter
-
         self._network_filter = NetworkResponseFilter()
 
     async def search_flights(self, request: SearchRequest) -> SearchResponse:
@@ -159,8 +157,8 @@ class SearchService:
                 combination_results.append(
                     CombinationResult(
                         date_combination=combo,
-                        flights=flights,
                         total_price=total_price,
+                        flights=flights,
                     )
                 )
                 crawls_success += 1

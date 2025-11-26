@@ -6,7 +6,7 @@ import pytest
 
 from app.exceptions import ParsingError
 from app.services.crawler_service import CrawlerService
-from app.services.google_flight_parser import FlightParser
+from app.services.google_flight_parser import GoogleFlightParser
 from tests.fixtures.helpers import BASE_URL, assert_flight_dto_valid
 
 EMPTY_HTML = "<html><body><div class='no-results'>Aucun vol trouvé</div></body></html>"
@@ -34,7 +34,7 @@ async def test_integration_crawl_and_parse_success(
     crawl_result = await _crawl_with_mock(mock_crawler)
 
     assert crawl_result.success is True
-    parser = FlightParser()
+    parser = GoogleFlightParser()
     flights = parser.parse(crawl_result.html)
     assert len(flights) == 10
     for flight in flights:
@@ -52,7 +52,7 @@ async def test_integration_crawl_success_parse_zero_flights(
     crawl_result = await _crawl_with_mock(mock_crawler)
 
     assert crawl_result.success is True
-    parser = FlightParser()
+    parser = GoogleFlightParser()
     with pytest.raises(ParsingError) as exc_info:
         parser.parse(crawl_result.html)
     assert "No flights found" in str(exc_info.value)
