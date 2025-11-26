@@ -614,8 +614,8 @@
   - [x] `_wait_for_kayak_polling_complete()` : Détection fin polling via progressbar
 - [ ] **Validation manuelle** : Session établie, consent géré, network capture actif
 - [x] **Quality checks** : ruff + mypy + coverage ≥ 80% (89%)
-- [ ] **Commit** : `feat(kayak): add crawler service with session and consent handling`
-- [ ] **PR** : feature/story-10 → develop
+- [x] **Commit** : `feat(kayak): add crawler service with session and consent handling`
+- [x] **PR** : feature/story-10 → develop
 
 📝 **Output** : Story 10 complétée (5 story points)
 
