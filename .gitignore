@@ -82,3 +82,10 @@ logs/
 *.pid
 *.seed
 *.pid.lock
+
+# Workflow autonome Epic 4 (ne pas committer)
+.workflow-*.md
+debug_*.json
+capture_*.json
+report_*.json
+audit_*.json
