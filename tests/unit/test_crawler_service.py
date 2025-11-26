@@ -152,7 +152,9 @@ async def test_crawl_with_proxy_service(
     with patch(
         "app.services.crawler_service.AsyncWebCrawler", return_value=crawler
     ) as mock_crawler_class:
-        result = await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL, use_proxy=True)
+        result = await crawler_service.crawl_google_flights(
+            GOOGLE_FLIGHT_BASE_URL, use_proxy=True
+        )
 
         assert result.success is True
         call_kwargs = mock_crawler_class.call_args
@@ -169,7 +171,9 @@ async def test_crawl_without_proxy_when_disabled(
     crawler = mock_async_web_crawler(mock_result=mock_crawl_result)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        result = await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL, use_proxy=False)
+        result = await crawler_service.crawl_google_flights(
+            GOOGLE_FLIGHT_BASE_URL, use_proxy=False
+        )
 
         assert result.success is True
 
@@ -186,7 +190,9 @@ async def test_crawl_proxy_rotation_called(
     crawler = mock_async_web_crawler(mock_result=mock_crawl_result)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL, use_proxy=True)
+        await crawler_service.crawl_google_flights(
+            GOOGLE_FLIGHT_BASE_URL, use_proxy=True
+        )
 
         proxy_service_single.get_next_proxy.assert_called_once()
 
@@ -472,7 +478,9 @@ async def test_crawl_proxy_logging_no_password(
         caplog.at_level(logging.INFO),
     ):
         for _ in range(3):
-            await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL, use_proxy=True)
+            await crawler_service.crawl_google_flights(
+                GOOGLE_FLIGHT_BASE_URL, use_proxy=True
+            )
 
     log_text = " ".join(record.message for record in caplog.records)
     assert "password" not in log_text.lower()

@@ -41,7 +41,9 @@ def test_retry_on_captcha_detected():
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            raise CaptchaDetectedError(url=GOOGLE_FLIGHT_BASE_URL, captcha_type="recaptcha_v2")
+            raise CaptchaDetectedError(
+                url=GOOGLE_FLIGHT_BASE_URL, captcha_type="recaptcha_v2"
+            )
         return "success"
 
     with patch("asyncio.sleep"):
