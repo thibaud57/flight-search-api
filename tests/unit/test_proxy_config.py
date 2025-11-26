@@ -3,88 +3,43 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.proxy import ProxyConfig
 
-
-def test_proxy_config_valid_fields() -> None:
+def test_proxy_config_valid_fields(proxy_config_factory) -> None:
     """ProxyConfig avec tous champs valides."""
-    config = ProxyConfig(
-        host="fr.decodo.com",
-        port=40000,
-        username="testuser",
-        password="mypassword",
-        country="FR",
-    )
+    config = proxy_config_factory()
 
     assert config.host == "fr.decodo.com"
     assert config.port == 40000
     assert config.username == "testuser"
-    assert config.password == "mypassword"
+    assert config.password.get_secret_value() == "testpass"
     assert config.country == "FR"
 
 
-def test_proxy_config_username_valid() -> None:
-    """Username valide (min 5 caracteres)."""
-    config = ProxyConfig(
-        host="fr.decodo.com",
-        port=40000,
-        username="testuser",
-        password="mypassword",
-        country="FR",
-    )
-
-    assert config.username == "testuser"
-
-
-def test_proxy_config_username_too_short() -> None:
+def test_proxy_config_username_too_short(proxy_config_factory) -> None:
     """Username trop court leve ValidationError."""
     with pytest.raises(ValidationError) as exc_info:
-        ProxyConfig(
-            host="fr.decodo.com",
-            port=40000,
-            username="abc",
-            password="mypassword",
-            country="FR",
-        )
+        proxy_config_factory(username="abc")
 
     assert "at least 5 characters" in str(exc_info.value).lower()
 
 
-def test_proxy_config_invalid_port() -> None:
+def test_proxy_config_invalid_port(proxy_config_factory) -> None:
     """Port invalide (hors plage 1-65535) leve ValidationError."""
     with pytest.raises(ValidationError) as exc_info:
-        ProxyConfig(
-            host="fr.decodo.com",
-            port=0,
-            username="testuser",
-            password="mypassword",
-            country="FR",
-        )
+        proxy_config_factory(port=0)
 
     assert "port" in str(exc_info.value).lower()
 
 
-def test_proxy_config_generate_url_format() -> None:
+def test_proxy_config_generate_url_format(proxy_config_factory) -> None:
     """get_proxy_url() genere URL correcte."""
-    config = ProxyConfig(
-        host="fr.decodo.com",
-        port=40000,
-        username="testuser",
-        password="mypassword",
-        country="FR",
-    )
+    config = proxy_config_factory()
 
-    assert config.get_proxy_url() == "http://testuser:mypassword@fr.decodo.com:40000"
+    assert config.get_proxy_url() == "http://testuser:testpass@fr.decodo.com:40000"
 
 
-def test_proxy_config_country_uppercase_conversion() -> None:
+def test_proxy_config_country_uppercase_conversion(proxy_config_factory) -> None:
     """Country automatiquement converti en uppercase."""
-    config = ProxyConfig(
-        host="fr.decodo.com",
-        port=40000,
-        username="testuser",
-        password="mypassword",
-        country="fr",
-    )
+    config = proxy_config_factory(country="fr")
 
     assert config.country == "FR"

@@ -217,6 +217,24 @@ __all__ = ["app"]
 
 ---
 
+### 8. Standards Imports
+
+**Règle : Toujours via `__init__.py`** (app + tests)
+
+```python
+# ✅ OBLIGATOIRE
+from app.models import DateRange, SearchRequest
+from app.services import CrawlerService
+
+# ❌ INTERDIT
+from app.models.request import DateRange
+from app.services.crawler_service import CrawlerService
+```
+
+**Avantages** : Cohérence, refactoring facile, lisibilité
+
+---
+
 ## 🚫 Anti-Patterns
 
 ### Commentaires Inline Interdits
@@ -1029,6 +1047,76 @@ def test_integration_exemple():
 7. Commit : `feat(api): add search endpoint with mock data`
 
 **Total Story 3** : 38 tests (34 unitaires + 4 intégration), coverage ≥ 80%
+
+---
+
+### Fixtures & Factories
+
+**Organisation** (`tests/fixtures/`) :
+
+```
+tests/fixtures/
+├── __init__.py          # Vide (marker package)
+├── factories.py         # Factories objets Pydantic
+├── mocks.py             # Mocks services/composants
+└── helpers.py           # Constantes + helpers dates
+```
+
+**Règles strictes** :
+- ✅ **DRY** : 0 duplication (1 constante/factory pour 1 concept)
+- ✅ **Factory pattern** : Paramètres flexibles (`as_dict`, `num_flights`, `past`)
+- ✅ **Constantes** : `TEMPLATE_URL` dans `helpers.py` (single source of truth)
+- ✅ **Délégation** : Fixtures wrapper délèguent aux factories
+- ❌ **Pas de hardcoded** : Jamais de valeurs en dur répétées
+
+**Exemples** :
+
+```python
+# ❌ AVANT (duplication)
+def test_a():
+    url = "https://www.google.com/travel/flights?tfs=test"
+
+def test_b():
+    url = "https://www.google.com/travel/flights?tfs=test"
+
+# ✅ APRÈS (constante)
+from tests.fixtures.helpers import TEMPLATE_URL
+
+def test_a():
+    url = TEMPLATE_URL
+```
+
+```python
+# ❌ AVANT (fixture rigide)
+@pytest.fixture
+def date_range():
+    return DateRange(start="...", end="...")
+
+# ✅ APRÈS (factory flexible)
+@pytest.fixture
+def date_range_factory():
+    def _create(start_offset=1, duration=6, as_dict=False):
+        start, end = get_date_range(start_offset, duration)
+        if as_dict:
+            return {"start": start.isoformat(), "end": end.isoformat()}
+        return DateRange(start=start.isoformat(), end=end.isoformat())
+    return _create
+```
+
+**Chargement** (`conftest.py`) :
+```python
+pytest_plugins = [
+    "tests.fixtures.factories",
+    "tests.fixtures.mocks",
+    "tests.fixtures.helpers",
+]
+```
+
+**Nommage** :
+- Factories → `*_factory` (retourne callable)
+- Mocks → `mock_*` (retourne objet mocké)
+- Helpers → `get_*`, `assert_*` (fonctions utilitaires)
+- Constantes → `UPPER_CASE`
 
 ---
 

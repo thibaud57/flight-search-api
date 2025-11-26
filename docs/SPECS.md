@@ -68,18 +68,38 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 
 **Total** : 5 story points
 
-**Valeur business** : SLA production, robustesse
+**Valeur business** : SLA production avec gestion erreurs robuste
 
-**Déployable** : ✅ Production-ready
+**Déployable** : ✅ Production-ready avec retry logic
+
+---
+
+## Epic 4: Kayak Integration (v0.8.0)
+
+**Objectif** : Ajouter Kayak comme second comparateur avec 2 routes distinctes
+
+**Documentation** : [kayak.md](references/kayak.md)
+
+**Stories** :
+- [Story 9: Routes Distinctes + KayakUrlBuilder + Renommages](specs/epic-4-kayak/story-9-routes-url.md) - 8 pts
+- [Story 10: CrawlerService Kayak + Session Consent](specs/epic-4-kayak/story-10-crawler-kayak.md) - 5 pts
+- [Story 11: KayakFlightParser](specs/epic-4-kayak/story-11-kayak-parser.md) - 5 pts
+- [Story 12: Per-Segment Filters (Kayak only)](specs/epic-4-kayak/story-12-segment-filters.md) - 5 pts
+
+**Total** : 23 story points
+
+**Valeur business** : Comparaison multi-sources (2 routes distinctes), filtres per-segment Kayak
+
+**Déployable** : ✅ Recherche Google Flights + Kayak avec filtres avancés
 
 ---
 
 ## 📊 Statistiques
 
-- **Total stories** : 6
-- **Total story points** : 33
-- **Epics** : 3
-- **Releases** : v0.5.0, v0.6.0, v0.7.0 → v1.0.0
+- **Total stories** : 10
+- **Total story points** : 56
+- **Epics** : 4
+- **Releases** : v0.5.0, v0.6.0, v0.7.0, v0.8.0 → v1.0.0
 
 ---
 
@@ -95,6 +115,7 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 - Epic 1 (Stories 1-3) → CHANGELOG → v0.5.0
 - Epic 2 (Stories 4-6) → CHANGELOG → v0.6.0
 - Epic 3 (Story 7) → CHANGELOG → v0.7.0
+- Epic 4 (Stories 9-12) → CHANGELOG → v0.8.0
 
 **Phase 6 : Documentation & Production**
 - 6.1 : Documentation utilisateur (README, API docs)
@@ -103,8 +124,8 @@ Vue d'ensemble des spécifications MVP organisées par Epic et User Story.
 - 6.4 : Déploiement Dokploy MVP
 
 **Phase 7 : Captcha (Post-MVP - Optionnel)**
-- 7A : Specs Story 8 (si monitoring >5% blocages)
-- 7B : Implémentation Story 8 → v1.1.0
+- 7A : Specs (si monitoring >5% blocages)
+- 7B : Implémentation → v1.1.0
 
 **Ordre exécution** : Story 1 → 2 → 3 → 4 → 5 (Proxies) → 6 (Multi-city) → 7
 

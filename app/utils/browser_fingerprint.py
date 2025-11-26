@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from crawl4ai import BrowserConfig
+from playwright.async_api import Cookie
 
 
 def get_static_headers() -> dict[str, str]:
@@ -50,7 +49,7 @@ def get_stealth_browser_args() -> list[str]:
 
 def get_base_browser_config(
     headers: dict[str, str] | None = None,
-    cookies: list[dict[str, str]] | None = None,
+    cookies: list[Cookie] | None = None,
     proxy_config: dict[str, str] | None = None,
 ) -> BrowserConfig:
     """Construit BrowserConfig de base avec stealth manuel (Chrome flags)."""
@@ -69,7 +68,7 @@ def get_base_browser_config(
 def build_browser_config_from_fingerprint(
     url: str,
     headers_dict: dict[str, str],
-    cookies: list[dict[str, Any]],
+    cookies: list[Cookie],
     proxy_config: dict[str, str] | None = None,
 ) -> BrowserConfig:
     """Construit BrowserConfig depuis session Google capturée."""

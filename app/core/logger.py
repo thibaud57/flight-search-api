@@ -5,7 +5,7 @@ import sys
 from functools import lru_cache
 from typing import ClassVar
 
-from pythonjsonlogger import jsonlogger  # type: ignore  # Pas de stubs mypy disponibles
+from pythonjsonlogger import jsonlogger  # type: ignore[import-untyped]
 
 
 class SensitiveDataFilter(logging.Filter):
@@ -44,8 +44,10 @@ def setup_logger(log_level: str) -> logging.Logger:
 
 @lru_cache
 def get_logger() -> logging.Logger:
-    """Retourne instance Logger cached configurée avec Settings."""
-    # Import local pour éviter circular import (config → logger → config)
+    """Retourne instance Logger cached configurée avec Settings.
+
+    Import local pour éviter circular import (config -> logger -> config).
+    """
     from app.core.config import get_settings
 
     settings = get_settings()

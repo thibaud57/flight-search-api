@@ -24,9 +24,12 @@ class ParsingError(Exception):
 class NetworkError(Exception):
     """Levée lors d'erreurs réseau."""
 
-    def __init__(self, url: str, status_code: int | None = None) -> None:
+    def __init__(
+        self, url: str, status_code: int | None = None, attempts: int = 1
+    ) -> None:
         self.url = url
         self.status_code = status_code
+        self.attempts = attempts
         msg = f"Network error at {url}"
         if status_code:
             msg += f" (status: {status_code})"

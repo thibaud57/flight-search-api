@@ -46,12 +46,13 @@
 
 📝 **Output** : `.claude/CLAUDE.md` (Git), `docs/references/github-actions.md`, `.github/workflows/release.yml`
 
-### 0.3 Mise à jour CHANGELOG et version
+### 0.3 Mise à jour CHANGELOG, version et PLAN.md
 - [x] Ajouter entrée v0.0.0-setup dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.0.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 0.3)
 - [x] Commit : `chore: bump version to 0.0.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop (pas de tag - versions démarrent Phase 1)
 
@@ -132,12 +133,13 @@
 
 📝 **Output** : `docs/ARCHITECTURE.md`
 
-### 1.5 Mise à jour CHANGELOG et version
+### 1.5 Mise à jour CHANGELOG, version et PLAN.md
 - [x] Ajouter entrée v0.1.0-research dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.1.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 1.5)
 - [x] Commit : `chore: bump version to 0.1.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.1.0-research sur master
 
@@ -185,12 +187,13 @@
 
 📝 **Output** : `.claude/CLAUDE.md` complet
 
-### 2.4 Mise à jour CHANGELOG et version
+### 2.4 Mise à jour CHANGELOG, version et PLAN.md
 - [x] Ajouter entrée v0.2.0-structure dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.2.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 2.4)
 - [x] Commit : `chore: bump version to 0.2.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.2.0-structure sur master
 
@@ -261,12 +264,13 @@
 
 **Note** : Step "Tests with coverage" temporairement désactivé (commenté dans ci.yml) car aucun test n'existe encore. À réactiver en Phase 5.1+ lors de l'implémentation TDD.
 
-### 3.6 Mise à jour CHANGELOG et version
+### 3.6 Mise à jour CHANGELOG, version et PLAN.md
 - [x] Ajouter entrée v0.3.0-build dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.3.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 3.6)
 - [x] Commit : `chore: bump version to 0.3.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.3.0-build sur master
 
@@ -369,26 +373,15 @@
 
 📝 **Output** : Story 7 specs complètes (5 story points)
 
-### 4.9 Story 8: Network Capture pour Multi-City Complet
-- [x] Specs : CrawlerService network capture (activation capture_network_requests)
-- [x] Specs : NetworkResponseFilter (filtrage API responses Google Flights)
-- [x] Specs : FlightParser JSON parsing (extraction tous segments depuis API)
-- [x] Specs : FlightCombinationResult modifié (total_price au niveau racine, flights sans price)
-- [x] Contexte business : Données complètes 3 segments, architecture prix corrigée
-- [x] Tests : Tests unitaires NetworkResponseFilter + FlightParser + CrawlerService + intégration (à spécifier)
-- [x] Ajouter à `docs/specs/epic-3-production-ready/story-8-network-capture.md`
-- [x] Commit : `docs(specs): add story 8 specifications`
-
-📝 **Output** : Story 8 specs complètes (8 story points)
-
 ---
 
-### 4.10 Mise à jour CHANGELOG et version
+### 4.10 Mise à jour CHANGELOG, version et PLAN.md
 - [x] Ajouter entrée v0.4.0-specs dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.4.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 4.10)
 - [x] Commit : `chore: bump version to 0.4.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.4.0-specs sur master
 
@@ -468,9 +461,10 @@
 
 - [x] Ajouter entrée v0.5.0 dans `docs/CHANGELOG.md`
 - [x] Mettre à jour version dans `app/main.py` : `version="0.5.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 5.4)
 - [x] **Commit** : `chore: bump version to 0.5.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin Epic 1** : Merge develop→master → Tag v0.5.0 → GitHub Release
 
@@ -520,21 +514,22 @@
 
 **🔍 Validation qualité** :
 
-- [ ] Lancer agent `reviewer` avec paramètres :
+- [x] Lancer agent `reviewer` avec paramètres :
   - `epic_number`: "2"
   - `previous_version_tag`: "v0.5.0"
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit si refactor** : `chore(epic-2): refactor for standards compliance`
+- [x] **Quality checks** : ruff + mymy + coverage ≥ 80%
+- [x] **Commit si refactor** : `chore(epic-2): refactor for standards compliance`
 
 📝 **Output** : Epic 2 validé - stories 4-6 conformes aux standards
 
 **📝 Mise à jour version** :
 
-- [ ] Ajouter entrée v0.6.0 dans `docs/CHANGELOG.md`
-- [ ] Mettre à jour version dans `app/main.py` : `version="0.6.0"`
-- [ ] **Commit** : `chore: bump version to 0.6.0 and update changelog`
+- [x] Ajouter entrée v0.6.0 dans `docs/CHANGELOG.md`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.6.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 5.8)
+- [x] **Commit** : `chore: bump version to 0.6.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin Epic 2** : Merge develop→master → Tag v0.6.0 → GitHub Release
 
@@ -546,59 +541,150 @@
 
 **Branche** : `feature/story-7-retry`
 
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-7-retry.md
-- [ ] **Validation manuelle** : Simuler échec, vérifier retry dans logs
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(services): add retry logic and error handling`
-- [ ] **PR** : feature/story-7 → develop
+- [x] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-7-retry.md
+- [x] **Validation manuelle** : Simuler échec, vérifier retry dans logs
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(services): add retry logic and error handling`
+- [x] **PR** : feature/story-7 → develop
 
 📝 **Output** : Story 7 complétée (5 story points)
 
-### 5.10 Story 8: Network Capture pour Multi-City Complet
-
-**Branche** : `feature/story-8-network-capture`
-
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-8-network-capture.md
-- [ ] **Validation manuelle** : Vérifier capture network events, parsing JSON 3 segments, total_price au niveau racine
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(crawler): add network capture for complete multi-city data`
-- [ ] **PR** : feature/story-8 → develop
-
-📝 **Output** : Story 8 complétée (8 story points)
-
 ---
 
-### 5.11 Validation Epic 3 et mise à jour CHANGELOG
+### 5.10 Validation Epic 3 et mise à jour CHANGELOG
 
 **🔍 Validation qualité** :
 
-- [ ] Lancer agent `reviewer` avec paramètres :
+- [x] Lancer agent `reviewer` avec paramètres :
   - `epic_number`: "3"
   - `previous_version_tag`: "v0.6.0"
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit si refactor** : `chore(epic-3): refactor for standards compliance`
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit si refactor** : `chore(epic-3): refactor for standards compliance`
 
-📝 **Output** : Epic 3 validé - stories 7-8 conformes aux standards
+📝 **Output** : Epic 3 validé - story 7 conforme aux standards
 
 **📝 Mise à jour version** :
 
-- [ ] Ajouter entrée v0.7.0 dans `docs/CHANGELOG.md`
-- [ ] Mettre à jour version dans `app/main.py` : `version="0.7.0"`
-- [ ] **Commit** : `chore: bump version to 0.7.0 and update changelog`
+- [x] Ajouter entrée v0.7.0 dans `docs/CHANGELOG.md`
+- [x] Mettre à jour version dans `app/main.py` : `version="0.7.0"`
+- [x] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 5.10)
+- [x] **Commit** : `chore: bump version to 0.7.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin Epic 3** : Merge develop→master → Tag v0.7.0 → GitHub Release
 
 ---
 
-### 5.12 Validation complète MVP et CHANGELOG
+## Epic 4: Kayak Integration
+
+**Objectif** : Ajouter Kayak comme second comparateur avec architecture multi-provider
+
+**Documentation** : `docs/references/kayak.md`
+
+### 5.11 Story 9: Routes Distinctes + KayakUrlBuilder + Renommages
+
+**Branche** : `feature/story-9-routes-url`
+
+- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-9-routes-url.md`
+- [ ] **Implémentation TDD** :
+  - [ ] Renommer `FlightParser` → `GoogleFlightParser` (fichiers, imports, tests, fixtures)
+  - [ ] Renommer route `/search-flights` → `/search-google-flights`
+  - [ ] Créer route `/search-kayak` (mock initial)
+  - [ ] KayakUrlBuilder : URL simple `/flights/PAR-SLZ/date`
+  - [ ] KayakSegment : Validation IATA stricte
+- [ ] **Validation manuelle** : Routes accessibles, renommages complets
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(kayak): add routes, URL builder and rename FlightParser`
+- [ ] **PR** : feature/story-9 → develop
+
+📝 **Output** : Story 9 complétée (8 story points)
+
+### 5.12 Story 10: CrawlerService Kayak + Session Consent
+
+**Branche** : `feature/story-10-crawler-kayak`
+
+- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-10-crawler-kayak.md`
+- [ ] **Implémentation TDD** :
+  - [ ] `get_kayak_session()` : Similaire pattern `get_google_session()`
+  - [ ] `crawl_kayak()` : Avec `capture_network_requests=True`
+  - [ ] `_handle_kayak_consent()` : Gestion popup RGPD Kayak
+  - [ ] Hook routing : `_after_goto_hook` route selon provider
+  - [ ] KayakConfig : Settings timeouts et sélecteurs
+- [ ] **Validation manuelle** : Session établie, consent géré, network capture actif
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(kayak): add crawler service with session and consent handling`
+- [ ] **PR** : feature/story-10 → develop
+
+📝 **Output** : Story 10 complétée (5 story points)
+
+### 5.13 Story 11: KayakFlightParser (JSON Extraction)
+
+**Branche** : `feature/story-11-kayak-parser`
+
+- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-11-kayak-parser.md`
+- [ ] **Implémentation TDD** :
+  - [ ] Parser JSON direct (segments, legs, results)
+  - [ ] Conversion vers GoogleFlightDTO (format unifié)
+  - [ ] Gestion structure dénormalisée (results → legs → segments)
+  - [ ] Wiring route : `/search-kayak` connectée avec parser
+- [ ] **Validation manuelle** : Parsing JSON réussi, recherche Kayak end-to-end
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(kayak): add flight parser for JSON extraction`
+- [ ] **PR** : feature/story-11 → develop
+
+📝 **Output** : Story 11 complétée (5 story points)
+
+### 5.14 Story 12: Per-Segment Filters (Kayak only)
+
+**Branche** : `feature/story-12-segment-filters`
+
+- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-12-segment-filters.md`
+- [ ] **Implémentation TDD** :
+  - [ ] SegmentFilters model : max_duration, max_stops, min_layover
+  - [ ] FilterService : Applique filtres per-segment sur résultats Kayak
+  - [ ] Integration route `/search-kayak` uniquement (pas `/search-google-flights`)
+- [ ] **Validation manuelle** : Filtres appliqués correctement sur route Kayak
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit** : `feat(kayak): add per-segment filtering for Kayak route`
+- [ ] **PR** : feature/story-12 → develop
+
+📝 **Output** : Story 12 complétée (5 story points) - Dernière story Epic 4
+
+---
+
+### 5.15 Validation Epic 4 et mise à jour CHANGELOG
+
+**🔍 Validation qualité** :
+
+- [ ] Lancer agent `reviewer` avec paramètres :
+  - `epic_number`: "4"
+  - `previous_version_tag`: "v0.7.0"
+- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [ ] **Commit si refactor** : `chore(epic-4): refactor for standards compliance`
+
+📝 **Output** : Epic 4 validé - stories 9-12 conformes aux standards
+
+**📝 Mise à jour version** :
+
+- [ ] Ajouter entrée v0.8.0 dans `docs/CHANGELOG.md`
+- [ ] Mettre à jour version dans `app/main.py` : `version="0.8.0"`
+- [ ] Cocher phase complétée dans `.claude/PLAN.md`
+- [ ] **Commit** : `chore: bump version to 0.8.0 and update changelog`
+
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
+
+**Fin Epic 4** : Merge develop→master → Tag v0.8.0 → GitHub Release
+
+---
+
+### 5.16 Validation complète MVP + Kayak et CHANGELOG
 
 **🔍 Validation qualité automatique** :
 
 - [ ] Lancer agent `reviewer` avec paramètres :
-  - `epic_number`: "1-2-3"
-  - `previous_version_tag`: "v0.7.0"
+  - `epic_number`: "1-2-3-4"
+  - `previous_version_tag`: "v0.8.0"
 - [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
 - [ ] **Commit si refactor** : `chore(mvp): refactor for standards compliance`
 
@@ -627,8 +713,8 @@
   - [ ] Structured JSON logs avec contexte (search_id, destinations, proxy_used)
 
 - [ ] **Validation Docker** :
-  - [ ] `docker build -t flight-search-api:v0.7.0 .` → Succès
-  - [ ] `docker run -p 8000:8000 --env-file .env flight-search-api:v0.7.0` → App démarre
+  - [ ] `docker build -t flight-search-api:v0.8.0 .` → Succès
+  - [ ] `docker run -p 8000:8000 --env-file .env flight-search-api:v0.8.0` → App démarre
   - [ ] Health check : `curl http://localhost:8000/health` → `{"status": "ok"}`
   - [ ] Search endpoint : `curl -X POST http://localhost:8000/api/v1/search-flights` → 10 résultats
 
@@ -646,18 +732,18 @@
 
 **📚 Documentation synchronisée** :
 
-- [ ] **CHANGELOG.md** : Entrées v0.5.0, v0.6.0, v0.7.0 complètes
+- [ ] **CHANGELOG.md** : Entrées v0.5.0, v0.6.0, v0.7.0, v0.8.0 complètes
 - [ ] **ARCHITECTURE.md** : ADRs à jour avec implémentation réelle
 - [ ] **SPECS.md** : Index complet (stories 1-6)
-- [ ] **REFERENCES.md** : Index à jour (10 fichiers références techniques)
+- [ ] **REFERENCES.md** : Index à jour (11 fichiers références techniques incluant Kayak)
 - [ ] **VERSIONS.md** : Matrice compatibilité conforme dépendances installées
 
 **✅ Décision Phase 6** :
 
-- **Si v0.7.0 OK sans bugs critiques** : ✅ Passer à Phase 6 (Documentation + Release v1.0.0)
-- **Si bugs critiques trouvés** : ❌ Fix via hotfix → Nouveau tag v0.7.1 → Revalider
+- **Si v0.9.0 OK sans bugs critiques** : ✅ Passer à Phase 6 (Documentation + Release v1.0.0)
+- **Si bugs critiques trouvés** : ❌ Fix via hotfix → Nouveau tag v0.8.1 → Revalider
 
-📝 **Output** : v0.7.0 validé, prêt pour Phase 6 (Documentation finale)
+📝 **Output** : v0.8.0 validé, prêt pour Phase 6 (Documentation finale)
 
 **Note** : Cette checklist exhaustive sert aussi de modèle pour validation futures versions majeures (v2.0.0, v3.0.0, etc.)
 
@@ -669,7 +755,7 @@
 
 **Branche** : `feature/documentation`
 
-**Prérequis** : v0.7.0 validé en Phase 5.11 ✅
+**Prérequis** : v0.8.0 validé en Phase 5.11 ✅
 
 ---
 
@@ -689,14 +775,15 @@
 
 ---
 
-### 6.2 CHANGELOG consolidé v1.0.0 et version
-- [ ] Vérifier entrées v0.5.0, v0.6.0, v0.7.0 complètes dans CHANGELOG.md
+### 6.2 CHANGELOG consolidé v1.0.0, version
+- [ ] Vérifier entrées v0.5.0, v0.6.0, v0.7.0, v0.8.0 complètes dans CHANGELOG.md
 - [ ] Créer section v1.0.0 avec résumé features MVP complètes
 - [ ] Enrichir SPECS.md section Statistiques avec timeline releases
 - [ ] Mettre à jour version dans `app/main.py` : `version="1.0.0"`
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 6.2)
 - [ ] Commit : `chore: bump version to 1.0.0 and update changelog`
 
-📝 **Output** : CHANGELOG.md v1.0.0 complet + SPECS.md enrichi avec releases
+📝 **Output** : CHANGELOG.md v1.0.0 complet + SPECS.md enrichi avec releases + `.claude/PLAN.md` mis à jour
 
 ---
 
@@ -709,6 +796,7 @@
 - [ ] Tag v1.0.0 : `git tag v1.0.0 && git push origin master --tags` (déclenche workflow release.yml)
 - [ ] Vérifier GitHub Release auto-créée
 - [ ] Marquer "Latest release" (pas Pre-release)
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 6.3)
 
 📝 **Output** : v1.0.0 Production release sur GitHub
 
@@ -741,6 +829,7 @@
 - [ ] Commit : `feat(logs): add file logging with rotation and cleanup`
 
 ### Déploiement
+- [ ] **Prérequis VPS** : Vérifier Docker ≥20.10.0, RAM ≥4GB, disque ≥10GB
 - [ ] Configurer Dokploy : connecter repo GitHub
 - [ ] Ajouter env vars dans UI Dokploy :
       - LOG_LEVEL=INFO
@@ -749,9 +838,13 @@
       - DECODO_PROXY_HOST
       - PROXY_ROTATION_ENABLED=true
       - CAPTCHA_DETECTION_ENABLED=true
+- [ ] **Build Docker** : `docker build -t flight-search-api:latest .`
+- [ ] **Run avec shared memory** : `docker run --shm-size="2g" -p 8001:8000` (CRITIQUE pour Chromium)
+- [ ] **Test Playwright** : `docker exec <id> python -c "from crawl4ai import AsyncWebCrawler"`
 - [ ] Déclencher build automatique (push sur master)
 - [ ] Vérifier deployment : `curl https://ton-domaine.com/health`
 - [ ] Tester endpoint complet avec n8n : vérifier header `X-Search-ID` dans response
+- [ ] **Monitor startup** : Vérifier logs browser init, proxy rotation, pas erreurs permissions
 - [ ] Monitorer logs Dokploy UI (stdout) : captcha rate, proxy costs, success rate
 - [ ] Vérifier logs fichiers sur VPS : `docker exec <container_id> ls -lh logs/`
 
@@ -829,12 +922,13 @@
 
 ---
 
-### 7A.4 Mise à jour CHANGELOG et version
+### 7A.4 Mise à jour CHANGELOG, version
 - [ ] Ajouter entrée v0.8.0-specs dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="0.8.0"`
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section Phase 7A)
 - [ ] Commit : `chore: bump version to 0.8.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin de phase** : Push branche → PR → Merge develop → Merge develop→master → Tag v0.8.0-specs sur master
 
@@ -883,9 +977,10 @@
 
 - [ ] Ajouter entrée v1.1.0 dans `docs/CHANGELOG.md`
 - [ ] Mettre à jour version dans `app/main.py` : `version="1.1.0"`
+- [ ] Cocher phase complétée dans `.claude/PLAN.md` (remplacer `- [ ]` → `- [x]` pour section phase 7B.2)
 - [ ] Commit : `chore: bump version to 1.1.0 and update changelog`
 
-📝 **Output** : `docs/CHANGELOG.md` mis à jour
+📝 **Output** : `docs/CHANGELOG.md` + `app/main.py` + `.claude/PLAN.md` mis à jour
 
 **Fin Epic 4** : Push branche → PR → Merge develop → Merge develop→master → Tag v1.1.0 sur master → GitHub Release (workflow automatique)
 
@@ -986,9 +1081,10 @@ flight-search-api/
 │   │   ├── fastapi.md
 │   │   ├── github-actions.md
 │   │   ├── google-flights.md
+│   │   ├── kayak.md
 │   │   ├── pydantic-v2.md
 │   │   └── tenacity.md
-│   ├── specs/          # Spécifications détaillées par story (Phase 4)
+│   ├── specs/          # Spécifications détaillées par story
 │   │   ├── epic-1-api-foundation/
 │   │   │   ├── story-1-health-check.md
 │   │   │   ├── story-2-config-logging.md
@@ -997,9 +1093,13 @@ flight-search-api/
 │   │   │   ├── story-4-crawler-parser.md
 │   │   │   ├── story-5-proxies.md
 │   │   │   └── story-6-multi-city-search.md
-│   │   └── epic-3-production-ready/
-│   │       ├── story-7-retry.md
-│   │       └── story-8-network-capture.md
+│   │   ├── epic-3-production-ready/
+│   │   │   └── story-7-retry.md
+│   │   └── epic-4-kayak/
+│   │       ├── story-9-routes-url.md
+│   │       ├── story-10-crawler-kayak.md
+│   │       ├── story-11-kayak-parser.md
+│   │       └── story-12-segment-filters.md
 │   ├── ARCHITECTURE.md
 │   ├── CHANGELOG.md
 │   ├── SPECS.md        # Index specs (liens vers stories)
@@ -1017,11 +1117,25 @@ flight-search-api/
 │   ├── services/
 │   │   ├── combination_generator.py
 │   │   ├── crawler_service.py
-│   │   ├── flight_parser.py
+│   │   ├── google_flight_parser.py
+│   │   ├── kayak_flight_parser.py
+│   │   ├── network_response_filter.py
+│   │   ├── polling_service.py
 │   │   ├── proxy_service.py
+│   │   ├── retry_strategy.py
 │   │   ├── search_service.py
-│   │   └── (captcha_solver.py - Phase 7 optionnelle)
+│   │   ├── segment_filter.py
+│   │   ├── providers/
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py
+│   │   │   ├── google_flights.py
+│   │   │   └── kayak.py
+│   │   └── captcha_solver.py
 │   ├── utils/
+│   │   ├── browser_fingerprint.py
+│   │   ├── google_flights_url.py
+│   │   ├── kayak_url.py
+│   │   └── resource_blocking.py
 │   └── main.py
 ├── tests/
 │   ├── integration/
@@ -1031,11 +1145,12 @@ flight-search-api/
 │       ├── test_combination_generator.py
 │       ├── test_config.py
 │       ├── test_crawler_service.py
-│       ├── test_flight_parser.py
+│       ├── test_google_flight_parser.py
+│       ├── test_kayak_flight_parser.py
 │       ├── test_models.py
 │       ├── test_proxy_service.py
 │       ├── test_search_service.py
-│       └── (test_captcha_solver.py - Phase 7)
+│       └── test_captcha_solver.py
 ├── .dockerignore
 ├── .env.example
 ├── .gitignore
