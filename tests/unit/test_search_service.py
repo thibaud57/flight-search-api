@@ -6,9 +6,10 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.models import SearchResponse
-from app.services import SearchService
+from app.models import SearchRequest, SearchResponse
+from app.services import CombinationGenerator, SearchService
 from tests.fixtures.helpers import (
+    TEMPLATE_URL,
     assert_results_sorted_by_price,
     create_date_combinations,
 )
@@ -45,7 +46,7 @@ def search_service(
     return SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
 
@@ -84,7 +85,7 @@ async def test_search_flights_crawls_all_urls(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     await service.search_flights(valid_search_request)
@@ -103,7 +104,7 @@ async def test_search_flights_parallel_crawling_asyncio_gather(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -126,7 +127,7 @@ async def test_search_flights_parses_all_html(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     await service.search_flights(valid_search_request)
@@ -158,7 +159,7 @@ async def test_search_flights_ranking_top_10(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -191,7 +192,7 @@ async def test_search_flights_ranking_price_primary(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -222,7 +223,7 @@ async def test_search_flights_ranking_same_price_stable(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -260,7 +261,7 @@ async def test_search_flights_ranking_tie_breaker_duration(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -293,7 +294,7 @@ async def test_search_flights_handles_partial_crawl_failures(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -316,7 +317,7 @@ async def test_search_flights_returns_empty_all_crawls_failed(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -340,7 +341,7 @@ async def test_search_flights_constructs_google_flights_urls(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     await service.search_flights(valid_search_request)
@@ -389,7 +390,7 @@ async def test_search_flights_search_stats_accurate(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     response = await service.search_flights(valid_search_request)
@@ -412,9 +413,64 @@ async def test_search_flights_less_than_10_results(
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
-        flight_parser=google_flight_parser_mock_10_flights_factory,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
     )
 
     response = await service.search_flights(valid_search_request)
 
     assert len(response.results) == 5
+
+
+# === Tests avec CombinationGenerator réel ===
+
+
+@pytest.mark.asyncio
+async def test_search_with_real_generator_two_segments(
+    mock_crawler_success,
+    google_flight_parser_mock_10_flights_factory,
+    search_request_factory,
+    mock_generate_google_flights_url,
+):
+    """Orchestration avec CombinationGenerator reel - 2 segments (7x6=42 combinaisons)."""
+    request = search_request_factory(days_segment1=6, days_segment2=5)
+    service = SearchService(
+        combination_generator=CombinationGenerator(),
+        crawler_service=mock_crawler_success,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
+    )
+
+    response = await service.search_flights(request)
+
+    assert len(response.results) == 10
+    assert_results_sorted_by_price(response.results)
+    assert mock_crawler_success.crawl_google_flights.call_count == 42
+
+
+@pytest.mark.asyncio
+async def test_search_with_real_generator_five_segments_asymmetric(
+    mock_crawler_success,
+    google_flight_parser_mock_10_flights_factory,
+    date_range_factory,
+    mock_generate_google_flights_url,
+):
+    """5 segments asymetriques avec CombinationGenerator reel (15x2x2x2x2=240 combinaisons)."""
+    request = SearchRequest(
+        template_url=TEMPLATE_URL,
+        segments_date_ranges=[
+            date_range_factory(start_offset=1, duration=14),
+            date_range_factory(start_offset=20, duration=1),
+            date_range_factory(start_offset=25, duration=1),
+            date_range_factory(start_offset=30, duration=1),
+            date_range_factory(start_offset=35, duration=1),
+        ],
+    )
+    service = SearchService(
+        combination_generator=CombinationGenerator(),
+        crawler_service=mock_crawler_success,
+        google_flight_parser=google_flight_parser_mock_10_flights_factory,
+    )
+
+    response = await service.search_flights(request)
+
+    assert len(response.results) == 10
+    assert mock_crawler_success.crawl_google_flights.call_count == 240

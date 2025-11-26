@@ -454,3 +454,23 @@ async def test_crawl_retry_with_proxy_rotation(
 
         assert result.success is True
         assert len(proxy_calls) >= 2
+
+
+@pytest.mark.asyncio
+async def test_crawl_proxy_logging_no_password(
+    proxy_service_single,
+    mock_async_web_crawler,
+    mock_crawl_result,
+    caplog,
+):
+    """Logs ne contiennent pas 'password' (securite)."""
+    crawler_service = CrawlerService(proxy_service=proxy_service_single)
+    crawler = mock_async_web_crawler(mock_result=mock_crawl_result)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        with caplog.at_level(logging.INFO):
+            for _ in range(3):
+                await crawler_service.crawl_google_flights(BASE_URL, use_proxy=True)
+
+    log_text = " ".join(record.message for record in caplog.records)
+    assert "password" not in log_text.lower()

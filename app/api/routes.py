@@ -27,7 +27,7 @@ def get_search_service() -> SearchService:
     return SearchService(
         combination_generator=CombinationGenerator(),
         crawler_service=CrawlerService(proxy_service=proxy_service),
-        flight_parser=GoogleFlightParser(),
+        google_flight_parser=GoogleFlightParser(),
     )
 
 
