@@ -57,10 +57,15 @@ Kayak charge les résultats via une API interne non documentée. Les données so
 | Endpoint | Méthode | Description |
 |----------|---------|-------------|
 | `/api/search/V8/flight/start` | GET | Démarre une recherche, retourne `searchId` |
-| `/api/search/V8/flight/poll` | GET | Récupère résultats progressifs |
+| `/i/api/search/dynamic/flights/poll` | POST | **Endpoint principal** - Récupère résultats progressifs (vérifié 2025-11-26) |
+| `/api/search/V8/flight/poll` | GET | Ancien endpoint poll (remplacé par `/i/api/search/dynamic/flights/poll`) |
 | `/k/authajax/` | GET | Authentification session |
 
-## Structure JSON Response
+**Note** : L'endpoint principal vérifié pour la capture de résultats est `/i/api/search/dynamic/flights/poll` (POST), pas `/api/search/V8/flight/poll` (GET). La structure path a évolué.
+
+## Structure JSON Response (Vérifiée 2025-11-26)
+
+**Response complète** `/i/api/search/dynamic/flights/poll` :
 
 ```json
 {
@@ -69,56 +74,170 @@ Kayak charge les résultats via une API interne non documentée. Les données so
     "tripType": "multicity",
     "legs": [...]
   },
+  "totalCount": 2005,
+  "filteredCount": 535,
+  "pageNumber": 1,
+  "pageSize": 15,
   "results": [
     {
-      "resultId": "abc123",
-      "price": 1250.00,
-      "legs": ["leg_id_1", "leg_id_2", "leg_id_3"]
+      "resultId": "d8399293dd06900e3dd54eaaea8af4e5",
+      "type": "core",
+      "isBest": true,
+      "isCheapest": false,
+      "bookingOptions": [
+        {
+          "providerCode": "GOTOGATE",
+          "displayPrice": {
+            "price": 1380,
+            "currency": "EUR",
+            "localizedPrice": "1 380 €"
+          },
+          "bookingUrl": {
+            "url": "/book/flight?code=...",
+            "urlType": "relative"
+          },
+          "fareAmenities": [
+            {
+              "type": "CARRYON_BAG",
+              "restriction": "UNAVAILABLE"
+            },
+            {
+              "type": "CHECKED_BAG",
+              "restriction": "FEE"
+            }
+          ]
+        }
+      ],
+      "legs": [
+        {
+          "id": "CDGSLZ1768910400000LA80671768950000000LA32942",
+          "segments": [
+            {"id": "1768910400000LA80670705"},
+            {"id": "1768950000000LA32941800"}
+          ]
+        }
+      ]
     }
   ],
   "legs": {
-    "leg_id_1": {
-      "duration": 765,
-      "stops": 0,
-      "segments": ["segment_id_1", "segment_id_2"]
+    "CDGSLZ1768910400000LA80671768950000000LA32942": {
+      "duration": 1100,
+      "arrival": "2026-01-21T02:25:00",
+      "departure": "2026-01-20T12:05:00",
+      "segments": [
+        {"id": "1768910400000LA80670705"},
+        {"id": "1768950000000LA32941800"}
+      ]
     }
   },
   "segments": {
-    "segment_id_1": {
-      "airline": "AF",
-      "flightNumber": "123",
+    "1768910400000LA80670705": {
+      "airline": "LA",
+      "flightNumber": "8067",
       "origin": "CDG",
-      "destination": "NRT",
-      "departure": "2026-01-14T10:30:00",
-      "arrival": "2026-01-15T06:45:00",
-      "duration": 765
+      "destination": "GRU",
+      "departure": "2026-01-20T12:05:00",
+      "arrival": "2026-01-20T20:00:00",
+      "duration": 715,
+      "equipmentTypeName": "Boeing 787-9 Dreamliner"
     }
+  },
+  "airports": {
+    "CDG": {...},
+    "GRU": {...}
+  },
+  "airlines": {
+    "LA": {...}
   }
 }
 ```
 
+**Exemple réel capturé** (4 segments multi-city PAR→SLZ, RIO→BUE, SCL→LIM, LIM→PAR) :
+- Total résultats : 2005 vols
+- Filtrés : 535 vols
+- Page 1 : 18 itinéraires (pageSize: 15, mais retourne 18)
+- Meilleur prix : 1 380 € (GOTOGATE)
+- 6 booking options par résultat (multi-providers)
+
 ## Champs Clés
+
+### Top-Level (Metadata)
 
 | Champ | Type | Description |
 |-------|------|-------------|
 | `status` | string | `"complete"` ou `"polling"` - indicateur fin chargement |
-| `results[]` | array | Liste combinaisons avec prix et références legs |
-| `results[].price` | float | Prix total itinéraire en devise locale |
+| `searchStatus` | object | Metadata recherche (tripType, legs, travelers, bags) |
+| `searchStatus.tripType` | string | `"multicity"`, `"roundtrip"`, `"oneway"` |
+| `totalCount` | int | Nombre total résultats trouvés |
+| `filteredCount` | int | Nombre résultats après filtres |
+| `pageNumber` | int | Numéro page courante (pagination) |
+| `pageSize` | int | Taille page (nombre max résultats par page) |
+
+### Results (Itinéraires complets)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `results[]` | array | Liste itinéraires complets multi-city |
+| `results[].resultId` | string | ID unique résultat (hash) |
+| `results[].type` | string | `"core"` = résultat standard |
+| `results[].isBest` | boolean | ✅ Flag "meilleur vol" (ranking Kayak) |
+| `results[].isCheapest` | boolean | ✅ Flag "moins cher" |
+| `results[].bookingOptions[]` | array | ✅ **Multi-providers** (6+ prix différents) |
+| `results[].legs[]` | array | Segments multi-city (inline avec id + segments[]) |
+
+### Booking Options (Multi-providers)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `bookingOptions[].providerCode` | string | Provider (GOTOGATE, FLIGHTNETWORK, etc.) |
+| `bookingOptions[].displayPrice` | object | Prix formaté (price, currency, localizedPrice) |
+| `bookingOptions[].displayPrice.price` | float | Prix brut (ex: 1380.00) |
+| `bookingOptions[].displayPrice.currency` | string | Devise (EUR, USD, etc.) |
+| `bookingOptions[].displayPrice.localizedPrice` | string | Prix localisé (ex: "1 380 €") |
+| `bookingOptions[].bookingUrl` | object | URL réservation (relative ou absolute) |
+| `bookingOptions[].fareAmenities[]` | array | Détails baggages, changements, sièges |
+
+### Legs (Référentiel segments multi-city)
+
+| Champ | Type | Description |
+|-------|------|-------------|
 | `legs{}` | dict | Dictionnaire leg_id → données trajet (duration, stops) |
-| `legs{}.duration` | int | Durée totale en minutes |
-| `legs{}.segments` | array | Liste segment_ids composant ce leg |
+| `legs{}.duration` | int | Durée totale leg en minutes |
+| `legs{}.arrival` | string | ISO 8601 datetime arrivée finale leg |
+| `legs{}.departure` | string | ISO 8601 datetime départ initial leg |
+| `legs{}.segments[]` | array | Liste segment_ids composant ce leg |
+
+### Segments (Vols individuels)
+
+| Champ | Type | Description |
+|-------|------|-------------|
 | `segments{}` | dict | Dictionnaire segment_id → données vol |
-| `segments{}.airline` | string | Code IATA compagnie (ex: `AF`) |
-| `segments{}.duration` | int | Durée segment en minutes |
+| `segments{}.airline` | string | Code IATA compagnie (ex: `LA`, `AF`) |
+| `segments{}.flightNumber` | string | Numéro vol (ex: `"8067"`) |
+| `segments{}.origin` | string | Code IATA aéroport départ (ex: `"CDG"`) |
+| `segments{}.destination` | string | Code IATA aéroport arrivée (ex: `"GRU"`) |
 | `segments{}.departure` | string | ISO 8601 datetime départ |
 | `segments{}.arrival` | string | ISO 8601 datetime arrivée |
+| `segments{}.duration` | int | Durée segment en minutes |
+| `segments{}.equipmentTypeName` | string | ✅ Type avion (ex: "Boeing 787-9 Dreamliner") |
+
+### Référentiels (Dictionnaires lookup)
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `airports{}` | dict | Dictionnaire code_IATA → données aéroport |
+| `airlines{}` | dict | Dictionnaire code_IATA → données compagnie |
 
 ## Points clés
 
-- **Structure dénormalisée** : `results` référence `legs` par ID, `legs` référence `segments` par ID
+- **Structure dénormalisée** : `results` référence `legs` par ID via `results[].legs[].id`, `legs` référence `segments` par ID
+- **Multi-providers** : ✅ **Avantage majeur** - Chaque résultat a 6+ `bookingOptions[]` avec prix différents (GOTOGATE, FLIGHTNETWORK, etc.)
+- **Ranking natif** : `isBest` et `isCheapest` flags → pas besoin calculer soi-même
+- **Metadata pagination** : `totalCount`, `filteredCount`, `pageNumber`, `pageSize` disponibles
+- **Type avion** : `segments{}.equipmentTypeName` détaillé (ex: "Boeing 787-9 Dreamliner")
 - **Layover disponible** : `legs{}.layover.duration` pour escales (si présent)
-- **Prix unique** : Prix total dans `results[].price`, pas de prix par segment
 - **Status polling** : Checker `status == "complete"` pour savoir si tous résultats chargés
+- **Prix localisés** : `displayPrice.localizedPrice` format natif (ex: "1 380 €")
 
 ---
 
@@ -291,6 +410,85 @@ async def handle_kayak_consent(page: Page) -> None:
 
 ---
 
+# Avantage Multi-Providers (Kayak vs Google Flights)
+
+## Description
+
+**Différence majeure** : Kayak retourne **plusieurs prix par itinéraire** (6+ booking options) alors que Google Flights ne retourne **qu'un seul prix**. Cet avantage est crucial pour proposer le meilleur rapport qualité/prix aux utilisateurs.
+
+## Exemple Réel (Capture 2025-11-26)
+
+**Itinéraire multi-city** : PAR→SLZ / RIO→BUE / SCL→LIM / LIM→PAR
+
+**Kayak** : 6 booking options pour le même itinéraire
+```json
+{
+  "resultId": "d8399293dd06900e3dd54eaaea8af4e5",
+  "bookingOptions": [
+    {
+      "providerCode": "GOTOGATE",
+      "displayPrice": {"price": 1380, "localizedPrice": "1 380 €"}
+    },
+    {
+      "providerCode": "FLIGHTNETWORK",
+      "displayPrice": {"price": 1390, "localizedPrice": "1 390 €"}
+    },
+    {
+      "providerCode": "GOTOGATE",
+      "displayPrice": {"price": 1560, "localizedPrice": "1 560 €"}
+    },
+    {
+      "providerCode": "FLIGHTNETWORK",
+      "displayPrice": {"price": 1571, "localizedPrice": "1 571 €"}
+    },
+    {
+      "providerCode": "GOTOGATE",
+      "displayPrice": {"price": 1814, "localizedPrice": "1 814 €"}
+    }
+  ]
+}
+```
+
+**Google Flights** : 1 seul prix pour le même itinéraire
+```json
+{
+  "flightId": "abc123",
+  "price": {"total": 1450}
+}
+```
+
+## Stratégie Extraction Prix
+
+**Recommandation** : Toujours extraire le **prix minimum** de `bookingOptions[]` pour chaque résultat :
+
+```python
+def get_cheapest_price(result: dict) -> float:
+    """Retourne le prix minimum parmi tous les providers."""
+    return min(
+        opt["displayPrice"]["price"]
+        for opt in result["bookingOptions"]
+    )
+```
+
+**Tri Top 10** : Utiliser prix minimum par résultat pour ranking :
+
+```python
+top_10 = sorted(
+    results,
+    key=lambda r: get_cheapest_price(r)
+)[:10]
+```
+
+## Points clés
+
+- **Meilleure valeur utilisateur** : 6+ prix différents = plus de chances d'avoir le meilleur prix
+- **Providers variés** : GOTOGATE, FLIGHTNETWORK, TRAVELOCITY, PRICELINE, etc.
+- **Écart prix** : Jusqu'à +31% entre provider le plus cher et le moins cher (1 380 € vs 1 814 €)
+- **Tri automatique** : `bookingOptions[]` déjà triés par prix croissant dans Kayak
+- **Avantage compétitif** : API retourne plus d'options que concurrent Google Flights
+
+---
+
 # Différences vs Google Flights
 
 ## Comparaison
@@ -302,14 +500,19 @@ async def handle_kayak_consent(page: Page) -> None:
 | **Chargement** | 10-15s (networkidle) | 20-30s (premiers résultats) |
 | **Polling** | Non requis | Optionnel (premiers résultats OK) |
 | **Structure JSON** | `data.flights[].segments[]` | `results[]` → `legs{}` → `segments{}` |
-| **Prix** | `price.total` dans flight | `price` dans result |
+| **Prix** | ❌ 1 prix unique | ✅ 6+ prix (multi-providers) |
 | **Escales** | `stops` count | `layover.duration` détaillé |
+| **Ranking** | Calcul manuel | `isBest`, `isCheapest` flags |
+| **Type avion** | Basique | `equipmentTypeName` détaillé |
 
 ## Avantages Kayak
 
+- **✅ Multi-providers** : 6+ prix par itinéraire vs 1 seul (Google) → **Meilleure valeur utilisateur**
 - **Layover détaillé** : Durée escale précise (pas juste count)
 - **URL lisible** : Debug plus facile
 - **Tri natif** : `?sort=bestflight_a` pré-trie résultats
+- **Ranking natif** : `isBest`, `isCheapest` flags disponibles
+- **Type avion** : Détails complets (Boeing 787-9 Dreamliner vs juste "787")
 
 ## Inconvénients Kayak
 

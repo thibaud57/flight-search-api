@@ -217,6 +217,24 @@ __all__ = ["app"]
 
 ---
 
+### 8. Standards Imports
+
+**Règle : Toujours via `__init__.py`** (app + tests)
+
+```python
+# ✅ OBLIGATOIRE
+from app.models import DateRange, SearchRequest
+from app.services import CrawlerService
+
+# ❌ INTERDIT
+from app.models.request import DateRange
+from app.services.crawler_service import CrawlerService
+```
+
+**Avantages** : Cohérence, refactoring facile, lisibilité
+
+---
+
 ## 🚫 Anti-Patterns
 
 ### Commentaires Inline Interdits

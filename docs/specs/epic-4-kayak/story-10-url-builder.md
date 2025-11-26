@@ -21,7 +21,7 @@ technologies: ["kayak", "pydantic", "playwright", "crawl4ai"]
 
 - **Codes IATA stricts** : Kayak rejette codes non valides (3 lettres uppercase uniquement)
 - **Format dates ISO** : `YYYY-MM-DD` obligatoire dans le path URL
-- **Multi-city 8 segments max** : Kayak limite à 8 segments par recherche
+- **Multi-city 6 segments max** : Kayak limite à 6 segments par recherche
 - **Popup RGPD variable** : Peut apparaître ou non selon état cookies navigateur
 - **Timeout consent 5s** : Popup doit être détecté rapidement pour ne pas ralentir scraping
 
@@ -35,7 +35,7 @@ technologies: ["kayak", "pydantic", "playwright", "crawl4ai"]
 
 ## Métriques succès
 
-- **Temps construction URL** : <1ms pour URLs 8 segments (fonction pure)
+- **Temps construction URL** : <1ms pour URLs 6 segments (fonction pure)
 - **Taux validation IATA** : 100% codes valides acceptés, 100% codes invalides rejetés
 - **Timeout consent** : 5s max pour détection popup (non bloquant si absent)
 - **Coverage tests** : ≥95% (composants critiques pour Epic 4)
@@ -117,14 +117,14 @@ class KayakUrlBuilder:
 | Champ | Type | Description | Contraintes |
 |-------|------|-------------|-------------|
 | `base_url` | `str` | URL de base Kayak | Default `"https://www.kayak.fr"` |
-| `segments` | `list[KayakSegment]` | Liste segments validés | 1 ≤ len ≤ 8 |
+| `segments` | `list[KayakSegment]` | Liste segments validés | 1 ≤ len ≤ 6 |
 
 **Comportement** :
 
 - Concatène segments au format `/origin-destination/date/origin-destination/date/...`
 - Ajoute query param `?sort=bestflight_a` (tri par pertinence Kayak)
 - Rejette listes vides (`len(segments) == 0`)
-- Rejette listes >8 segments (limite Kayak)
+- Rejette listes >6 segments (limite Kayak)
 - Retourne URL complète prête à crawler
 
 **Exemples sorties** :
@@ -143,7 +143,7 @@ class KayakUrlBuilder:
 **Erreurs levées** :
 
 - `ValueError` si `len(segments) == 0`
-- `ValueError` si `len(segments) > 8`
+- `ValueError` si `len(segments) > 6`
 
 ---
 
@@ -220,9 +220,9 @@ class ConsentHandler:
 | 1 | `test_build_url_single_segment` | URL aller simple | `[KayakSegment("PAR", "SLZ", "2026-01-14")]` | `"https://www.kayak.fr/flights/PAR-SLZ/2026-01-14?sort=bestflight_a"` | Vérifie format URL 1 segment |
 | 2 | `test_build_url_two_segments` | URL aller-retour | `[segment1, segment2]` avec dates différentes | `"https://www.kayak.fr/flights/PAR-TYO/2026-03-15/TYO-PAR/2026-03-25?sort=bestflight_a"` | Vérifie format URL 2 segments |
 | 3 | `test_build_url_three_segments_multicity` | URL multi-city 3 segments | `[segment1, segment2, segment3]` | `"https://www.kayak.fr/flights/PAR-SLZ/2026-01-14/SLZ-LIM/2026-03-28/LIM-PAR/2026-04-10?sort=bestflight_a"` | Vérifie format URL multi-city |
-| 4 | `test_build_url_eight_segments_max` | URL 8 segments (limite max) | Liste 8 segments | URL valide avec 8 segments concaténés | Vérifie limite supérieure Kayak |
+| 4 | `test_build_url_six_segments_max` | URL 6 segments (limite max) | Liste 6 segments | URL valide avec 6 segments concaténés | Vérifie limite supérieure Kayak |
 | 5 | `test_build_url_empty_segments` | Liste segments vide | `[]` | Lève `ValueError` | Vérifie validation liste non vide |
-| 6 | `test_build_url_nine_segments_exceeds_limit` | Liste >8 segments | Liste 9 segments | Lève `ValueError` | Vérifie limite max 8 segments |
+| 6 | `test_build_url_seven_segments_exceeds_limit` | Liste >6 segments | Liste 7 segments | Lève `ValueError` | Vérifie limite max 6 segments |
 | 7 | `test_build_url_custom_base_url` | Base URL personnalisée | `base_url="https://www.kayak.com"`, 1 segment | URL commence par `"https://www.kayak.com/flights/..."` | Vérifie flexibilité domaine |
 | 8 | `test_build_url_sort_param_present` | Query param sort présent | 1 segment | URL finit par `"?sort=bestflight_a"` | Vérifie ajout tri automatique |
 | 9 | `test_build_url_segment_separator` | Séparateurs corrects | 2 segments | URL contient `-` entre codes et `/` entre segments | Vérifie séparateurs conformes |
@@ -321,7 +321,7 @@ class ConsentHandler:
 2. **Validation dates ISO** : KayakSegment rejette dates non ISO-8601 (`DD/MM/YYYY`, dates partielles)
 3. **Construction URL 1 segment** : `builder.build_url([segment])` retourne URL aller simple valide
 4. **Construction URL multi-city** : `builder.build_url([s1, s2, s3])` retourne URL multi-city avec segments concaténés
-5. **Limite 8 segments** : `builder.build_url([s1...s9])` lève `ValueError`
+5. **Limite 6 segments** : `builder.build_url([s1...s7])` lève `ValueError`
 6. **Query param sort** : Toutes URLs finissent par `?sort=bestflight_a`
 7. **Détection popup consent** : `handler.handle_consent(page)` détecte et clique popup si présent
 8. **Timeout consent 5s** : `wait_for_selector(timeout=5000)` utilisé pour ne pas bloquer
