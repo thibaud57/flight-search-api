@@ -282,3 +282,48 @@ class TestKayakFlightParser:
         assert results[1].airline == "AA"
         assert results[0].departure_airport == "CDG"
         assert results[1].departure_airport == "JFK"
+
+    def test_parse_performance_benchmark_50_results(self):
+        """Benchmark performance parsing 50 résultats < 100ms."""
+        import time
+
+        # Arrange
+        parser = KayakFlightParser()
+
+        results_data = []
+        legs_data = {}
+        segments_data = {}
+
+        for i in range(50):
+            result_id = f"result_{i}"
+            leg_id = f"leg_{i}"
+            segment_id = f"segment_{i}"
+
+            results_data.append(
+                {"resultId": result_id, "price": 1000.0 + i, "legs": [leg_id]}
+            )
+            legs_data[leg_id] = {"duration": 600, "stops": 0, "segments": [segment_id]}
+            segments_data[segment_id] = {
+                "airline": f"AL{i}",
+                "origin": "PAR",
+                "destination": "TYO",
+                "departure": "2026-01-14T10:00:00",
+                "arrival": "2026-01-14T20:00:00",
+                "duration": 600,
+            }
+
+        json_data = {
+            "status": "complete",
+            "results": results_data,
+            "legs": legs_data,
+            "segments": segments_data,
+        }
+
+        # Act
+        start_time = time.perf_counter()
+        results = parser.parse(json_data)
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+
+        # Assert
+        assert len(results) == 50
+        assert elapsed_ms < 100, f"Parsing took {elapsed_ms:.2f}ms (expected < 100ms)"

@@ -130,3 +130,25 @@ class TestConsentHandler:
             # Assert
             mock_button.click.assert_called_once()
             mock_sleep.assert_called_once_with(1)
+
+    @pytest.mark.asyncio
+    async def test_handle_consent_custom_timeout(self):
+        """Timeout personnalisé."""
+        # Arrange
+        mock_page = AsyncMock()
+        mock_button = AsyncMock()
+        mock_page.wait_for_selector = AsyncMock(return_value=mock_button)
+
+        custom_timeout = 3000
+        handler = ConsentHandler(
+            consent_selectors=["button[id*='accept']"], timeout_ms=custom_timeout
+        )
+
+        # Act
+        await handler.handle_consent(mock_page)
+
+        # Assert
+        mock_page.wait_for_selector.assert_called_once_with(
+            "button[id*='accept']", timeout=custom_timeout
+        )
+        assert handler.timeout_ms == custom_timeout

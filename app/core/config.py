@@ -18,6 +18,7 @@ class CrawlerTimeouts(BaseModel):
     crawl_page_timeout_ms: int = 30000
     crawl_delay_s: float = 5.0
     crawl_global_timeout_s: float = 40.0
+    consent_timeout_ms: int = 5000
 
 
 class Settings(BaseSettings):

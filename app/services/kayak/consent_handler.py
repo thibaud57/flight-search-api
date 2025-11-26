@@ -12,15 +12,16 @@ logger = logging.getLogger(__name__)
 class ConsentHandler:
     """Gère le popup de consentement cookies Kayak."""
 
-    def __init__(self, consent_selectors: list[str]) -> None:
-        """Initialise handler avec sélecteurs popup."""
+    def __init__(self, consent_selectors: list[str], timeout_ms: int = 5000) -> None:
+        """Initialise handler avec sélecteurs popup et timeout configurable."""
         self.consent_selectors = consent_selectors
+        self.timeout_ms = timeout_ms
 
     async def handle_consent(self, page: Page) -> None:
         """Détecte et ferme popup consent si présent."""
         for selector in self.consent_selectors:
             try:
-                button = await page.wait_for_selector(selector, timeout=5000)
+                button = await page.wait_for_selector(selector, timeout=self.timeout_ms)
                 if button:
                     await button.click()
                     logger.info(

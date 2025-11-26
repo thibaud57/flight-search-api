@@ -215,3 +215,47 @@ def google_flights_html_factory():
         return flights_html
 
     return _create
+
+
+@pytest.fixture
+def kayak_segment_factory():
+    """Factory pour créer KayakSegment avec IATA configurables."""
+    from app.utils import KayakSegment
+
+    def _create(
+        origin="PAR",
+        destination="TYO",
+        date="2026-01-14",
+        as_dict=False,
+    ):
+        """Crée KayakSegment avec defaults configurables."""
+        if as_dict:
+            return {"origin": origin, "destination": destination, "date": date}
+        return KayakSegment(origin=origin, destination=destination, date=date)
+
+    return _create
+
+
+@pytest.fixture
+def kayak_segments_list_factory(kayak_segment_factory):
+    """Factory pour créer liste KayakSegments multi-city."""
+
+    def _create(num_segments=1, start_date="2026-01-14"):
+        """Crée liste segments pour tests URL builder."""
+        from datetime import datetime, timedelta
+
+        base_date = datetime.fromisoformat(start_date)
+        segments = []
+        airports = ["PAR", "NYC", "LAX", "TYO", "BKK", "DXB", "LHR"]
+
+        for i in range(num_segments):
+            origin = airports[i % len(airports)]
+            destination = airports[(i + 1) % len(airports)]
+            date = (base_date + timedelta(days=30 * i)).isoformat()[:10]
+            segments.append(
+                kayak_segment_factory(origin=origin, destination=destination, date=date)
+            )
+
+        return segments
+
+    return _create

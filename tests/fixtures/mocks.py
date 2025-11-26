@@ -150,3 +150,42 @@ def mock_generate_google_flights_url():
     ) as mock_url_gen:
         mock_url_gen.return_value = MOCKED_URL
         yield mock_url_gen
+
+
+@pytest.fixture
+def mock_playwright_page():
+    """Mock Playwright Page avec wait_for_selector configurable."""
+
+    def _create(button_present=True, timeout_on_selector=None):
+        """Crée mock Page Playwright.
+
+        Args:
+            button_present: Si True, wait_for_selector retourne mock button
+            timeout_on_selector: Si str, raise TimeoutError sur ce sélecteur
+        """
+        from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+
+        mock_page = AsyncMock()
+        mock_button = AsyncMock()
+
+        if timeout_on_selector:
+
+            async def wait_for_selector_side_effect(selector: str, timeout: int):
+                if selector == timeout_on_selector:
+                    raise PlaywrightTimeoutError(f"Timeout on {selector}")
+                return mock_button if button_present else None
+
+            mock_page.wait_for_selector = AsyncMock(
+                side_effect=wait_for_selector_side_effect
+            )
+        else:
+            if button_present:
+                mock_page.wait_for_selector = AsyncMock(return_value=mock_button)
+            else:
+                mock_page.wait_for_selector = AsyncMock(
+                    side_effect=PlaywrightTimeoutError("Timeout")
+                )
+
+        return mock_page, mock_button
+
+    return _create

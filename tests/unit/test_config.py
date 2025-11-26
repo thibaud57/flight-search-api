@@ -101,3 +101,13 @@ def test_settings_secret_str_password_masked(settings_env_factory) -> None:
 
     assert str(settings.DECODO_PASSWORD) == "**********"
     assert settings.DECODO_PASSWORD.get_secret_value() == "secret123"
+
+
+def test_settings_crawler_timeouts_default(settings_env_factory) -> None:
+    """CrawlerTimeouts contient defaults consent_timeout_ms."""
+    settings = settings_env_factory()
+
+    assert settings.crawler.consent_timeout_ms == 5000
+    assert settings.crawler.crawl_page_timeout_ms == 30000
+    assert settings.crawler.crawl_delay_s == 5.0
+    assert settings.crawler.crawl_global_timeout_s == 40.0
