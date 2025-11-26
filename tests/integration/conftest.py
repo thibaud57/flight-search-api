@@ -1,8 +1,4 @@
-"""Configuration pytest pour tests d'intégration.
-
-Applique automatiquement le marker @pytest.mark.integration à tous les tests
-du répertoire integration/.
-"""
+"""Configuration pytest pour tests d'intégration."""
 
 import pytest
 

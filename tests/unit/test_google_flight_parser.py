@@ -1,9 +1,9 @@
-"""Tests unitaires FlightParser."""
+"""Tests unitaires GoogleFlightParser."""
 
 import pytest
 
 from app.exceptions import ParsingError
-from app.services import FlightParser
+from app.services import GoogleFlightParser
 from tests.fixtures.helpers import assert_flight_dto_valid
 
 
@@ -26,7 +26,7 @@ def test_parse_valid_html_multiple_flights(google_flights_html_factory):
     html = google_flights_html_factory(
         num_flights=10, base_price=100.0, price_increment=50.0
     )
-    parser = FlightParser()
+    parser = GoogleFlightParser()
 
     flights = parser.parse(html)
 
@@ -38,7 +38,7 @@ def test_parse_valid_html_multiple_flights(google_flights_html_factory):
 
 def test_parse_flight_all_fields_present(single_flight_html):
     """Vol avec tous champs renseignés."""
-    parser = FlightParser()
+    parser = GoogleFlightParser()
 
     flights = parser.parse(single_flight_html)
 
@@ -64,7 +64,7 @@ def test_parse_price_with_spaces():
     </li>
     </ul></body></html>
     """
-    parser = FlightParser()
+    parser = GoogleFlightParser()
 
     flights = parser.parse(html)
 
@@ -85,7 +85,7 @@ def test_parse_missing_price():
     </li>
     </ul></body></html>
     """
-    parser = FlightParser()
+    parser = GoogleFlightParser()
 
     flights = parser.parse(html)
 
@@ -105,7 +105,7 @@ def test_parse_invalid_price_format():
     </li>
     </ul></body></html>
     """
-    parser = FlightParser()
+    parser = GoogleFlightParser()
 
     flights = parser.parse(html)
 
@@ -125,7 +125,7 @@ def test_parse_missing_airline():
     </li>
     </ul></body></html>
     """
-    parser = FlightParser()
+    parser = GoogleFlightParser()
 
     flights = parser.parse(html)
 
@@ -145,7 +145,7 @@ def test_parse_invalid_datetime_format():
     </li>
     </ul></body></html>
     """
-    parser = FlightParser()
+    parser = GoogleFlightParser()
 
     flights = parser.parse(html)
 
@@ -165,7 +165,7 @@ def test_parse_arrival_before_departure():
     </li>
     </ul></body></html>
     """
-    parser = FlightParser()
+    parser = GoogleFlightParser()
 
     flights = parser.parse(html)
 
@@ -174,7 +174,7 @@ def test_parse_arrival_before_departure():
 
 def test_parse_no_flights_found():
     """HTML sans .pIav2d lève ParsingError."""
-    parser = FlightParser()
+    parser = GoogleFlightParser()
     html = "<html><body><div>No flights here</div></body></html>"
 
     with pytest.raises(ParsingError) as exc_info:
@@ -192,7 +192,7 @@ def test_parse_stops_nonstop():
     </li>
     </ul></body></html>
     """
-    parser = FlightParser()
+    parser = GoogleFlightParser()
 
     flights = parser.parse(html)
 
@@ -209,7 +209,7 @@ def test_parse_stops_multiple():
     </li>
     </ul></body></html>
     """
-    parser = FlightParser()
+    parser = GoogleFlightParser()
 
     flights = parser.parse(html)
 

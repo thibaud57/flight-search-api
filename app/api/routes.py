@@ -6,11 +6,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.core import get_logger, get_settings
-from app.models import HealthResponse, SearchRequest, SearchResponse
+from app.models import HealthResponse, SearchRequest, SearchResponse, SearchStats
 from app.services import (
     CombinationGenerator,
     CrawlerService,
-    FlightParser,
+    GoogleFlightParser,
     ProxyService,
     SearchService,
 )
@@ -27,7 +27,7 @@ def get_search_service() -> SearchService:
     return SearchService(
         combination_generator=CombinationGenerator(),
         crawler_service=CrawlerService(proxy_service=proxy_service),
-        flight_parser=FlightParser(),
+        google_flight_parser=GoogleFlightParser(),
     )
 
 
@@ -37,13 +37,13 @@ def health_check() -> HealthResponse:
     return HealthResponse(status="ok")
 
 
-@router.post("/api/v1/search-flights", tags=["search"])
-async def search_flights_endpoint(
+@router.post("/api/v1/search-google-flights", tags=["search"])
+async def search_google_flights_endpoint(
     request: SearchRequest,
     search_service: Annotated[SearchService, Depends(get_search_service)],
     logger: Annotated[Logger, Depends(get_logger)],
 ) -> SearchResponse:
-    """Endpoint recherche vols multi-city async."""
+    """Endpoint recherche vols multi-city via Google Flights."""
     logger.info(
         "Flight search started",
         extra={
@@ -63,3 +63,26 @@ async def search_flights_endpoint(
     )
 
     return response
+
+
+@router.post("/api/v1/search-kayak", tags=["search"])
+async def search_kayak_endpoint(
+    request: SearchRequest,
+    logger: Annotated[Logger, Depends(get_logger)],
+) -> SearchResponse:
+    """Endpoint recherche vols multi-city via Kayak (mock)."""
+    logger.info(
+        "Kayak search started (mock)",
+        extra={
+            "segments_count": len(request.segments_date_ranges),
+        },
+    )
+
+    return SearchResponse(
+        results=[],
+        search_stats=SearchStats(
+            total_results=0,
+            search_time_ms=0,
+            segments_count=len(request.segments_date_ranges),
+        ),
+    )

@@ -7,14 +7,15 @@ from typing import Any
 
 import pytest
 
-from app.models import FlightCombinationResult, GoogleFlightDTO
+from app.models import DateCombination, FlightCombinationResult, GoogleFlightDTO
 
 # URLs Google Flights pour tests
-TEMPLATE_URL = "https://www.google.com/travel/flights?tfs=CBwQAhooagwIAxIIL20vMDVxdGpyDAgDEggvbS8wN2RmayIKMjAyNS0wNi0wMXIKMjAyNS0wNi0xNXABggELCP___________wFAAUgBmAEB"
-BASE_URL = "https://www.google.com/travel/flights"
+GOOGLE_FLIGHT_TEMPLATE_URL = "https://www.google.com/travel/flights?tfs=CBwQAhooagwIAxIIL20vMDVxdGpyDAgDEggvbS8wN2RmayIKMjAyNS0wNi0wMXIKMjAyNS0wNi0xNXABggELCP___________wFAAUgBmAEB"
+GOOGLE_FLIGHT_BASE_URL = "https://www.google.com/travel/flights"
 
-# URL API endpoint pour tests
-SEARCH_FLIGHTS_ENDPOINT = "/api/v1/search-flights"
+# URL API endpoints pour tests
+SEARCH_GOOGLE_FLIGHTS_ENDPOINT = "/api/v1/search-google-flights"
+SEARCH_KAYAK_ENDPOINT = "/api/v1/search-kayak"
 
 
 def get_future_date(days_offset: int = 1) -> date:
@@ -111,8 +112,6 @@ def assert_log_not_captured(
 
 def create_date_combinations(num_combinations: int) -> list:
     """Génère liste DateCombination pour tests SearchService."""
-    from app.models import DateCombination
-
     return [
         DateCombination(
             segment_dates=[

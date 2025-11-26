@@ -256,21 +256,21 @@ def _extract_kayak_api_responses(self, result: CrawlResult) -> list[dict]:
 
 ---
 
-## Tests intégration
+### Tests unitaires - Scénarios complexes (3 tests)
 
-**Format recommandé : Given/When/Then (BDD)**
+**Note** : Ces tests utilisent des mocks pour simuler des scénarios complexes multi-composants. Ils restent des tests unitaires car ils n'utilisent pas TestClient FastAPI pour tester la couche HTTP.
 
-| # | Nom test | Prérequis (Given) | Action (When) | Résultat attendu (Then) |
-|---|----------|-------------------|---------------|-------------------------|
-| 1 | `test_integration_kayak_session_with_consent` | Mock page avec popup consent visible | `get_kayak_session(url)` | Session établie, popup cliqué, pas d'exception |
-| 2 | `test_integration_crawl_kayak_captures_network` | Mock crawler avec responses API | `crawl_kayak(url)` | CrawlResult contient `network_requests` avec JSON API |
-| 3 | `test_integration_kayak_vs_google_hook` | URL Google et URL Kayak | `_after_goto_hook()` pour chaque | Google: consent Google, Kayak: consent Kayak |
+**Format recommandé : Given/When/Then (BDD) pour lisibilité scénarios complexes**
 
-**Total tests intégration** : **3 tests**
+| # | Nom test | Scénario | Input | Output attendu | Vérification |
+|---|----------|----------|-------|----------------|--------------|
+| 17 | `test_kayak_session_with_consent_flow` | Session établie avec popup consent visible | Mock page avec popup consent visible | `get_kayak_session(url)` réussit, popup cliqué | Vérifie flow complet session + consent |
+| 18 | `test_crawl_kayak_captures_network_requests` | Crawl avec capture network | Mock crawler avec responses API | CrawlResult contient `network_requests` avec JSON API | Vérifie capture network activée |
+| 19 | `test_hook_routing_kayak_vs_google` | Hook routing selon provider | URL Google et URL Kayak | `_after_goto_hook()` appelle consent adapté | Vérifie routing hook selon URL |
 
 ---
 
-**TOTAL STORY 10** : 16 tests unitaires + 3 tests intégration = **19 tests**
+**TOTAL STORY 10** : 16 + 3 = **19 tests unitaires**
 
 ---
 
@@ -323,7 +323,7 @@ KAYAK_RESULTS_SELECTOR=".resultWrapper"
 ## Critères qualité
 
 14. **Coverage ≥80%** : Tests couvrent nouvelles méthodes CrawlerService
-15. **19 tests passent** : 16 unitaires + 3 intégration tous verts
+15. **19 tests passent** : 19 tests unitaires tous verts (16 basiques + 3 scénarios complexes)
 16. **Ruff + Mypy passent** : Code conforme standards projet
 17. **Docstrings 1 ligne** : Méthodes publiques documentées
 

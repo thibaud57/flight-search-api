@@ -90,6 +90,7 @@ ruff format . --check     # Check sans modifier
 - ✅ CI/CD doit bloquer si ruff échoue
 - ✅ Line length 88 (cohérence Black)
 - ✅ Imports triés (isort intégré)
+- ✅ Imports au niveau module uniquement (sauf circular imports ou `TYPE_CHECKING`)
 
 ---
 
@@ -304,7 +305,7 @@ flight-search-api/
 │   ├── services/
 │   │   ├── combination_generator.py    # Génère permutations multi-city
 │   │   ├── crawler_service.py          # Crawl4AI + retry logic
-│   │   ├── flight_parser.py            # JsonCssExtractionStrategy
+│   │   ├── google_flight_parser.py     # JsonCssExtractionStrategy Google Flights
 │   │   ├── proxy_service.py            # Decodo config + rotation
 │   │   ├── search_service.py           # Orchestration + Top 10 ranking
 │   │   └── (captcha_solver.py)         # Phase 7 optionnelle
@@ -319,7 +320,7 @@ flight-search-api/
 │       ├── test_combination_generator.py
 │       ├── test_config.py
 │       ├── test_crawler_service.py
-│       ├── test_flight_parser.py
+│       ├── test_google_flight_parser.py
 │       ├── test_models.py
 │       ├── test_proxy_service.py
 │       ├── test_search_service.py

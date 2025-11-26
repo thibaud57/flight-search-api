@@ -202,16 +202,16 @@ def format_duration(minutes: int) -> str:
 
 ---
 
-## Tests intégration
+### Tests unitaires - Fixtures JSON réalistes (2 tests)
 
-**Format recommandé : Given/When/Then (BDD)**
+**Note** : Ces tests utilisent des fixtures JSON réalistes mais restent des tests unitaires car ils n'utilisent pas TestClient FastAPI. Ils testent le parser de manière isolée avec des données représentatives.
 
-| # | Nom test | Prérequis (Given) | Action (When) | Résultat attendu (Then) |
-|---|----------|-------------------|---------------|-------------------------|
-| 1 | `test_integration_parse_real_kayak_response` | JSON réel capturé depuis API Kayak (fixture) | Appel `parse(json_data)` | Liste GoogleFlightDTO valide, tous champs mappés correctement |
-| 2 | `test_integration_parse_malformed_json_gracefully` | JSON malformé (keys manquantes) | Appel `parse(json_data)` | Lève `ValueError` avec message explicite, pas de crash |
+| # | Nom test | Scénario | Input | Output attendu | Vérification |
+|---|----------|----------|-------|----------------|--------------|
+| 14 | `test_parse_real_kayak_response_fixture` | Parse JSON réel capturé depuis API Kayak | Fixture JSON réaliste multi-results | Liste GoogleFlightDTO valide, tous champs mappés correctement | Vérifie parsing end-to-end avec données réelles |
+| 15 | `test_parse_malformed_json_gracefully` | JSON malformé (keys manquantes) | JSON avec keys obligatoires absentes | Lève `ValueError` avec message explicite, pas de crash | Vérifie gestion erreurs robuste |
 
-**Total tests intégration** : 2 tests
+**Total tests unitaires avec fixtures** : 2 tests
 
 ---
 
@@ -356,13 +356,12 @@ def format_duration(minutes: int) -> str:
 
 ## Critères qualité
 13. **Coverage ≥ 90%** : Module `flight_parser.py` couvert à 90%+ par tests unitaires
-14. **13 tests unitaires** : Tous scénarios (nominal, edge cases, erreurs) testés
-15. **2 tests intégration** : Parse JSON réel + JSON malformé
-16. **Ruff + Mypy + Type hints** : Code conforme standards projet (0 erreurs lint/typecheck)
-17. **Docstrings 1 ligne** : Toutes fonctions documentées (format PEP 257)
-18. **Pas de commentaires inline** : Code self-explanatory (sauf justification explicite)
+14. **15 tests unitaires passent** : 13 tests basiques + 2 tests avec fixtures JSON réalistes
+15. **Ruff + Mypy + Type hints** : Code conforme standards projet (0 erreurs lint/typecheck)
+16. **Docstrings 1 ligne** : Toutes fonctions documentées (format PEP 257)
+17. **Pas de commentaires inline** : Code self-explanatory (sauf justification explicite)
 
 ## Critères production
-19. **Performance < 100ms** : Dénormalisation de 50 résultats en < 100ms (benchmark intégration)
-20. **Logs production** : Log warning pour IDs manquants (permet debugging structure JSON évolutive)
-21. **Future-proof** : Structure permet ajout facile de nouveaux champs Kayak (extensibilité)
+18. **Performance < 100ms** : Dénormalisation de 50 résultats en < 100ms (benchmark)
+19. **Logs production** : Log warning pour IDs manquants (permet debugging structure JSON évolutive)
+20. **Future-proof** : Structure permet ajout facile de nouveaux champs Kayak (extensibilité)

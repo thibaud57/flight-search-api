@@ -23,7 +23,7 @@ from app.utils import generate_google_flights_url
 if TYPE_CHECKING:
     from app.services.combination_generator import CombinationGenerator
     from app.services.crawler_service import CrawlerService
-    from app.services.flight_parser import FlightParser
+    from app.services.google_flight_parser import GoogleFlightParser
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +35,12 @@ class SearchService:
         self,
         combination_generator: CombinationGenerator,
         crawler_service: CrawlerService,
-        flight_parser: FlightParser,
+        google_flight_parser: GoogleFlightParser,
     ) -> None:
         """Initialise service avec dependances injectees."""
         self._combination_generator = combination_generator
         self._crawler_service = crawler_service
-        self._flight_parser = flight_parser
+        self._google_flight_parser = google_flight_parser
         self._settings = get_settings()
 
     async def search_flights(self, request: SearchRequest) -> SearchResponse:
@@ -139,7 +139,7 @@ class SearchService:
                 continue
 
             try:
-                flights = self._flight_parser.parse(result.html)
+                flights = self._google_flight_parser.parse(result.html)
 
                 if not flights:
                     crawls_failed += 1
