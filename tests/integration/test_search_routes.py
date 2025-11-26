@@ -9,7 +9,6 @@ from tests.fixtures.helpers import (
 )
 
 
-
 def test_search_google_flights_returns_200_with_valid_request(
     client_with_mock_search: TestClient, search_request_factory
 ) -> None:
