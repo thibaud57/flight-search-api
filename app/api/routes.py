@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.core import get_logger, get_settings
-from app.models import HealthResponse, SearchRequest, SearchResponse
+from app.models import HealthResponse, SearchRequest, SearchResponse, SearchStats
 from app.services import (
     CombinationGenerator,
     CrawlerService,
@@ -77,8 +77,6 @@ async def search_kayak_endpoint(
             "segments_count": len(request.segments_date_ranges),
         },
     )
-
-    from app.models import SearchStats
 
     return SearchResponse(
         results=[],

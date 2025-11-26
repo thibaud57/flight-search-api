@@ -9,7 +9,7 @@ from app.core import Settings
 from app.models import DateRange, GoogleFlightDTO, ProxyConfig, SearchRequest
 from app.services import GoogleFlightParser
 from tests.fixtures.helpers import (
-    GOOGLE_FLIGHT_COMPLETE_URL,
+    GOOGLE_FLIGHT_TEMPLATE_URL,
     get_date_range,
     get_future_date,
 )
@@ -37,14 +37,14 @@ def search_request_factory():
 
         if as_dict:
             return {
-                "template_url": GOOGLE_FLIGHT_COMPLETE_URL,
+                "template_url": GOOGLE_FLIGHT_TEMPLATE_URL,
                 "segments_date_ranges": [
                     {"start": seg.start, "end": seg.end} for seg in segments
                 ],
             }
 
         return SearchRequest(
-            template_url=GOOGLE_FLIGHT_COMPLETE_URL,
+            template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
             segments_date_ranges=segments,
         )
 

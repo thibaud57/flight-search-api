@@ -9,7 +9,7 @@ from app.exceptions import CaptchaDetectedError, NetworkError
 from app.models import SearchRequest, SearchResponse
 from app.services import CombinationGenerator, SearchService
 from tests.fixtures.helpers import (
-    GOOGLE_FLIGHT_COMPLETE_URL,
+    GOOGLE_FLIGHT_TEMPLATE_URL,
     assert_results_sorted_by_price,
     create_date_combinations,
 )
@@ -421,9 +421,6 @@ async def test_search_flights_less_than_10_results(
     assert len(response.results) == 5
 
 
-# === Tests avec CombinationGenerator réel ===
-
-
 @pytest.mark.asyncio
 async def test_search_with_real_generator_two_segments(
     mock_crawler_success,
@@ -455,7 +452,7 @@ async def test_search_with_real_generator_five_segments_asymmetric(
 ):
     """5 segments asymetriques avec CombinationGenerator reel (15x2x2x2x2=240 combinaisons)."""
     request = SearchRequest(
-        template_url=GOOGLE_FLIGHT_COMPLETE_URL,
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[
             date_range_factory(start_offset=1, duration=14),
             date_range_factory(start_offset=20, duration=1),

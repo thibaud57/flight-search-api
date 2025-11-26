@@ -11,7 +11,7 @@ from app.models import (
     SearchResponse,
     SearchStats,
 )
-from app.services import CombinationGenerator
+from app.services import CombinationGenerator, CrawlResult
 from tests.fixtures.helpers import GOOGLE_FLIGHT_BASE_URL, get_future_date
 
 
@@ -137,8 +137,6 @@ def mock_proxy_pool():
 @pytest.fixture
 def mock_crawler_success():
     """Mock CrawlerService async avec HTML valide (partagé tests integration)."""
-    from app.services import CrawlResult
-
     crawler = AsyncMock()
     crawler.crawl_google_flights.return_value = CrawlResult(
         success=True, html="<html>valid</html>", status_code=200

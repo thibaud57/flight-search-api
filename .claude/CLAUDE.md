@@ -90,6 +90,7 @@ ruff format . --check     # Check sans modifier
 - ✅ CI/CD doit bloquer si ruff échoue
 - ✅ Line length 88 (cohérence Black)
 - ✅ Imports triés (isort intégré)
+- ✅ Imports au niveau module uniquement (sauf circular imports ou `TYPE_CHECKING`)
 
 ---
 

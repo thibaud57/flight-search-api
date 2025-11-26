@@ -9,7 +9,7 @@ from app.models import (
     SearchStats,
 )
 from tests.fixtures.helpers import (
-    GOOGLE_FLIGHT_COMPLETE_URL,
+    GOOGLE_FLIGHT_TEMPLATE_URL,
     get_date_range,
     get_future_date,
 )
@@ -101,7 +101,7 @@ def test_search_request_valid_five_segments():
         )
 
     request = SearchRequest(
-        template_url=GOOGLE_FLIGHT_COMPLETE_URL,
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=segments_date_ranges,
     )
 
@@ -113,7 +113,7 @@ def test_search_request_single_segment_fails():
     tomorrow = get_future_date(1)
     with pytest.raises(ValidationError):
         SearchRequest(
-            template_url=GOOGLE_FLIGHT_COMPLETE_URL,
+            template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
             segments_date_ranges=[
                 DateRange(
                     start=tomorrow.isoformat(),
@@ -135,7 +135,7 @@ def test_search_request_too_many_segments_fails():
 
     with pytest.raises(ValidationError):
         SearchRequest(
-            template_url=GOOGLE_FLIGHT_COMPLETE_URL,
+            template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
             segments_date_ranges=segments_date_ranges,
         )
 
@@ -144,7 +144,7 @@ def test_search_request_empty_segments_fails():
     """Segments vide rejetée."""
     with pytest.raises(ValidationError):
         SearchRequest(
-            template_url=GOOGLE_FLIGHT_COMPLETE_URL,
+            template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
             segments_date_ranges=[],
         )
 
@@ -152,7 +152,7 @@ def test_search_request_empty_segments_fails():
 def test_search_request_explosion_combinatoire_ok():
     """1000 combinaisons exactement accepté."""
     request = SearchRequest(
-        template_url=GOOGLE_FLIGHT_COMPLETE_URL,
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[
             DateRange(
                 start=get_future_date(1).isoformat(),
@@ -184,7 +184,7 @@ def test_search_request_explosion_combinatoire_fails():
     """Plus de 1000 combinaisons rejeté."""
     with pytest.raises(ValidationError) as exc_info:
         SearchRequest(
-            template_url=GOOGLE_FLIGHT_COMPLETE_URL,
+            template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
             segments_date_ranges=[
                 DateRange(
                     start=get_future_date(1).isoformat(),
@@ -216,7 +216,7 @@ def test_search_request_explosion_message_suggests_reduction():
     """Message erreur suggère segment à réduire."""
     with pytest.raises(ValidationError) as exc_info:
         SearchRequest(
-            template_url=GOOGLE_FLIGHT_COMPLETE_URL,
+            template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
             segments_date_ranges=[
                 DateRange(
                     start=get_future_date(1).isoformat(),
@@ -240,7 +240,7 @@ def test_search_request_explosion_message_suggests_reduction():
 def test_search_request_asymmetric_ranges_valid():
     """Ranges asymétriques optimisés acceptés."""
     request = SearchRequest(
-        template_url=GOOGLE_FLIGHT_COMPLETE_URL,
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[
             DateRange(
                 start=get_future_date(1).isoformat(),
@@ -277,7 +277,7 @@ def test_search_request_missing_fields_fails():
 def test_search_request_model_dump_json_valid():
     """Serialization JSON valide."""
     request = SearchRequest(
-        template_url=GOOGLE_FLIGHT_COMPLETE_URL,
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[
             DateRange(
                 start=get_future_date(1).isoformat(),
