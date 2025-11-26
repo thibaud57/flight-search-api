@@ -373,18 +373,6 @@
 
 📝 **Output** : Story 7 specs complètes (5 story points)
 
-### 4.9 Story 8: Network Capture pour Multi-City Complet
-- [x] Specs : CrawlerService network capture (activation capture_network_requests)
-- [x] Specs : NetworkResponseFilter (filtrage API responses Google Flights)
-- [x] Specs : FlightParser JSON parsing (extraction tous segments depuis API)
-- [x] Specs : FlightCombinationResult modifié (total_price au niveau racine, flights sans price)
-- [x] Contexte business : Données complètes 3 segments, architecture prix corrigée
-- [x] Tests : Tests unitaires NetworkResponseFilter + FlightParser + CrawlerService + intégration (à spécifier)
-- [x] Ajouter à `docs/specs/epic-3-production-ready/story-8-network-capture.md`
-- [x] Commit : `docs(specs): add story 8 specifications`
-
-📝 **Output** : Story 8 specs complètes (8 story points)
-
 ---
 
 ### 4.10 Mise à jour CHANGELOG, version et PLAN.md
@@ -560,19 +548,6 @@
 - [x] **PR** : feature/story-7 → develop
 
 📝 **Output** : Story 7 complétée (5 story points)
-
-### 5.10 Story 8: Network Capture pour Multi-City Complet
-
-**Branche** : `feature/story-8-network-capture`
-
-- [ ] **Renommer** : `flight_parser.py` → `google_flight_parser.py` (prépare multi-provider)
-- [ ] **Implémentation TDD** : Suivre workflow CLAUDE.md + specs story-8-network-capture.md
-- [ ] **Validation manuelle** : Vérifier capture network events, parsing JSON 3 segments, total_price au niveau racine
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(crawler): add network capture for complete multi-city data`
-- [ ] **PR** : feature/story-8 → develop
-
-📝 **Output** : Story 8 complétée (8 story points)
 
 ### 5.11 Story 9: Per-Segment Filters
 
