@@ -9,8 +9,8 @@ from app.services.google_flight_parser import GoogleFlightParser
 
 
 @pytest.fixture
-def flight_parser():
-    """FlightParser instance."""
+def google_flight_parser():
+    """GoogleFlightParser instance."""
     return GoogleFlightParser()
 
 
@@ -87,9 +87,11 @@ def mock_api_response_three_segments():
     }
 
 
-def test_parse_json_three_segments(flight_parser, mock_api_response_three_segments):
+def test_parse_json_three_segments(
+    google_flight_parser, mock_api_response_three_segments
+):
     """Parse JSON API avec 3 segments."""
-    total_price, flights = flight_parser.parse_api_responses(
+    total_price, flights = google_flight_parser.parse_api_responses(
         [mock_api_response_three_segments]
     )
 
@@ -112,7 +114,7 @@ def test_parse_json_extracts_total_price(
     flight_parser, mock_api_response_three_segments
 ):
     """Extraction prix total itinéraire séparé."""
-    total_price, flights = flight_parser.parse_api_responses(
+    total_price, flights = google_flight_parser.parse_api_responses(
         [mock_api_response_three_segments]
     )
 
@@ -122,9 +124,13 @@ def test_parse_json_extracts_total_price(
         assert flight.price is None
 
 
-def test_parse_json_converts_duration(flight_parser, mock_api_response_three_segments):
+def test_parse_json_converts_duration(
+    google_flight_parser, mock_api_response_three_segments
+):
     """Conversion duration minutes → format display."""
-    _, flights = flight_parser.parse_api_responses([mock_api_response_three_segments])
+    _, flights = google_flight_parser.parse_api_responses(
+        [mock_api_response_three_segments]
+    )
 
     assert flights[0].duration == "12h 45min"
     assert flights[1].duration == "1h 30min"
@@ -142,7 +148,7 @@ def test_parse_json_invalid_structure(flight_parser):
     }
 
     with pytest.raises(ParsingError):
-        flight_parser.parse_api_responses([invalid_response])
+        google_flight_parser.parse_api_responses([invalid_response])
 
 
 def test_parse_json_missing_segment_fields(flight_parser):
@@ -173,7 +179,7 @@ def test_parse_json_missing_segment_fields(flight_parser):
         "response_data": json.dumps(json_data),
     }
 
-    total_price, flights = flight_parser.parse_api_responses([response])
+    total_price, flights = google_flight_parser.parse_api_responses([response])
 
     assert len(flights) == 1
     assert flights[0].duration == "Unknown"
@@ -208,4 +214,4 @@ def test_parse_json_missing_total_price(flight_parser):
     }
 
     with pytest.raises(ParsingError):
-        flight_parser.parse_api_responses([response])
+        google_flight_parser.parse_api_responses([response])

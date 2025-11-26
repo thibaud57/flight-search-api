@@ -30,12 +30,12 @@ class SearchService:
         self,
         combination_generator: CombinationGenerator,
         crawler_service: CrawlerService,
-        flight_parser: GoogleFlightParser,
+        google_flight_parser: GoogleFlightParser,
     ) -> None:
         """Initialise service avec dependances injectees."""
         self._combination_generator = combination_generator
         self._crawler_service = crawler_service
-        self._flight_parser = flight_parser
+        self._flight_parser = google_flight_parser
         self._settings = get_settings()
         self._network_filter = NetworkResponseFilter()
 

@@ -128,7 +128,7 @@ def settings_env_factory(monkeypatch):
 
 
 @pytest.fixture
-def flight_parser_mock_factory():
+def google_flight_parser_mock_factory():
     """Factory pour mocker GoogleFlightParser avec nombre configurable de vols."""
 
     def _create(num_flights=1, base_price=500.0, price_increment=100.0):
@@ -150,15 +150,15 @@ def flight_parser_mock_factory():
 
 
 @pytest.fixture
-def flight_parser_mock_single_factory(flight_parser_mock_factory):
-    """Mock FlightParser retournant 1 vol valide (tests retry)."""
-    return flight_parser_mock_factory(num_flights=1, base_price=500.0)
+def google_flight_parser_mock_single_factory(google_flight_parser_mock_factory):
+    """Mock GoogleFlightParser retournant 1 vol valide (tests retry)."""
+    return google_flight_parser_mock_factory(num_flights=1, base_price=500.0)
 
 
 @pytest.fixture
-def flight_parser_mock_10_flights_factory(flight_parser_mock_factory):
-    """Mock FlightParser retournant 10 vols."""
-    return flight_parser_mock_factory(num_flights=10, base_price=1000.0)
+def google_flight_parser_mock_10_flights_factory(google_flight_parser_mock_factory):
+    """Mock GoogleFlightParser retournant 10 vols."""
+    return google_flight_parser_mock_factory(num_flights=10, base_price=1000.0)
 
 
 @pytest.fixture
