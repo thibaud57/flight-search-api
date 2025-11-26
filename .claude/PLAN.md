@@ -604,15 +604,16 @@
 
 **Branche** : `feature/story-10-crawler-kayak`
 
-- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-10-crawler-kayak.md`
-- [ ] **Implémentation TDD** :
-  - [ ] `get_kayak_session()` : Similaire pattern `get_google_session()`
-  - [ ] `crawl_kayak()` : Avec `capture_network_requests=True`
-  - [ ] `_handle_kayak_consent()` : Gestion popup RGPD Kayak
-  - [ ] Hook routing : `_after_goto_hook` route selon provider
-  - [ ] KayakConfig : Settings timeouts et sélecteurs
+- [x] **Specs complètes** : `docs/specs/epic-4-kayak/story-10-crawler-kayak.md`
+- [x] **Implémentation TDD** :
+  - [x] `get_kayak_session()` : Similaire pattern `get_google_session()`
+  - [x] `crawl_kayak()` : Avec `capture_network_requests=True`
+  - [x] `_handle_kayak_consent()` : Gestion popup RGPD Kayak
+  - [x] Hook routing : `_after_goto_hook` route selon provider
+  - [x] KayakConfig : Settings timeouts et sélecteurs
+  - [x] `_wait_for_kayak_polling_complete()` : Détection fin polling via progressbar
 - [ ] **Validation manuelle** : Session établie, consent géré, network capture actif
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80% (89%)
 - [ ] **Commit** : `feat(kayak): add crawler service with session and consent handling`
 - [ ] **PR** : feature/story-10 → develop
 
