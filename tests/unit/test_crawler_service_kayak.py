@@ -5,7 +5,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.models import Provider
-from app.services import CrawlerService
 from tests.fixtures.helpers import KAYAK_BASE_URL, KAYAK_TEMPLATE_URL
 from tests.fixtures.mocks import create_mock_settings_context
 

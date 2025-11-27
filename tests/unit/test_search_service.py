@@ -1,12 +1,12 @@
 """Tests unitaires SearchService async."""
 
 import logging
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.models import GoogleSearchRequest, SearchRequest, SearchResponse
+from app.models import GoogleSearchRequest, SearchResponse
 from app.services import CombinationGenerator, SearchService
 from tests.fixtures.helpers import (
     GOOGLE_FLIGHT_TEMPLATE_URL,
