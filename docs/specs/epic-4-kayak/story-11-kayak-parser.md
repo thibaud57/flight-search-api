@@ -79,7 +79,7 @@ class KayakFlightParser:
 
 ## 2. Structure JSON Kayak
 
-**⚠️ Fichier référence complet** : `tests/fixtures/kayak/poll_data_example.json` (1.3MB, structure complète capturée depuis API Kayak interne)
+**⚠️ Fixture factory** : `kayak_poll_data_factory()` dans `tests/fixtures/factories.py` (génère structure réelle avec cas edge configurables)
 
 **Input attendu** (depuis network capture, structure simplifiée) :
 
@@ -221,7 +221,7 @@ def format_duration(minutes: int) -> str:
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 14 | `test_parse_real_kayak_response_fixture` | Parse JSON réel capturé depuis API Kayak | Fixture `tests/fixtures/kayak/poll_data_example.json` | Liste GoogleFlightDTO valide, tous champs mappés correctement | Vérifie parsing end-to-end avec données réelles |
+| 14 | `test_parse_real_kayak_response_fixture` | Parse JSON généré via factory avec structure réelle | Fixture `kayak_poll_data_factory(num_results=10, with_multi_segment=True)` | Liste GoogleFlightDTO valide, tous champs mappés correctement | Vérifie parsing end-to-end avec données réalistes |
 | 15 | `test_parse_malformed_json_gracefully` | JSON malformé (keys manquantes) | JSON avec keys obligatoires absentes | Lève `ValueError` avec message explicite, pas de crash | Vérifie gestion erreurs robuste |
 
 **Total tests unitaires avec fixtures** : 2 tests
