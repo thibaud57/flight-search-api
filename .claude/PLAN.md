@@ -165,9 +165,9 @@
 - [x] Remplir `.dockerignore`
 - [x] Créer `.env.example` avec variables :
       - LOG_LEVEL=INFO
-      - DECODO_USERNAME=customer-XXXX-country-FR
-      - DECODO_PASSWORD=your_password
-      - DECODO_PROXY_HOST=pr.decodo.com:8080
+      - PROXY_USERNAME=customer-XXXX-country-FR
+      - PROXY_PASSWORD=your_password
+      - PROXY_HOST=pr.decodo.com:8080
       - PROXY_ROTATION_ENABLED=true
       - CAPTCHA_DETECTION_ENABLED=true
 - [x] Commit : `chore: add system configuration files`
@@ -834,9 +834,9 @@
 - [ ] Configurer Dokploy : connecter repo GitHub
 - [ ] Ajouter env vars dans UI Dokploy :
       - LOG_LEVEL=INFO
-      - DECODO_USERNAME
-      - DECODO_PASSWORD
-      - DECODO_PROXY_HOST
+      - PROXY_USERNAME
+      - PROXY_PASSWORD
+      - PROXY_HOST
       - PROXY_ROTATION_ENABLED=true
       - CAPTCHA_DETECTION_ENABLED=true
 - [ ] **Build Docker** : `docker build -t flight-search-api:latest .`

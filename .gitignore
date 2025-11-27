@@ -74,6 +74,9 @@ ms-playwright/
 .env.local
 .env.*.local
 
+# Test fixtures (generated/captured manually)
+tests/fixtures/kayak/poll_data_example.json
+
 # Logs
 logs/
 *.log

@@ -7,6 +7,7 @@ from app.models.request import (
     DateRange,
     GoogleSearchRequest,
     KayakSearchRequest,
+    Provider,
     SearchRequest,
 )
 from app.models.response import (
@@ -26,6 +27,7 @@ __all__ = [
     "HealthResponse",
     "KayakSearchRequest",
     "KayakSegment",
+    "Provider",
     "ProxyConfig",
     "SearchRequest",
     "SearchResponse",

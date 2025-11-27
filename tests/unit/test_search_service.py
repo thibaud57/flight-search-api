@@ -19,7 +19,7 @@ from tests.fixtures.helpers import (
 def mock_crawler_service(mock_crawl_result):
     """Mock CrawlerService async."""
     crawler = AsyncMock()
-    crawler.crawl_google_flights.return_value = mock_crawl_result
+    crawler.crawl_flights.return_value = mock_crawl_result
     return crawler
 
 
@@ -90,7 +90,7 @@ async def test_search_flights_crawls_all_urls(
 
     await service.search_flights(valid_search_request)
 
-    assert mock_crawler_service.crawl_google_flights.call_count == 42
+    assert mock_crawler_service.crawl_flights.call_count == 42
 
 
 @pytest.mark.asyncio
@@ -109,7 +109,7 @@ async def test_search_flights_parallel_crawling_asyncio_gather(
 
     response = await service.search_flights(valid_search_request)
 
-    assert mock_crawler_service.crawl_google_flights.call_count == 10
+    assert mock_crawler_service.crawl_flights.call_count == 10
     assert response is not None
 
 
@@ -290,7 +290,7 @@ async def test_search_flights_handles_partial_crawl_failures(
             raise CaptchaDetectedError(url=url, captcha_type="recaptcha")
         return mock_crawl_result
 
-    mock_crawler_service.crawl_google_flights.side_effect = mock_crawl
+    mock_crawler_service.crawl_flights.side_effect = mock_crawl
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
@@ -311,7 +311,7 @@ async def test_search_flights_returns_empty_all_crawls_failed(
     valid_search_request,
 ):
     """Retourne response vide si tous crawls echouent."""
-    mock_crawler_service.crawl_google_flights.side_effect = NetworkError(
+    mock_crawler_service.crawl_flights.side_effect = NetworkError(
         url="test", status_code=500
     )
     service = SearchService(
@@ -440,7 +440,7 @@ async def test_search_with_real_generator_two_segments(
 
     assert len(response.results) == 10
     assert_results_sorted_by_price(response.results)
-    assert mock_crawler_success.crawl_google_flights.call_count == 42
+    assert mock_crawler_success.crawl_flights.call_count == 42
 
 
 @pytest.mark.asyncio
@@ -470,4 +470,4 @@ async def test_search_with_real_generator_five_segments_asymmetric(
     response = await service.search_flights(request)
 
     assert len(response.results) == 10
-    assert mock_crawler_success.crawl_google_flights.call_count == 240
+    assert mock_crawler_success.crawl_flights.call_count == 240

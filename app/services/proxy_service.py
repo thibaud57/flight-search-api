@@ -1,4 +1,4 @@
-"""Service de gestion et rotation de proxies residentiels Decodo."""
+"""Service de gestion et rotation de proxies residentiels."""
 
 import itertools
 import logging
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProxyService:
-    """Service de gestion et rotation de proxies residentiels Decodo."""
+    """Service de gestion et rotation de proxies residentiels."""
 
     def __init__(self, proxy_pool: list[ProxyConfig]) -> None:
         """Initialise service avec pool de proxies."""

@@ -211,7 +211,7 @@ jobs:
       - name: Deploy
         run: ./deploy.sh
         env:
-          API_KEY: ${{ secrets.DECODO_API_KEY }}
+          API_KEY: ${{ secrets.PROXY_API_KEY }}
           DB_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
 
   release:

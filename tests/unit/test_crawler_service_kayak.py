@@ -4,9 +4,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.models import Provider
 from app.services import CrawlerService
-
-KAYAK_URL = "https://www.kayak.fr/flights/PAR-TYO/2025-06-01/TYO-PAR/2025-06-15?sort=bestflight_a"
+from tests.fixtures.helpers import KAYAK_BASE_URL, KAYAK_TEMPLATE_URL
 
 
 @pytest.fixture(autouse=True)
@@ -32,7 +32,7 @@ def mock_page():
 
 
 @pytest.mark.asyncio
-async def test_get_kayak_session_success(
+async def test_get_session_kayak_success(
     crawler_service, mock_async_web_crawler, mock_crawl_result_factory
 ):
     """Session Kayak etablie avec consent."""
@@ -46,13 +46,13 @@ async def test_get_kayak_session_success(
     crawler.crawler_strategy = mock_strategy
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        await crawler_service.get_kayak_session(KAYAK_URL)
+        await crawler_service.get_session(Provider.KAYAK)
 
         assert mock_result.success is True
 
 
 @pytest.mark.asyncio
-async def test_get_kayak_session_no_popup(
+async def test_get_session_kayak_no_popup(
     crawler_service, mock_async_web_crawler, mock_crawl_result_factory
 ):
     """Session sans popup consent non bloquant."""
@@ -63,13 +63,13 @@ async def test_get_kayak_session_no_popup(
     crawler.crawler_strategy = mock_strategy
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        await crawler_service.get_kayak_session(KAYAK_URL)
+        await crawler_service.get_session(Provider.KAYAK)
 
         assert mock_result.success is True
 
 
 @pytest.mark.asyncio
-async def test_crawl_kayak_with_network_capture(
+async def test_crawl_flights_kayak_with_network_capture(
     crawler_service, mock_async_web_crawler, mock_crawl_result_factory
 ):
     """Crawl Kayak avec network capture active."""
@@ -80,14 +80,14 @@ async def test_crawl_kayak_with_network_capture(
     crawler.crawler_strategy = mock_strategy
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        result = await crawler_service.crawl_kayak(KAYAK_URL)
+        result = await crawler_service.crawl_flights(KAYAK_TEMPLATE_URL, Provider.KAYAK)
 
         assert result.success is True
         assert crawler.arun.called
 
 
 @pytest.mark.asyncio
-async def test_crawl_kayak_returns_html(
+async def test_crawl_flights_kayak_returns_html(
     crawler_service, mock_async_web_crawler, mock_crawl_result_factory
 ):
     """HTML retourne avec contenu DOM."""
@@ -99,36 +99,36 @@ async def test_crawl_kayak_returns_html(
     crawler.crawler_strategy = mock_strategy
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        result = await crawler_service.crawl_kayak(KAYAK_URL)
+        result = await crawler_service.crawl_flights(KAYAK_TEMPLATE_URL, Provider.KAYAK)
 
         assert result.html == expected_html
         assert "data-resultid" in result.html
 
 
 @pytest.mark.asyncio
-async def test_handle_kayak_consent_click(crawler_service, mock_page):
+async def test_handle_consent_click(crawler_service, mock_page):
     """Popup consent clique sur bouton accept."""
     mock_button = AsyncMock()
     mock_page.wait_for_selector = AsyncMock(return_value=mock_button)
     mock_button.click = AsyncMock()
 
-    await crawler_service._handle_kayak_consent(mock_page)
+    await crawler_service._handle_consent(mock_page)
 
     mock_button.click.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_handle_kayak_consent_timeout(crawler_service, mock_page, caplog):
+async def test_handle_consent_timeout(crawler_service, mock_page, caplog):
     """Timeout sans popup retourne sans erreur."""
     mock_page.wait_for_selector = AsyncMock(side_effect=TimeoutError("No popup"))
 
-    await crawler_service._handle_kayak_consent(mock_page)
+    await crawler_service._handle_consent(mock_page)
 
     assert len(caplog.records) >= 0
 
 
 @pytest.mark.asyncio
-async def test_handle_kayak_consent_fallback_selector(crawler_service, mock_page):
+async def test_handle_consent_fallback_selector(crawler_service, mock_page):
     """Fallback sur 2e selecteur si 1er timeout."""
     call_count = 0
     mock_button = AsyncMock()
@@ -143,132 +143,26 @@ async def test_handle_kayak_consent_fallback_selector(crawler_service, mock_page
     mock_page.wait_for_selector = mock_wait_with_fallback
     mock_button.click = AsyncMock()
 
-    await crawler_service._handle_kayak_consent(mock_page)
+    await crawler_service._handle_consent(mock_page)
 
     assert call_count == 2
     mock_button.click.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_after_goto_hook_kayak_url(crawler_service, mock_page):
-    """Hook detecte URL Kayak et appelle handle_kayak_consent."""
-    with patch.object(
-        crawler_service, "_handle_kayak_consent", new_callable=AsyncMock
-    ) as mock_consent:
-        mock_context = MagicMock()
-        mock_response = MagicMock()
+async def test_session_after_goto_hook_kayak(crawler_service, mock_page):
+    """Hook session appelle handle_consent pour Kayak."""
+    mock_context = AsyncMock()
+    mock_response = AsyncMock()
 
-        await crawler_service._after_goto_hook(
-            mock_page, mock_context, KAYAK_URL, mock_response
+    with patch.object(
+        crawler_service, "_handle_consent", new_callable=AsyncMock
+    ) as mock_consent:
+        await crawler_service._session_after_goto_hook(
+            mock_page, mock_context, KAYAK_BASE_URL, mock_response
         )
 
         mock_consent.assert_called_once_with(mock_page)
-
-
-@pytest.mark.asyncio
-async def test_after_goto_hook_google_url(crawler_service, mock_page):
-    """Hook detecte URL Google et appelle handle_google_consent."""
-    google_url = "https://www.google.com/travel/flights"
-
-    with patch.object(
-        crawler_service, "_handle_google_consent", new_callable=AsyncMock
-    ) as mock_google_consent:
-        mock_context = MagicMock()
-        mock_response = MagicMock()
-
-        await crawler_service._after_goto_hook(
-            mock_page, mock_context, google_url, mock_response
-        )
-
-        mock_google_consent.assert_called_once_with(mock_page)
-
-
-@pytest.mark.asyncio
-async def test_extract_kayak_api_filters_url(crawler_service):
-    """Filtre URLs API Kayak depuis network requests."""
-    mock_network_requests = [
-        MagicMock(
-            url="https://www.kayak.fr/api/search/poll",
-            response_status=200,
-            response_body='{"results": [{"price": 100}]}',
-        ),
-        MagicMock(
-            url="https://www.kayak.fr/other/path",
-            response_status=200,
-            response_body='{"results": [{"price": 200}]}',
-        ),
-    ]
-
-    mock_result = MagicMock()
-    mock_result.network_requests = mock_network_requests
-
-    responses = crawler_service._extract_kayak_api_responses(mock_result)
-
-    assert len(responses) == 1
-    assert "results" in responses[0]
-
-
-@pytest.mark.asyncio
-async def test_extract_kayak_api_filters_status(crawler_service):
-    """Filtre status 200 uniquement."""
-    mock_network_requests = [
-        MagicMock(
-            url="https://www.kayak.fr/api/search/poll",
-            response_status=200,
-            response_body='{"results": [{"price": 100}]}',
-        ),
-        MagicMock(
-            url="https://www.kayak.fr/api/search/poll",
-            response_status=404,
-            response_body='{"results": [{"price": 200}]}',
-        ),
-    ]
-
-    mock_result = MagicMock()
-    mock_result.network_requests = mock_network_requests
-
-    responses = crawler_service._extract_kayak_api_responses(mock_result)
-
-    assert len(responses) == 1
-
-
-@pytest.mark.asyncio
-async def test_extract_kayak_api_parses_json(crawler_service):
-    """Parse JSON response body valide."""
-    mock_network_requests = [
-        MagicMock(
-            url="https://www.kayak.fr/api/search/poll",
-            response_status=200,
-            response_body='{"results": [{"price": 500}]}',
-        ),
-    ]
-
-    mock_result = MagicMock()
-    mock_result.network_requests = mock_network_requests
-
-    responses = crawler_service._extract_kayak_api_responses(mock_result)
-
-    assert len(responses) == 1
-    assert responses[0]["results"][0]["price"] == 500
-
-
-@pytest.mark.asyncio
-async def test_extract_kayak_api_ignores_invalid_json(crawler_service):
-    """Ignore JSON invalide sans exception."""
-    mock_network_requests = [
-        MagicMock(
-            url="https://www.kayak.fr/api/search/poll",
-            response_status=200,
-            response_body="Invalid JSON {{{",
-        ),
-    ]
-
-    mock_result = MagicMock()
-    mock_result.network_requests = mock_network_requests
-
-    responses = crawler_service._extract_kayak_api_responses(mock_result)
-
-    assert len(responses) == 0
 
 
 @pytest.mark.asyncio
@@ -290,96 +184,26 @@ async def test_kayak_session_with_consent_flow(
     crawler.crawler_strategy = mock_strategy
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        await crawler_service.get_kayak_session(KAYAK_URL)
+        await crawler_service.get_session(Provider.KAYAK)
 
         assert consent_clicked is True
         assert mock_result.success is True
 
 
 @pytest.mark.asyncio
-async def test_crawl_kayak_captures_network_requests(
+async def test_crawl_flights_kayak_with_use_proxy_false(
     crawler_service, mock_async_web_crawler, mock_crawl_result_factory
 ):
-    """Crawl Kayak capture network requests avec JSON API."""
-    mock_network_requests = [
-        MagicMock(
-            url="https://www.kayak.fr/api/search/poll",
-            response_status=200,
-            response_body='{"results": [{"price": 500}]}',
-        ),
-    ]
-
-    mock_result = mock_crawl_result_factory(html="<html>Results</html>")
-    mock_result.network_requests = mock_network_requests
+    """Crawl Kayak sans proxy."""
+    mock_result = mock_crawl_result_factory(html="<html>Kayak results</html>")
 
     crawler = mock_async_web_crawler(mock_result=mock_result)
     mock_strategy = MagicMock()
     crawler.crawler_strategy = mock_strategy
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        result = await crawler_service.crawl_kayak(KAYAK_URL)
+        result = await crawler_service.crawl_flights(
+            KAYAK_TEMPLATE_URL, Provider.KAYAK, use_proxy=False
+        )
 
         assert result.success is True
-        responses = crawler_service._extract_kayak_api_responses(mock_result)
-        assert len(responses) == 1
-
-
-@pytest.mark.asyncio
-async def test_hook_routing_kayak_vs_google(crawler_service, mock_page):
-    """Hook routing selon provider URL."""
-    mock_context = MagicMock()
-    mock_response = MagicMock()
-
-    with patch.object(
-        crawler_service, "_handle_kayak_consent", new_callable=AsyncMock
-    ) as mock_kayak:
-        await crawler_service._after_goto_hook(
-            mock_page, mock_context, KAYAK_URL, mock_response
-        )
-        mock_kayak.assert_called_once()
-
-    google_url = "https://www.google.com/travel/flights"
-    with patch.object(
-        crawler_service, "_handle_google_consent", new_callable=AsyncMock
-    ) as mock_google:
-        await crawler_service._after_goto_hook(
-            mock_page, mock_context, google_url, mock_response
-        )
-        mock_google.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_wait_for_kayak_polling_complete_success(crawler_service, mock_page):
-    """Polling Kayak termine avec progressbar a 100%."""
-    mock_page.wait_for_function = AsyncMock(return_value=True)
-
-    result = await crawler_service._wait_for_kayak_polling_complete(mock_page)
-
-    assert result is True
-    mock_page.wait_for_function.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_wait_for_kayak_polling_complete_timeout(crawler_service, mock_page):
-    """Polling Kayak timeout retourne False sans erreur."""
-    mock_page.wait_for_function = AsyncMock(side_effect=TimeoutError("Timeout"))
-
-    result = await crawler_service._wait_for_kayak_polling_complete(mock_page)
-
-    assert result is False
-
-
-@pytest.mark.asyncio
-async def test_wait_for_kayak_polling_complete_custom_timeout(
-    crawler_service, mock_page
-):
-    """Timeout personnalise applique correctement."""
-    custom_timeout = 30000
-    mock_page.wait_for_function = AsyncMock(return_value=True)
-
-    await crawler_service._wait_for_kayak_polling_complete(
-        mock_page, timeout=custom_timeout
-    )
-
-    call_kwargs = mock_page.wait_for_function.call_args.kwargs
-    assert call_kwargs.get("timeout") == custom_timeout

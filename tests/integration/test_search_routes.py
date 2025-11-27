@@ -1,9 +1,11 @@
 """Tests integration routes search HTTP."""
 
+import pytest
 from fastapi.testclient import TestClient
 
 from tests.fixtures.helpers import (
     GOOGLE_FLIGHT_TEMPLATE_URL,
+    KAYAK_TEMPLATE_URL,
     SEARCH_GOOGLE_FLIGHTS_ENDPOINT,
     SEARCH_KAYAK_ENDPOINT,
 )
@@ -38,53 +40,39 @@ def test_search_google_flights_returns_200_with_valid_request(
         )
 
 
-def test_search_google_flights_returns_422_empty_segments(
+@pytest.mark.parametrize(
+    "segments_data,description",
+    [
+        ([], "segments vide"),
+        (
+            lambda factory: [
+                factory(start_offset=10, duration=-10, as_dict=True),
+                factory(start_offset=14, duration=5, as_dict=True),
+            ],
+            "dates invalides",
+        ),
+        (
+            lambda factory: [
+                factory(start_offset=1 + i * 10, duration=2, as_dict=True)
+                for i in range(6)
+            ],
+            "trop de segments",
+        ),
+    ],
+)
+def test_search_google_flights_validation_errors_422(
     client_with_mock_search: TestClient,
+    date_range_factory,
+    segments_data,
+    description,
 ) -> None:
-    """Segments vide retourne 422."""
+    """Requetes invalides retournent 422."""
+    if callable(segments_data):
+        segments_data = segments_data(date_range_factory)
+
     request_data = {
         "template_url": GOOGLE_FLIGHT_TEMPLATE_URL,
-        "segments_date_ranges": [],
-    }
-
-    response = client_with_mock_search.post(
-        SEARCH_GOOGLE_FLIGHTS_ENDPOINT, json=request_data
-    )
-
-    assert response.status_code == 422
-    assert "detail" in response.json()
-
-
-def test_search_google_flights_returns_422_invalid_dates(
-    client_with_mock_search: TestClient, date_range_factory
-) -> None:
-    """Dates invalides retourne 422."""
-    request_data = {
-        "template_url": GOOGLE_FLIGHT_TEMPLATE_URL,
-        "segments_date_ranges": [
-            date_range_factory(start_offset=10, duration=-10, as_dict=True),
-            date_range_factory(start_offset=14, duration=5, as_dict=True),
-        ],
-    }
-
-    response = client_with_mock_search.post(
-        SEARCH_GOOGLE_FLIGHTS_ENDPOINT, json=request_data
-    )
-
-    assert response.status_code == 422
-    assert "detail" in response.json()
-
-
-def test_search_google_flights_returns_422_too_many_segments(
-    client_with_mock_search: TestClient, date_range_factory
-) -> None:
-    """Plus de 5 segments retourne 422."""
-    request_data = {
-        "template_url": GOOGLE_FLIGHT_TEMPLATE_URL,
-        "segments_date_ranges": [
-            date_range_factory(start_offset=1 + i * 10, duration=2, as_dict=True)
-            for i in range(6)
-        ],
+        "segments_date_ranges": segments_data,
     }
 
     response = client_with_mock_search.post(
@@ -151,6 +139,30 @@ def test_search_kayak_returns_200_mock_response(
     assert "results" in data
     assert data["results"] == []
     assert "search_stats" in data
+
+
+@pytest.mark.parametrize(
+    "endpoint,template_url",
+    [
+        (SEARCH_GOOGLE_FLIGHTS_ENDPOINT, GOOGLE_FLIGHT_TEMPLATE_URL),
+        (SEARCH_KAYAK_ENDPOINT, KAYAK_TEMPLATE_URL),
+    ],
+)
+def test_search_both_providers_validation_empty_segments_422(
+    client_with_mock_search: TestClient,
+    endpoint,
+    template_url,
+) -> None:
+    """Les 2 endpoints valident segments vide et retournent 422."""
+    request_data = {
+        "template_url": template_url,
+        "segments_date_ranges": [],
+    }
+
+    response = client_with_mock_search.post(endpoint, json=request_data)
+
+    assert response.status_code == 422
+    assert "detail" in response.json()
 
 
 def test_old_route_search_flights_returns_404(

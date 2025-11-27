@@ -11,9 +11,9 @@ def test_settings_load_from_env_vars(settings_env_factory) -> None:
     settings = settings_env_factory(LOG_LEVEL="DEBUG")
 
     assert settings.LOG_LEVEL == "DEBUG"
-    assert settings.DECODO_USERNAME == "testuser"
-    assert settings.DECODO_PASSWORD.get_secret_value() == "password123"
-    assert settings.DECODO_PROXY_HOST == "fr.decodo.com:40000"
+    assert settings.PROXY_USERNAME == "testuser"
+    assert settings.PROXY_PASSWORD.get_secret_value() == "password123"
+    assert settings.PROXY_HOST == "proxy.example.com:40000"
     assert settings.PROXY_ROTATION_ENABLED is True
     assert settings.CAPTCHA_DETECTION_ENABLED is True
 
@@ -26,34 +26,34 @@ def test_settings_log_level_literal_validation(settings_env_factory) -> None:
     assert "LOG_LEVEL" in str(exc_info.value)
 
 
-def test_settings_decodo_username_format_valid(settings_env_factory) -> None:
-    """DECODO_USERNAME min 5 chars valide."""
+def test_settings_proxy_username_format_valid(settings_env_factory) -> None:
+    """PROXY_USERNAME min 5 chars valide."""
     settings = settings_env_factory()
 
-    assert settings.DECODO_USERNAME == "testuser"
+    assert settings.PROXY_USERNAME == "testuser"
 
 
-def test_settings_decodo_username_format_invalid(settings_env_factory) -> None:
-    """DECODO_USERNAME trop court rejete."""
+def test_settings_proxy_username_format_invalid(settings_env_factory) -> None:
+    """PROXY_USERNAME trop court rejete."""
     with pytest.raises(ValidationError) as exc_info:
-        settings_env_factory(DECODO_USERNAME="abc")
+        settings_env_factory(PROXY_USERNAME="abc")
 
-    assert "DECODO_USERNAME" in str(exc_info.value)
+    assert "PROXY_USERNAME" in str(exc_info.value)
 
 
-def test_settings_decodo_proxy_host_format_valid(settings_env_factory) -> None:
-    """DECODO_PROXY_HOST format host:port valide."""
+def test_settings_proxy_host_format_valid(settings_env_factory) -> None:
+    """PROXY_HOST format host:port valide."""
     settings = settings_env_factory()
 
-    assert settings.DECODO_PROXY_HOST == "fr.decodo.com:40000"
+    assert settings.PROXY_HOST == "proxy.example.com:40000"
 
 
-def test_settings_decodo_proxy_host_format_invalid(settings_env_factory) -> None:
-    """DECODO_PROXY_HOST sans port rejete."""
+def test_settings_proxy_host_format_invalid(settings_env_factory) -> None:
+    """PROXY_HOST sans port rejete."""
     with pytest.raises(ValidationError) as exc_info:
-        settings_env_factory(DECODO_PROXY_HOST="fr.decodo.com")
+        settings_env_factory(PROXY_HOST="proxy.example.com")
 
-    assert "DECODO_PROXY_HOST" in str(exc_info.value)
+    assert "PROXY_HOST" in str(exc_info.value)
 
 
 def test_settings_boolean_fields_coercion(settings_env_factory) -> None:
@@ -83,21 +83,21 @@ def test_settings_proxy_config_generation(settings_env_factory) -> None:
     settings = settings_env_factory()
 
     assert settings.proxy_config is not None
-    assert settings.proxy_config.host == "fr.decodo.com"
+    assert settings.proxy_config.host == "proxy.example.com"
     assert settings.proxy_config.port == 40000
     assert settings.proxy_config.username == "testuser"
 
 
 def test_settings_proxy_disabled(settings_env_factory) -> None:
     """Proxies desactives genere None."""
-    settings = settings_env_factory(DECODO_PROXY_ENABLED="false")
+    settings = settings_env_factory(PROXY_ENABLED="false")
 
     assert settings.proxy_config is None
 
 
 def test_settings_secret_str_password_masked(settings_env_factory) -> None:
     """SecretStr masque password dans logs."""
-    settings = settings_env_factory(DECODO_PASSWORD="secret123")
+    settings = settings_env_factory(PROXY_PASSWORD="secret123")
 
-    assert str(settings.DECODO_PASSWORD) == "**********"
-    assert settings.DECODO_PASSWORD.get_secret_value() == "secret123"
+    assert str(settings.PROXY_PASSWORD) == "**********"
+    assert settings.PROXY_PASSWORD.get_secret_value() == "secret123"

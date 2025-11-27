@@ -53,23 +53,17 @@ def test_date_range_start_past_fails(date_range_factory):
         DateRange(**invalid_past_range)
 
 
-def test_date_range_invalid_format_fails(date_range_factory):
-    """Format date invalide rejeté."""
-    invalid_format_range = date_range_factory(
-        start_offset=1, duration=14, invalid_format=True, as_dict=True
-    )
+@pytest.mark.parametrize(
+    "start,end,description",
+    [
+        ("2025/06/01", "2025-06-15", "format date invalide"),
+        ("2025-02-30", "2025-03-01", "date inexistante"),
+    ],
+)
+def test_date_range_validation_errors(start, end, description):
+    """Validation DateRange rejette dates invalides."""
     with pytest.raises(ValidationError):
-        DateRange(**invalid_format_range)
-
-
-def test_date_range_non_existent_date_fails():
-    """Date inexistante rejetée."""
-    date_range_data = {
-        "start": "2025-02-30",
-        "end": "2025-03-01",
-    }
-    with pytest.raises(ValidationError):
-        DateRange(**date_range_data)
+        DateRange(start=start, end=end)
 
 
 def test_date_range_future_dates_valid(date_range_factory):
@@ -90,54 +84,37 @@ def test_search_request_valid_two_segments(search_request_factory):
     assert len(request.segments_date_ranges) == 2
 
 
-def test_search_request_valid_five_segments():
-    """Request valide avec 5 segments (maximum)."""
+@pytest.mark.parametrize(
+    "num_segments,should_fail",
+    [
+        (1, True),  # minimum 2 segments
+        (2, False),  # valid
+        (5, False),  # maximum 5 segments
+        (6, True),  # too many segments
+    ],
+)
+def test_search_request_segments_count_validation(num_segments, should_fail):
+    """Validation nombre segments SearchRequest (2-5)."""
     segments_date_ranges = []
-    for i in range(5):
+    for i in range(num_segments):
         start = get_future_date(1 + i * 10)
         end = get_future_date(1 + i * 10 + 2)
         segments_date_ranges.append(
             DateRange(start=start.isoformat(), end=end.isoformat())
         )
 
-    request = SearchRequest(
-        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
-        segments_date_ranges=segments_date_ranges,
-    )
-
-    assert len(request.segments_date_ranges) == 5
-
-
-def test_search_request_single_segment_fails():
-    """1 segment rejeté (multi-city minimum 2)."""
-    tomorrow = get_future_date(1)
-    with pytest.raises(ValidationError):
-        SearchRequest(
-            template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
-            segments_date_ranges=[
-                DateRange(
-                    start=tomorrow.isoformat(),
-                    end=get_future_date(6).isoformat(),
-                )
-            ],
-        )
-
-
-def test_search_request_too_many_segments_fails():
-    """Plus de 5 segments rejetés."""
-    segments_date_ranges = []
-    for i in range(6):
-        start = get_future_date(1 + i * 10)
-        end = get_future_date(1 + i * 10 + 2)
-        segments_date_ranges.append(
-            DateRange(start=start.isoformat(), end=end.isoformat())
-        )
-
-    with pytest.raises(ValidationError):
-        SearchRequest(
+    if should_fail:
+        with pytest.raises(ValidationError):
+            SearchRequest(
+                template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
+                segments_date_ranges=segments_date_ranges,
+            )
+    else:
+        request = SearchRequest(
             template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
             segments_date_ranges=segments_date_ranges,
         )
+        assert len(request.segments_date_ranges) == num_segments
 
 
 def test_search_request_empty_segments_fails():
@@ -344,10 +321,21 @@ def test_flight_combination_result_valid_fields(flight_dto_factory, date_range_f
     assert combination.flights[0].airline == "Air France"
 
 
-def test_google_flight_dto_negative_price_fails(flight_dto_factory):
-    """Prix négatif rejeté dans GoogleFlightDTO."""
+@pytest.mark.parametrize(
+    "field,value,description",
+    [
+        ("price", -100.0, "prix négatif"),
+        ("price", 0, "prix zéro"),
+        ("airline", "A", "airline trop court"),
+        ("stops", -1, "stops négatif"),
+    ],
+)
+def test_google_flight_dto_validation_errors(
+    flight_dto_factory, field, value, description
+):
+    """Validation GoogleFlightDTO rejette valeurs invalides."""
     with pytest.raises(ValidationError):
-        flight_dto_factory(price=-100.0)
+        flight_dto_factory(**{field: value})
 
 
 def test_search_stats_valid_fields():
@@ -449,18 +437,6 @@ def test_search_response_max_10_results(flight_dto_factory):
         SearchResponse(results=results, search_stats=stats_data)
 
 
-def test_flight_price_must_be_positive(flight_dto_factory):
-    """GoogleFlightDTO price doit être > 0."""
-    with pytest.raises(ValidationError):
-        flight_dto_factory(price=0)
-
-
-def test_flight_airline_min_length(flight_dto_factory):
-    """Airline doit avoir au moins 2 caractères."""
-    with pytest.raises(ValidationError):
-        flight_dto_factory(airline="A")
-
-
 def test_flight_time_string_format(flight_dto_factory):
     """GoogleFlightDTO accepte times en format string."""
     flight = flight_dto_factory(
@@ -478,9 +454,3 @@ def test_flight_duration_format(flight_dto_factory):
     )
 
     assert flight.duration == "10h 30min"
-
-
-def test_flight_stops_must_be_non_negative(flight_dto_factory):
-    """stops doit être >= 0."""
-    with pytest.raises(ValidationError):
-        flight_dto_factory(stops=-1)

@@ -79,28 +79,41 @@ class KayakFlightParser:
 
 ## 2. Structure JSON Kayak
 
-**Input attendu** (depuis network capture) :
+**⚠️ Fichier référence complet** : `tests/fixtures/kayak/poll_data_example.json` (1.3MB, structure complète capturée depuis API Kayak interne)
+
+**Input attendu** (depuis network capture, structure simplifiée) :
 
 ```json
 {
-  "status": "complete",
+  "searchId": "ofECLnOBi5",
+  "searchUrl": {...},
   "results": [
     {
       "resultId": "abc123",
-      "price": 1250.00,
-      "legs": ["leg_id_1", "leg_id_2"]
+      "type": "core",
+      "bookingOptions": [
+        {
+          "displayPrice": {"price": 1250.00, "currency": "EUR"},
+          "legFarings": [
+            {"legId": "CDGHND1770..."}
+          ]
+        }
+      ]
     }
   ],
   "legs": {
-    "leg_id_1": {
+    "CDGHND1770...": {
       "duration": 765,
-      "stops": 0,
-      "segments": ["segment_id_1"],
-      "layover": {"duration": 120}
+      "segments": [
+        {"id": "1770397200000U221121210", "layover": {"duration": 120}},
+        {"id": "1770462000000HU7540615"}
+      ],
+      "arrival": "2026-01-15T06:45:00",
+      "departure": "2026-01-14T10:30:00"
     }
   },
   "segments": {
-    "segment_id_1": {
+    "1770397200000U221121210": {
       "airline": "AF",
       "flightNumber": "123",
       "origin": "CDG",
@@ -117,12 +130,12 @@ class KayakFlightParser:
 
 | Champ GoogleFlightDTO | Source Kayak | Notes |
 |-----------------------|--------------|-------|
-| `price` | `results[].price` | Float obligatoire |
+| `price` | `results[].bookingOptions[0].displayPrice.price` | Float obligatoire |
 | `airline` | `segments{}.airline` | String code IATA (ex: "AF") |
 | `departure_time` | `segments{}.departure` | ISO 8601 string |
 | `arrival_time` | `segments{}.arrival` | ISO 8601 string |
 | `duration` | `legs{}.duration` minutes → format "Xh Ymin" | Conversion minutes → string |
-| `stops` | `legs{}.stops` | Int optionnel (défaut: 0 si absent) |
+| `stops` | Calculé depuis `len(legs{}.segments) - 1` | Int (0 si 1 segment, 1 si 2 segments, etc.) |
 | `departure_airport` | `segments{}.origin` | String code IATA (optionnel) |
 | `arrival_airport` | `segments{}.destination` | String code IATA (optionnel) |
 
@@ -179,16 +192,16 @@ def format_duration(minutes: int) -> str:
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 1 | `test_parse_valid_json_complete` | Parse JSON valide complet avec status "complete" | JSON avec 2 results, tous champs présents | Liste de 2 GoogleFlightDTO triés par prix | Vérifie dénormalisation correcte + tri |
+| 1 | `test_parse_valid_json_complete` | Parse JSON valide complet | JSON avec 2 results, tous champs présents (structure réelle) | Liste de 2 GoogleFlightDTO triés par prix | Vérifie dénormalisation correcte + tri |
 | 2 | `test_parse_empty_results` | Parse JSON avec results vide | `{"results": [], "legs": {}, "segments": {}}` | Liste vide `[]` | Vérifie gestion cas sans résultats |
 | 3 | `test_parse_missing_results_key` | JSON sans key "results" | `{"legs": {}, "segments": {}}` | Lève `ValueError("Missing 'results' key")` | Vérifie validation structure JSON |
 | 4 | `test_parse_missing_legs_key` | JSON sans key "legs" | `{"results": [...], "segments": {}}` | Lève `ValueError("Missing 'legs' key")` | Vérifie validation structure JSON |
 | 5 | `test_parse_missing_segments_key` | JSON sans key "segments" | `{"results": [...], "legs": {}}` | Lève `ValueError("Missing 'segments' key")` | Vérifie validation structure JSON |
-| 6 | `test_parse_leg_id_not_found` | Result référence leg ID inexistant | Result avec `legs: ["unknown_id"]` | Skip ce result, log warning | Vérifie resilience face IDs invalides |
-| 7 | `test_parse_segment_id_not_found` | Leg référence segment ID inexistant | Leg avec `segments: ["unknown_id"]` | Skip ce result, log warning | Vérifie resilience face IDs invalides |
-| 8 | `test_parse_optional_fields_absent` | Segments sans stops/layover | Segment sans champs `stops`, `layover` | GoogleFlightDTO avec `stops=0`, pas de crash | Vérifie defaults intelligents |
+| 6 | `test_parse_leg_id_not_found` | Result référence leg ID inexistant | Result avec `bookingOptions[].legFarings[].legId = "unknown_id"` | Skip ce result, log warning | Vérifie resilience face IDs invalides |
+| 7 | `test_parse_segment_id_not_found` | Leg référence segment ID inexistant | Leg avec `segments: [{"id": "unknown_id"}]` | Skip ce result, log warning | Vérifie resilience face IDs invalides |
+| 8 | `test_parse_optional_fields_absent` | Segments sans champs optionnels | Segment sans `origin`, `destination`, `flightNumber` | GoogleFlightDTO avec defaults, pas de crash | Vérifie defaults intelligents |
 | 9 | `test_parse_sorting_by_price` | Résultats avec prix désordonnés | 3 results avec prix [1500, 1000, 1200] | Liste triée [1000, 1200, 1500] | Vérifie tri ascendant par prix |
-| 10 | `test_parse_multiple_segments_per_leg` | Leg avec 2+ segments (escales) | Leg avec `segments: ["seg1", "seg2"]` | 1 GoogleFlightDTO par segment | Vérifie gestion vols multi-segments |
+| 10 | `test_parse_multiple_segments_per_leg` | Leg avec 2+ segments (escales) | Leg avec `segments: [{"id": "seg1"}, {"id": "seg2"}]` | 1 GoogleFlightDTO par segment | Vérifie gestion vols multi-segments |
 
 ### Conversion format_duration (~3 tests)
 
@@ -208,7 +221,7 @@ def format_duration(minutes: int) -> str:
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 14 | `test_parse_real_kayak_response_fixture` | Parse JSON réel capturé depuis API Kayak | Fixture JSON réaliste multi-results | Liste GoogleFlightDTO valide, tous champs mappés correctement | Vérifie parsing end-to-end avec données réelles |
+| 14 | `test_parse_real_kayak_response_fixture` | Parse JSON réel capturé depuis API Kayak | Fixture `tests/fixtures/kayak/poll_data_example.json` | Liste GoogleFlightDTO valide, tous champs mappés correctement | Vérifie parsing end-to-end avec données réelles |
 | 15 | `test_parse_malformed_json_gracefully` | JSON malformé (keys manquantes) | JSON avec keys obligatoires absentes | Lève `ValueError` avec message explicite, pas de crash | Vérifie gestion erreurs robuste |
 
 **Total tests unitaires avec fixtures** : 2 tests
@@ -217,33 +230,47 @@ def format_duration(minutes: int) -> str:
 
 ## Exemples JSON
 
-**Exemple 1 : JSON Kayak valide complet**
+**Exemple 1 : JSON Kayak valide complet** (structure réelle simplifiée)
 ```json
 {
-  "status": "complete",
+  "searchId": "test123",
   "results": [
     {
       "resultId": "result_1",
-      "price": 1250.50,
-      "legs": ["leg_1"]
+      "type": "core",
+      "bookingOptions": [
+        {
+          "displayPrice": {"price": 1250.50, "currency": "EUR"},
+          "legFarings": [{"legId": "leg_1"}]
+        }
+      ]
     },
     {
       "resultId": "result_2",
-      "price": 980.00,
-      "legs": ["leg_2"]
+      "type": "core",
+      "bookingOptions": [
+        {
+          "displayPrice": {"price": 980.00, "currency": "EUR"},
+          "legFarings": [{"legId": "leg_2"}]
+        }
+      ]
     }
   ],
   "legs": {
     "leg_1": {
       "duration": 765,
-      "stops": 1,
-      "segments": ["segment_1", "segment_2"],
-      "layover": {"duration": 120}
+      "segments": [
+        {"id": "segment_1", "layover": {"duration": 120}},
+        {"id": "segment_2"}
+      ],
+      "arrival": "2026-01-14T19:15:00",
+      "departure": "2026-01-14T10:30:00"
     },
     "leg_2": {
       "duration": 600,
-      "stops": 0,
-      "segments": ["segment_3"]
+      "segments": [{"id": "segment_3"}],
+      "arrival": "2026-01-15T12:00:00",
+      "departure": "2026-01-15T08:00:00"
     }
   },
   "segments": {
@@ -295,18 +322,25 @@ def format_duration(minutes: int) -> str:
 **Exemple 3 : JSON Kayak avec champs optionnels absents**
 ```json
 {
-  "status": "complete",
+  "searchId": "minimal",
   "results": [
     {
       "resultId": "result_minimal",
-      "price": 1500.00,
-      "legs": ["leg_minimal"]
+      "type": "core",
+      "bookingOptions": [
+        {
+          "displayPrice": {"price": 1500.00, "currency": "EUR"},
+          "legFarings": [{"legId": "leg_minimal"}]
+        }
+      ]
     }
   ],
   "legs": {
     "leg_minimal": {
       "duration": 480,
-      "segments": ["segment_minimal"]
+      "segments": [{"id": "segment_minimal"}],
+      "arrival": "2026-02-01T22:00:00",
+      "departure": "2026-02-01T14:00:00"
     }
   },
   "segments": {
@@ -319,13 +353,18 @@ def format_duration(minutes: int) -> str:
   }
 }
 ```
+**Note** : Champs `origin`, `destination`, `flightNumber` absents → Parser doit gérer avec `.get()` et defaults
 
 **Exemple 4 : JSON malformé (key manquante)**
 ```json
 {
-  "status": "complete",
+  "searchId": "malformed",
   "results": [
-    {"resultId": "r1", "price": 1000, "legs": ["l1"]}
+    {
+      "resultId": "r1",
+      "type": "core",
+      "bookingOptions": [{"displayPrice": {"price": 1000, "currency": "EUR"}}]
+    }
   ],
   "segments": {
     "s1": {"airline": "AF", "duration": 300}

@@ -124,7 +124,7 @@ def mock_proxy_pool():
     """Pool de 3 proxies pour tests."""
     return [
         ProxyConfig(
-            host=f"proxy{i}.decodo.com",
+            host=f"proxy{i}.example.com",
             port=40000 + i,
             username=f"proxy{i}user",
             password=f"proxy{i}pass",
@@ -138,7 +138,7 @@ def mock_proxy_pool():
 def mock_crawler_success():
     """Mock CrawlerService async avec HTML valide (partagé tests integration)."""
     crawler = AsyncMock()
-    crawler.crawl_google_flights.return_value = CrawlResult(
+    crawler.crawl_flights.return_value = CrawlResult(
         success=True, html="<html>valid</html>", status_code=200
     )
     return crawler

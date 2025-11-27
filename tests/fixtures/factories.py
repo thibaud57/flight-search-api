@@ -114,12 +114,12 @@ def settings_env_factory(monkeypatch):
     def _create(**overrides):
         defaults = {
             "LOG_LEVEL": "INFO",
-            "DECODO_USERNAME": "testuser",
-            "DECODO_PASSWORD": "password123",
-            "DECODO_PROXY_HOST": "fr.decodo.com:40000",
+            "PROXY_USERNAME": "testuser",
+            "PROXY_PASSWORD": "password123",
+            "PROXY_HOST": "proxy.example.com:40000",
             "PROXY_ROTATION_ENABLED": "true",
             "CAPTCHA_DETECTION_ENABLED": "true",
-            "DECODO_PROXY_ENABLED": "true",
+            "PROXY_ENABLED": "true",
         }
         env_vars = {**defaults, **overrides}
         for key, value in env_vars.items():
@@ -168,7 +168,7 @@ def proxy_config_factory():
     """Factory pour créer ProxyConfig avec paramètres configurables."""
 
     def _create(
-        host="fr.decodo.com",
+        host="proxy.example.com",
         port=40000,
         username="testuser",
         password="testpass",
