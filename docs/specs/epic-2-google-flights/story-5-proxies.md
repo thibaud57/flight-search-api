@@ -264,7 +264,7 @@ class Settings(BaseSettings):
     PROXY_USERNAME: str
     PROXY_PASSWORD: SecretStr
     PROXY_HOST: str = "fr.decodo.com:40000"
-    PROXY_ENABLED: bool = True
+    PROXY_ROTATION_ENABLED: bool = True
 
     @model_validator(mode='after')
     def build_proxy_config(self) -> 'Settings':
@@ -278,7 +278,7 @@ class Settings(BaseSettings):
 | `PROXY_USERNAME` | `str` | - | Username proxy provider (identifiant simple dashboard) | min_length 5 |
 | `PROXY_PASSWORD` | `SecretStr` | - | Password proxy provider (masqué logs) | min_length 8, masqué automatiquement par SecretStr |
 | `PROXY_HOST` | `str` | `"fr.decodo.com:40000"` | Hostname:port proxy France rotating | Format "host:port" avec validation |
-| `PROXY_ENABLED` | `bool` | `True` | Active/désactive proxies globalement | False désactive proxy |
+| `PROXY_ROTATION_ENABLED` | `bool` | `True` | Active/désactive proxies globalement | False désactive proxy |
 
 **Comportement** :
 
@@ -286,7 +286,7 @@ class Settings(BaseSettings):
 - **Validation username** → min_length 5, identifiant simple fourni par dashboard proxy provider
 - **Génération ProxyConfig** → model_validator génère ProxyConfig depuis PROXY_USERNAME, PASSWORD, HOST
 - **Sécurité password** → SecretStr masque automatiquement PROXY_PASSWORD dans logs (affiche "**********"), get_secret_value() utilisé uniquement pour génération ProxyConfig
-- **Mode désactivé** → Si PROXY_ENABLED=False, pas de ProxyConfig généré
+- **Mode désactivé** → Si PROXY_ROTATION_ENABLED=False, pas de ProxyConfig généré
 - **Rotation server-side native Decodo** → Port 40000 (endpoint rotating France) change automatiquement l'IP à chaque requête HTTP. Pas de pool côté client nécessaire, ProxyService devient simple wrapper pour compatibilité CrawlerService. Documentation : https://help.decodo.com/docs/residential-proxy-endpoints-and-ports
 
 **Variables .env** :
@@ -336,7 +336,7 @@ PROXY_HOST=fr.decodo.com:40000
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
 | 13 | `test_settings_proxy_config_generation` | model_validator génère ProxyConfig | .env avec PROXY_USERNAME, PASSWORD, HOST, ENABLED=true | `settings.proxy_config` valide avec credentials cohérents | Vérifie génération automatique ProxyConfig depuis env vars |
-| 14 | `test_settings_proxy_disabled` | Proxies désactivés génère None | .env avec PROXY_ENABLED=false | `settings.proxy_config == None` | Vérifie comportement désactivation proxies |
+| 14 | `test_settings_proxy_disabled` | Proxies désactivés génère None | .env avec PROXY_ROTATION_ENABLED=false | `settings.proxy_config == None` | Vérifie comportement désactivation proxies |
 | 15 | `test_settings_username_too_short` | Username trop court rejette Settings | .env avec PROXY_USERNAME="abc" | Lève `ValidationError` "at least 5 characters" | Vérifie validation username min_length |
 | 16 | `test_settings_secret_str_password_masked` | SecretStr masque password dans logs | Settings avec PROXY_PASSWORD="secret123" | `str(settings.PROXY_PASSWORD) == "**********"` (masqué) | Vérifie sécurité SecretStr Pydantic |
 
@@ -354,7 +354,7 @@ PROXY_HOST=fr.decodo.com:40000
 | 2 | `test_integration_settings_load_from_env` | Fichier .env avec PROXY_USERNAME, PASSWORD, HOST, ENABLED=true | Charger Settings() depuis env | `settings.proxy_config` valide, aucune exception ValidationError |
 | 3 | `test_integration_proxy_service_injected_crawler` | Settings avec proxies enabled, ProxyService créé depuis settings.proxy_pool, CrawlerService reçoit proxy_service via DI | Appeler `crawler_service.crawl_google_flights(url, use_proxy=True)` | CrawlerService appelle `proxy_service.get_next_proxy()` 1 fois (vérifié mock spy), BrowserConfig.proxy contient URL proxy complète, crawl success |
 | 4 | `test_integration_proxy_rotation_logging_observability` | ProxyService pool 3 proxies, CrawlerService avec logging structuré activé | Crawler 10 URLs consécutives | Logs contiennent 10 entrées INFO avec extra fields proxy_host, proxy_index, proxy_country, distribution équitable proxies (3-3-4 ou 3-4-3 count), aucun password loggé |
-| 5 | `test_integration_proxy_service_disabled_no_injection` | Settings avec PROXY_ENABLED=false, CrawlerService initialisé sans proxy_service (None) | Appeler `crawl_google_flights(url, use_proxy=True)` | CrawlerService détecte proxy_service==None, BrowserConfig.proxy==None (pas de proxy utilisé), logs contiennent proxy_host="no_proxy", crawl success en mode direct |
+| 5 | `test_integration_proxy_service_disabled_no_injection` | Settings avec PROXY_ROTATION_ENABLED=false, CrawlerService initialisé sans proxy_service (None) | Appeler `crawl_google_flights(url, use_proxy=True)` | CrawlerService détecte proxy_service==None, BrowserConfig.proxy==None (pas de proxy utilisé), logs contiennent proxy_host="no_proxy", crawl success en mode direct |
 
 **Total tests intégration** : 5 tests
 
@@ -405,7 +405,7 @@ PROXY_HOST=fr.decodo.com:40000
 - `PROXY_USERNAME` : Identifiant simple fourni par dashboard proxy provider
 - `PROXY_PASSWORD` : Mot de passe proxy provider (masqué par SecretStr en logs)
 - `PROXY_HOST` : Hostname:port France rotating (default "fr.decodo.com:40000")
-- `PROXY_ENABLED` : Boolean active/désactive proxies (false pour dev local)
+- `PROXY_ROTATION_ENABLED` : Boolean active/désactive proxies (false pour dev local)
 
 **Valeurs masquées production** : Remplacer credentials par vraies valeurs proxy provider (stockées dans Dokploy secrets UI, pas committées dans git).
 
@@ -447,7 +447,7 @@ PROXY_HOST=fr.decodo.com:40000
 
 5. **Settings génère ProxyConfig automatiquement** : model_validator génère `settings.proxy_config` ProxyConfig depuis variables env (PROXY_USERNAME, PASSWORD, HOST)
 
-6. **Mode proxies désactivé fonctionne** : Si PROXY_ENABLED=false → settings.proxy_config==None, CrawlerService initialise sans proxy, BrowserConfig.proxy==None, crawls réussissent en mode direct sans proxy (vérifié logs proxy_host=="no_proxy")
+6. **Mode proxies désactivé fonctionne** : Si PROXY_ROTATION_ENABLED=false → settings.proxy_config==None, CrawlerService initialise sans proxy, BrowserConfig.proxy==None, crawls réussissent en mode direct sans proxy (vérifié logs proxy_host=="no_proxy")
 
 7. **URL proxy format correct** : ProxyConfig.get_proxy_url() retourne exactement `"http://{username}:{password}@{host}:{port}"`, utilisable directement par BrowserConfig Crawl4AI (vérifié regex matching URL + test crawl mock réussi)
 

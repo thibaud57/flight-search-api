@@ -90,7 +90,7 @@ def test_settings_proxy_config_generation(settings_env_factory) -> None:
 
 def test_settings_proxy_disabled(settings_env_factory) -> None:
     """Proxies desactives genere None."""
-    settings = settings_env_factory(PROXY_ENABLED="false")
+    settings = settings_env_factory(PROXY_ROTATION_ENABLED="false")
 
     assert settings.proxy_config is None
 

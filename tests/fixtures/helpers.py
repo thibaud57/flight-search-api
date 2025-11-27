@@ -10,7 +10,7 @@ import pytest
 from app.models import DateCombination, FlightCombinationResult, GoogleFlightDTO
 
 # URLs Google Flights pour tests
-GOOGLE_FLIGHT_TEMPLATE_URL = "https://www.google.com/travel/flights/search?tfs=CBwQAhooEgoyMDI2LTAyLTAzagwIAxIIL20vMDVxdGpyDAgDEggvbS8wN2RmaxooEgoyMDI2LTAyLTA3agwIAxIIL20vMDlkNF9yDAgDEggvbS8wMTkxNBooEgoyMDI2LTAyLTExagwIAxIIL20vMDE5MTRyDAgDEggvbS8wNmM2MhooEgoyMDI2LTAyLTE1agwIAxIIL20vMDJ6MGpyDAgDEggvbS8wNXF0akABSAFwAYIBCwj___________8BmAED&hl=fr&gl=FR"
+GOOGLE_FLIGHT_TEMPLATE_URL = "https://www.google.com/travel/flights/search?tfs=CBwQAhooEgoyMDI2LTAyLTAzagwIAxIIL20vMDVxdGpyDAgDEggvbS8wN2RmaxooEgoyMDI2LTAyLTA3agwIAxIIL20vMDlkNF9yDAgDEggvbS8wMTkxNEABSAFwAYIBCwj___________8BmAED&hl=fr&gl=FR"
 GOOGLE_FLIGHT_BASE_URL = "https://www.google.com/travel/flights"
 
 # URLs Kayak pour tests

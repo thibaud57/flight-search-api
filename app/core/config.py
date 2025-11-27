@@ -31,7 +31,6 @@ class CrawlerTimeouts(BaseModel):
 
 class Settings(BaseSettings):
     """Configuration application chargee depuis variables d'environnement."""
-
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -45,7 +44,7 @@ class Settings(BaseSettings):
     PROXY_USERNAME: str = Field(..., min_length=5)
     PROXY_PASSWORD: SecretStr
     PROXY_HOST: str = "fr.decodo.com:40000"
-    PROXY_ENABLED: bool = True
+
     PROXY_ROTATION_ENABLED: bool = True
     CAPTCHA_DETECTION_ENABLED: bool = True
 
@@ -70,7 +69,7 @@ class Settings(BaseSettings):
                 "Risky configuration: Both proxy rotation and captcha detection are disabled"
             )
 
-        if self.PROXY_ENABLED:
+        if self.PROXY_ROTATION_ENABLED:
             host_parts = self.PROXY_HOST.split(":")
             self.proxy_config = ProxyConfig(
                 host=host_parts[0],
