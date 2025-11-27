@@ -631,8 +631,8 @@
   - [x] Factory kayak_flight_dto_factory créée
 - [x] **Validation manuelle** : Parsing JSON réussi avec 15 tests unitaires
 - [x] **Quality checks** : ruff + mypy + coverage ≥ 90%
-- [ ] **Commit** : `feat(kayak): add flight parser for JSON extraction`
-- [ ] **PR** : feature/story-11 → develop
+- [x] **Commit** : `feat(kayak): add flight parser for JSON extraction`
+- [x] **PR** : feature/story-11 → develop
 
 📝 **Output** : Story 11 complétée (5 story points)
 
