@@ -21,9 +21,6 @@ KAYAK_BASE_URL = "https://www.kayak.fr/flights"
 SEARCH_GOOGLE_FLIGHTS_ENDPOINT = "/api/v1/search-google-flights"
 SEARCH_KAYAK_ENDPOINT = "/api/v1/search-kayak"
 
-# Fixture poll_data Kayak (structure JSON réelle capturée)
-KAYAK_POLL_DATA_FIXTURE_PATH = "tests/fixtures/kayak/poll_data_example.json"
-
 
 def get_future_date(days_offset: int = 1) -> date:
     """Retourne date future avec offset depuis aujourd'hui."""
