@@ -10,7 +10,9 @@ from app.models import (
     DateRange,
     GoogleFlightDTO,
     GoogleSearchRequest,
+    KayakFlightDTO,
     KayakSearchRequest,
+    LayoverInfo,
     ProxyConfig,
 )
 from app.services import GoogleFlightParser
@@ -116,7 +118,7 @@ def date_range_factory():
 
 
 @pytest.fixture
-def flight_dto_factory():
+def google_flight_dto_factory():
     """Factory pour créer GoogleFlightDTO avec defaults."""
 
     def _create(
@@ -138,6 +140,57 @@ def flight_dto_factory():
             stops=stops,
             departure_airport=departure_airport,
             arrival_airport=arrival_airport,
+        )
+
+    return _create
+
+
+@pytest.fixture
+def kayak_flight_dto_factory():
+    """Factory pour créer KayakFlightDTO avec defaults."""
+
+    def _create(
+        price=1000.0,
+        airline="Test Airline",
+        departure_time="2026-01-14T10:00:00",
+        arrival_time="2026-01-14T20:00:00",
+        duration="10h 0min",
+        departure_airport="CDG",
+        arrival_airport="NRT",
+        num_layovers=0,
+        as_dict=False,
+    ):
+        layovers = []
+        if num_layovers > 0:
+            layovers = [
+                LayoverInfo(airport=f"JF{i}", duration=f"{i + 1}h 0min")
+                for i in range(num_layovers)
+            ]
+
+        if as_dict:
+            return {
+                "price": price,
+                "airline": airline,
+                "departure_time": departure_time,
+                "arrival_time": arrival_time,
+                "duration": duration,
+                "departure_airport": departure_airport,
+                "arrival_airport": arrival_airport,
+                "layovers": [
+                    {"airport": lay.airport, "duration": lay.duration}
+                    for lay in layovers
+                ],
+            }
+
+        return KayakFlightDTO(
+            price=price,
+            airline=airline,
+            departure_time=departure_time,
+            arrival_time=arrival_time,
+            duration=duration,
+            departure_airport=departure_airport,
+            arrival_airport=arrival_airport,
+            layovers=layovers,
         )
 
     return _create

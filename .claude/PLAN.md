@@ -623,14 +623,14 @@
 
 **Branche** : `feature/story-11-kayak-parser`
 
-- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-11-kayak-parser.md`
-- [ ] **Implémentation TDD** :
-  - [ ] Parser JSON direct (segments, legs, results)
-  - [ ] Conversion vers GoogleFlightDTO (format unifié)
-  - [ ] Gestion structure dénormalisée (results → legs → segments)
-  - [ ] Wiring route : `/search-kayak` connectée avec parser
-- [ ] **Validation manuelle** : Parsing JSON réussi, recherche Kayak end-to-end
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Specs complètes** : `docs/specs/epic-4-kayak/story-11-kayak-parser.md`
+- [x] **Implémentation TDD** :
+  - [x] Parser JSON direct (segments, legs, results)
+  - [x] Conversion vers KayakFlightDTO (format dédié Kayak)
+  - [x] Gestion structure dénormalisée (results → legs → segments)
+  - [x] Factory kayak_flight_dto_factory créée
+- [x] **Validation manuelle** : Parsing JSON réussi avec 15 tests unitaires
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 90%
 - [ ] **Commit** : `feat(kayak): add flight parser for JSON extraction`
 - [ ] **PR** : feature/story-11 → develop
 

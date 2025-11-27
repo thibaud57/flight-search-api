@@ -78,7 +78,7 @@ def mock_crawl_result_factory():
 
 
 @pytest.fixture
-def mock_search_service(flight_dto_factory):
+def mock_search_service(google_flight_dto_factory):
     """Mock SearchService pour tests integration endpoint."""
     service = MagicMock()
     start_date = get_future_date(1)
@@ -91,7 +91,7 @@ def mock_search_service(flight_dto_factory):
                     get_future_date(15).isoformat(),
                 ],
                 flights=[
-                    flight_dto_factory(
+                    google_flight_dto_factory(
                         price=800.0 + i * 100,
                         airline="Test Airline",
                         departure_time="10:00",

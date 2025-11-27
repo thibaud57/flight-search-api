@@ -141,7 +141,7 @@ async def test_search_flights_ranking_top_10(
     mock_combination_generator,
     mock_crawler_service,
     google_flight_parser_mock_10_flights_factory,
-    flight_dto_factory,
+    google_flight_dto_factory,
     valid_search_request,
 ):
     """Selectionne top 10 resultats par prix."""
@@ -154,7 +154,7 @@ async def test_search_flights_ranking_top_10(
     def mock_parse(html):
         idx = call_count[0] % len(prices)
         call_count[0] += 1
-        return [flight_dto_factory(price=float(prices[idx]), airline="Test")]
+        return [google_flight_dto_factory(price=float(prices[idx]), airline="Test")]
 
     google_flight_parser_mock_10_flights_factory.parse.side_effect = mock_parse
     service = SearchService(
@@ -174,7 +174,7 @@ async def test_search_flights_ranking_price_primary(
     mock_combination_generator,
     mock_crawler_service,
     google_flight_parser_mock_10_flights_factory,
-    flight_dto_factory,
+    google_flight_dto_factory,
     valid_search_request,
 ):
     """Prix total est critere dominant ranking."""
@@ -187,7 +187,7 @@ async def test_search_flights_ranking_price_primary(
     def mock_parse(html):
         idx = call_count[0]
         call_count[0] += 1
-        return [flight_dto_factory(price=test_prices[idx], airline="Test")]
+        return [google_flight_dto_factory(price=test_prices[idx], airline="Test")]
 
     google_flight_parser_mock_10_flights_factory.parse.side_effect = mock_parse
     service = SearchService(
@@ -206,7 +206,7 @@ async def test_search_flights_ranking_same_price_stable(
     mock_combination_generator,
     mock_crawler_service,
     google_flight_parser_mock_10_flights_factory,
-    flight_dto_factory,
+    google_flight_dto_factory,
     valid_search_request,
 ):
     """Ordre stable quand prix identiques (premier crawle = premier retourne)."""
@@ -218,7 +218,7 @@ async def test_search_flights_ranking_same_price_stable(
     def mock_parse(html):
         idx = call_count[0]
         call_count[0] += 1
-        return [flight_dto_factory(price=1000.0, airline=f"Airline {idx}")]
+        return [google_flight_dto_factory(price=1000.0, airline=f"Airline {idx}")]
 
     google_flight_parser_mock_10_flights_factory.parse.side_effect = mock_parse
     service = SearchService(
@@ -241,7 +241,7 @@ async def test_search_flights_ranking_tie_breaker_duration(
     mock_combination_generator,
     mock_crawler_service,
     google_flight_parser_mock_10_flights_factory,
-    flight_dto_factory,
+    google_flight_dto_factory,
     valid_search_request,
 ):
     """Departage ex-aequo prix par duree."""
@@ -255,7 +255,9 @@ async def test_search_flights_ranking_tie_breaker_duration(
         call_count[0] += 1
         durations = ["15h 00min", "10h 00min"]
         return [
-            flight_dto_factory(price=1000.0, airline="Test", duration=durations[idx])
+            google_flight_dto_factory(
+                price=1000.0, airline="Test", duration=durations[idx]
+            )
         ]
 
     google_flight_parser_mock_10_flights_factory.parse.side_effect = mock_parse

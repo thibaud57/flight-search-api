@@ -284,12 +284,14 @@ def test_search_request_type_hints_pep695_compliant():
     assert "list" in str(segments_annotation)
 
 
-def test_flight_combination_result_valid_fields(flight_dto_factory, date_range_factory):
+def test_flight_combination_result_valid_fields(
+    google_flight_dto_factory, date_range_factory
+):
     """FlightCombinationResult valide."""
     start_date1, _ = get_date_range(start_offset=1, duration=0)
     start_date2, _ = get_date_range(start_offset=15, duration=0)
 
-    flight = flight_dto_factory(
+    flight = google_flight_dto_factory(
         price=1250.50,
         airline="Air France",
         departure_time="10:30",
@@ -335,11 +337,11 @@ def test_flight_combination_result_valid_fields(flight_dto_factory, date_range_f
     ],
 )
 def test_google_flight_dto_validation_errors(
-    flight_dto_factory, field, value, description
+    google_flight_dto_factory, field, value, description
 ):
     """Validation GoogleFlightDTO rejette valeurs invalides."""
     with pytest.raises(ValidationError):
-        flight_dto_factory(**{field: value})
+        google_flight_dto_factory(**{field: value})
 
 
 def test_search_stats_valid_fields():
@@ -356,13 +358,13 @@ def test_search_stats_valid_fields():
     assert stats.segments_count == 2
 
 
-def test_search_response_results_sorted_by_price(flight_dto_factory):
+def test_search_response_results_sorted_by_price(google_flight_dto_factory):
     """Results triés prix croissant."""
     start_date1, _ = get_date_range(start_offset=1, duration=0)
     start_date2, _ = get_date_range(start_offset=2, duration=0)
 
-    flight1 = flight_dto_factory(price=2000.0, airline="Airline2")
-    flight2 = flight_dto_factory(price=1000.0, airline="Airline1")
+    flight1 = google_flight_dto_factory(price=2000.0, airline="Airline2")
+    flight2 = google_flight_dto_factory(price=1000.0, airline="Airline1")
 
     results_unsorted = [
         {
@@ -402,14 +404,14 @@ def test_search_response_results_sorted_by_price(flight_dto_factory):
     assert "sorted" in str(exc_info.value).lower()
 
 
-def test_search_response_max_10_results(flight_dto_factory):
+def test_search_response_max_10_results(google_flight_dto_factory):
     """Max 10 results respecté."""
     start_date1, _ = get_date_range(start_offset=1, duration=0)
     start_date2, _ = get_date_range(start_offset=15, duration=0)
 
     results = []
     for i in range(11):
-        flight = flight_dto_factory(
+        flight = google_flight_dto_factory(
             price=1000.0 + i * 100,
             airline=f"Airline{i}",
             departure_time="10:00",
@@ -441,9 +443,9 @@ def test_search_response_max_10_results(flight_dto_factory):
         SearchResponse(results=results, search_stats=stats_data)
 
 
-def test_flight_time_string_format(flight_dto_factory):
+def test_flight_time_string_format(google_flight_dto_factory):
     """GoogleFlightDTO accepte times en format string."""
-    flight = flight_dto_factory(
+    flight = google_flight_dto_factory(
         departure_time="10:30", arrival_time="14:45", duration="4h 15min"
     )
 
@@ -451,9 +453,9 @@ def test_flight_time_string_format(flight_dto_factory):
     assert flight.arrival_time == "14:45"
 
 
-def test_flight_duration_format(flight_dto_factory):
+def test_flight_duration_format(google_flight_dto_factory):
     """GoogleFlightDTO duration accepte format string."""
-    flight = flight_dto_factory(
+    flight = google_flight_dto_factory(
         departure_time="10:00", arrival_time="20:30", duration="10h 30min"
     )
 
