@@ -2,7 +2,7 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-from app.models.google_flight_dto import GoogleFlightDTO
+from app.models import FlightDTO
 
 
 class HealthResponse(BaseModel):
@@ -20,8 +20,8 @@ class FlightCombinationResult(BaseModel):
 
     segment_dates: Annotated[list[str], "Dates par segment (ISO 8601)"]
     flights: Annotated[
-        list[GoogleFlightDTO],
-        "Meilleurs vols pour cette combinaison (pour l'instant juste le segment 1)",
+        list[FlightDTO],
+        "Meilleurs vols pour cette combinaison (Google ou Kayak selon provider)",
     ]
 
     @field_validator("segment_dates", mode="after")
@@ -34,9 +34,7 @@ class FlightCombinationResult(BaseModel):
 
     @field_validator("flights", mode="after")
     @classmethod
-    def validate_flights_not_empty(
-        cls, v: list[GoogleFlightDTO]
-    ) -> list[GoogleFlightDTO]:
+    def validate_flights_not_empty(cls, v: list[FlightDTO]) -> list[FlightDTO]:
         """Valide au moins 1 vol."""
         if len(v) == 0:
             raise ValueError("At least 1 flight required")
