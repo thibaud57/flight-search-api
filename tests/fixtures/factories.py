@@ -6,18 +6,25 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.core import Settings
-from app.models import DateRange, GoogleFlightDTO, GoogleSearchRequest, ProxyConfig
+from app.models import (
+    DateRange,
+    GoogleFlightDTO,
+    GoogleSearchRequest,
+    KayakSearchRequest,
+    ProxyConfig,
+)
 from app.services import GoogleFlightParser
 from tests.fixtures.helpers import (
     GOOGLE_FLIGHT_TEMPLATE_URL,
+    KAYAK_TEMPLATE_URL,
     get_date_range,
     get_future_date,
 )
 
 
 @pytest.fixture
-def search_request_factory():
-    """Factory pour créer SearchRequest (objet ou dict) avec dates dynamiques."""
+def google_search_request_factory():
+    """Factory pour créer GoogleSearchRequest (objet ou dict) avec dates dynamiques."""
 
     def _create(days_segment1=2, days_segment2=2, offset_segment2=10, as_dict=False):
         tomorrow = get_future_date(1)
@@ -45,6 +52,42 @@ def search_request_factory():
 
         return GoogleSearchRequest(
             template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
+            segments_date_ranges=segments,
+        )
+
+    return _create
+
+
+@pytest.fixture
+def kayak_search_request_factory():
+    """Factory pour créer KayakSearchRequest (objet ou dict) avec dates dynamiques."""
+
+    def _create(days_segment1=2, days_segment2=2, offset_segment2=10, as_dict=False):
+        tomorrow = get_future_date(1)
+
+        segments = [
+            DateRange(
+                start=tomorrow.isoformat(),
+                end=(tomorrow + timedelta(days=days_segment1)).isoformat(),
+            ),
+            DateRange(
+                start=(tomorrow + timedelta(days=offset_segment2)).isoformat(),
+                end=(
+                    tomorrow + timedelta(days=offset_segment2 + days_segment2)
+                ).isoformat(),
+            ),
+        ]
+
+        if as_dict:
+            return {
+                "template_url": KAYAK_TEMPLATE_URL,
+                "segments_date_ranges": [
+                    {"start": seg.start, "end": seg.end} for seg in segments
+                ],
+            }
+
+        return KayakSearchRequest(
+            template_url=KAYAK_TEMPLATE_URL,
             segments_date_ranges=segments,
         )
 

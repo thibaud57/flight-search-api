@@ -6,7 +6,63 @@ from crawl4ai import BrowserConfig
 from playwright.async_api import Cookie
 
 
-def get_static_headers() -> dict[str, str]:
+def get_base_browser_config(
+    headers: dict[str, str] | None = None,
+    cookies: list[Cookie] | None = None,
+    proxy_config: dict[str, str] | None = None,
+) -> BrowserConfig:
+    """Construit BrowserConfig de base avec stealth manuel (Chrome flags)."""
+    return BrowserConfig(
+        headless=False,
+        extra_args=_get_stealth_browser_args(),
+        headers=headers or _get_static_headers(),
+        cookies=cookies or [],
+        viewport_width=1920,
+        viewport_height=1080,
+        proxy_config=proxy_config,
+        enable_stealth=False,
+    )
+
+
+def build_browser_config_from_fingerprint(
+    url: str,
+    cookies: list[Cookie],
+    proxy_config: dict[str, str] | None = None,
+    headers_dict: dict[str, str] | None = None,
+) -> BrowserConfig:
+    """Construit BrowserConfig depuis session Google capturée."""
+    base_headers = headers_dict or _get_static_headers()
+
+    headers = {
+        "Accept": base_headers.get("Accept", "*/*"),
+        "Accept-Language": base_headers.get("Accept-Language", "fr-FR,fr;q=0.9"),
+        "Accept-Encoding": base_headers.get(
+            "Accept-Encoding", "gzip, deflate, br, zstd"
+        ),
+        "User-Agent": base_headers.get("User-Agent", ""),
+        "Referer": url,
+        "Origin": "https://www.google.com",
+    }
+
+    client_hints = {
+        k: v
+        for k, v in base_headers.items()
+        if k.startswith("sec-ch-ua") or k.startswith("sec-fetch")
+    }
+    headers.update(client_hints)
+
+    for key, value in base_headers.items():
+        if key not in headers:
+            headers[key] = value
+
+    return get_base_browser_config(
+        headers=headers,
+        cookies=cookies,
+        proxy_config=proxy_config,
+    )
+
+
+def _get_static_headers() -> dict[str, str]:
     """Retourne headers HTTP statiques Chrome 142 éprouvés."""
     return {
         "Accept": "*/*",
@@ -34,7 +90,7 @@ def get_static_headers() -> dict[str, str]:
     }
 
 
-def get_stealth_browser_args() -> list[str]:
+def _get_stealth_browser_args() -> list[str]:
     """Retourne args Chrome pour stealth mode anti-détection + anti-leak geolocation."""
     return [
         "--disable-blink-features=AutomationControlled",
@@ -45,55 +101,3 @@ def get_stealth_browser_args() -> list[str]:
         "--disable-webrtc-hw-encoding",
         "--enforce-webrtc-ip-permission-check",
     ]
-
-
-def get_base_browser_config(
-    headers: dict[str, str] | None = None,
-    cookies: list[Cookie] | None = None,
-    proxy_config: dict[str, str] | None = None,
-) -> BrowserConfig:
-    """Construit BrowserConfig de base avec stealth manuel (Chrome flags)."""
-    return BrowserConfig(
-        headless=False,
-        extra_args=get_stealth_browser_args(),
-        headers=headers or get_static_headers(),
-        cookies=cookies or [],
-        viewport_width=1920,
-        viewport_height=1080,
-        proxy_config=proxy_config,
-        enable_stealth=False,
-    )
-
-
-def build_browser_config_from_fingerprint(
-    url: str,
-    cookies: list[Cookie],
-    proxy_config: dict[str, str] | None = None,
-    headers_dict: dict[str, str] | None = None,
-) -> BrowserConfig:
-    """Construit BrowserConfig depuis session Google capturée."""
-    base_headers = headers_dict or get_static_headers()
-
-    headers = {
-        "Accept": base_headers.get("Accept", "*/*"),
-        "Accept-Language": base_headers.get("Accept-Language", "fr-FR,fr;q=0.9"),
-        "Accept-Encoding": base_headers.get(
-            "Accept-Encoding", "gzip, deflate, br, zstd"
-        ),
-        "User-Agent": base_headers.get("User-Agent", ""),
-        "Referer": url,
-        "Origin": "https://www.google.com",
-    }
-
-    client_hints = {
-        k: v
-        for k, v in base_headers.items()
-        if k.startswith("sec-ch-ua") or k.startswith("sec-fetch")
-    }
-    headers.update(client_hints)
-
-    return get_base_browser_config(
-        headers=headers,
-        cookies=cookies,
-        proxy_config=proxy_config,
-    )

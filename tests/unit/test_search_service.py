@@ -24,9 +24,9 @@ def mock_crawler_service(mock_crawl_result):
 
 
 @pytest.fixture
-def valid_search_request(search_request_factory):
+def valid_search_request(google_search_request_factory):
     """SearchRequest valide 2 segments."""
-    return search_request_factory(days_segment1=6, days_segment2=5)
+    return google_search_request_factory(days_segment1=6, days_segment2=5)
 
 
 @pytest.fixture(autouse=True)
@@ -425,11 +425,11 @@ async def test_search_flights_less_than_10_results(
 async def test_search_with_real_generator_two_segments(
     mock_crawler_success,
     google_flight_parser_mock_10_flights_factory,
-    search_request_factory,
+    google_search_request_factory,
     mock_generate_google_flights_url,
 ):
     """Orchestration avec CombinationGenerator reel - 2 segments (7x6=42 combinaisons)."""
-    request = search_request_factory(days_segment1=6, days_segment2=5)
+    request = google_search_request_factory(days_segment1=6, days_segment2=5)
     service = SearchService(
         combination_generator=CombinationGenerator(),
         crawler_service=mock_crawler_success,

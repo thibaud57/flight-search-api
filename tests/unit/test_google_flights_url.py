@@ -3,7 +3,7 @@
 import pytest
 
 from app.utils import GoogleFlightsUrlError, generate_google_flights_url
-from tests.fixtures.helpers import GOOGLE_FLIGHT_TEMPLATE_URL
+from tests.fixtures.helpers import GOOGLE_FLIGHT_BASE_URL, GOOGLE_FLIGHT_TEMPLATE_URL
 
 
 def test_generate_google_flights_url_valid_dates():
@@ -39,11 +39,10 @@ def test_generate_google_flights_url_invalid_date_format():
 
 def test_generate_google_flights_url_missing_tfs_param():
     """URL sans paramètre tfs lève erreur."""
-    url_without_tfs = "https://www.google.com/travel/flights"
     new_dates = ["2026-06-01", "2026-06-15"]
 
     with pytest.raises(GoogleFlightsUrlError) as exc_info:
-        generate_google_flights_url(url_without_tfs, new_dates)
+        generate_google_flights_url(GOOGLE_FLIGHT_BASE_URL, new_dates)
 
     assert "tfs" in str(exc_info.value).lower()
 
@@ -72,7 +71,7 @@ def test_generate_google_flights_url_mismatched_date_count():
 def test_generate_google_flights_url_three_segments():
     """URL 3 segments multi-city."""
     template_3seg = "https://www.google.com/travel/flights?tfs=CBwQAhooagwIAxIIL20vMDVxdGpyDAgDEggvbS8wN2RmayIKMjAyNS0wNi0wMXIKMjAyNS0wNi0xNXABggELCP___________wFAAUgBmAEBKihqDAgDEggvbS8wN2RmaxIMCAMSCC9tLzA1cXRqIgoyMDI1LTA2LTE1cgoyMDI1LTA2LTMwcAGCAQsI____________AUABSAGYARD"
-    new_dates = ["2026-07-01", "2026-07-15", "2026-07-30"]
+    new_dates = ["2026-07-01", "2026-07-15", "2026-07-15", "2026-07-30"]
 
     url = generate_google_flights_url(template_3seg, new_dates)
 

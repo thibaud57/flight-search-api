@@ -39,18 +39,12 @@ async def test_capture_kayak_poll_data_success(
     mock_page, mock_poll_response, mock_priceprediction_response
 ):
     """Capture poll_data avec succès après priceprediction."""
-    call_count = 0
 
-    async def mock_on_response(event_name, handler):
-        nonlocal call_count
-        if call_count == 0:
-            await handler(mock_poll_response)
-            call_count += 1
-        elif call_count == 1:
-            await handler(mock_priceprediction_response)
-            call_count += 2
+    def mock_on_register(event_name, handler):
+        handler(mock_poll_response)
+        handler(mock_priceprediction_response)
 
-    mock_page.on.side_effect = mock_on_response
+    mock_page.on = MagicMock(side_effect=mock_on_register)
 
     poll_data = await capture_kayak_poll_data(mock_page, timeout=2.0)
 
@@ -74,10 +68,10 @@ async def test_capture_kayak_poll_data_no_poll_responses(
 ):
     """Priceprediction reçu mais aucun poll → retourne None."""
 
-    async def mock_on_response(event_name, handler):
-        await handler(mock_priceprediction_response)
+    def mock_on_register(event_name, handler):
+        handler(mock_priceprediction_response)
 
-    mock_page.on.side_effect = mock_on_response
+    mock_page.on = MagicMock(side_effect=mock_on_register)
 
     poll_data = await capture_kayak_poll_data(mock_page, timeout=2.0)
 
@@ -100,15 +94,12 @@ async def test_capture_kayak_poll_data_returns_last_poll(
     poll_response_2.text = AsyncMock(return_value='{"results": [{"price": 450}]}')
 
     responses = [poll_response_1, poll_response_2, mock_priceprediction_response]
-    response_idx = 0
 
-    async def mock_on_response(event_name, handler):
-        nonlocal response_idx
+    def mock_on_register(event_name, handler):
         for resp in responses:
-            await handler(resp)
-            response_idx += 1
+            handler(resp)
 
-    mock_page.on.side_effect = mock_on_response
+    mock_page.on = MagicMock(side_effect=mock_on_register)
 
     poll_data = await capture_kayak_poll_data(mock_page, timeout=2.0)
 

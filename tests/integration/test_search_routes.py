@@ -12,10 +12,10 @@ from tests.fixtures.helpers import (
 
 
 def test_search_google_flights_returns_200_with_valid_request(
-    client_with_mock_search: TestClient, search_request_factory
+    client_with_mock_search: TestClient, google_search_request_factory
 ) -> None:
     """Request valide retourne 200 avec SearchResponse triee par prix."""
-    request_data = search_request_factory(
+    request_data = google_search_request_factory(
         days_segment1=6, days_segment2=5, as_dict=True
     )
 
@@ -108,10 +108,10 @@ def test_search_google_flights_exact_dates_accepted(
 
 
 def test_search_google_flights_extra_field_rejected(
-    client_with_mock_search: TestClient, search_request_factory
+    client_with_mock_search: TestClient, google_search_request_factory
 ) -> None:
     """SearchRequest avec champ extra doit etre rejete (extra=forbid)."""
-    request_data = search_request_factory(as_dict=True)
+    request_data = google_search_request_factory(as_dict=True)
     request_data["provider"] = "google_flights"
 
     response = client_with_mock_search.post(
@@ -127,10 +127,10 @@ def test_search_google_flights_extra_field_rejected(
 
 
 def test_search_kayak_returns_200_mock_response(
-    client_with_mock_search: TestClient, search_request_factory
+    client_with_mock_search: TestClient, google_search_request_factory
 ) -> None:
     """Route Kayak accessible et retourne 200 (mock vide)."""
-    request_data = search_request_factory(as_dict=True)
+    request_data = google_search_request_factory(as_dict=True)
 
     response = client_with_mock_search.post(SEARCH_KAYAK_ENDPOINT, json=request_data)
 
@@ -166,10 +166,10 @@ def test_search_both_providers_validation_empty_segments_422(
 
 
 def test_old_route_search_flights_returns_404(
-    client_with_mock_search: TestClient, search_request_factory
+    client_with_mock_search: TestClient, google_search_request_factory
 ) -> None:
     """Ancienne route /search-flights retourne 404."""
-    request_data = search_request_factory(as_dict=True)
+    request_data = google_search_request_factory(as_dict=True)
 
     response = client_with_mock_search.post("/api/v1/search-flights", json=request_data)
 

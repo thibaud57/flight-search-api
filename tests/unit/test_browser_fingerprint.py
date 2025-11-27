@@ -5,55 +5,7 @@ from crawl4ai import BrowserConfig
 from app.utils import (
     build_browser_config_from_fingerprint,
     get_base_browser_config,
-    get_static_headers,
-    get_stealth_browser_args,
 )
-
-
-def test_get_static_headers_returns_dict():
-    """Retourne dict headers statiques."""
-    headers = get_static_headers()
-
-    assert isinstance(headers, dict)
-    assert len(headers) > 0
-
-
-def test_get_static_headers_contains_user_agent():
-    """Headers contiennent User-Agent Chrome."""
-    headers = get_static_headers()
-
-    assert "User-Agent" in headers
-    assert "Chrome" in headers["User-Agent"]
-
-
-def test_get_static_headers_contains_accept_language():
-    """Headers contiennent Accept-Language fr-FR."""
-    headers = get_static_headers()
-
-    assert "Accept-Language" in headers
-    assert "fr-FR" in headers["Accept-Language"]
-
-
-def test_get_stealth_browser_args_returns_list():
-    """Retourne liste args Chrome."""
-    args = get_stealth_browser_args()
-
-    assert isinstance(args, list)
-    assert len(args) > 0
-
-
-def test_get_stealth_browser_args_contains_anti_automation():
-    """Args contiennent flag anti-automation."""
-    args = get_stealth_browser_args()
-
-    assert "--disable-blink-features=AutomationControlled" in args
-
-
-def test_get_stealth_browser_args_contains_no_sandbox():
-    """Args contiennent --no-sandbox."""
-    args = get_stealth_browser_args()
-
-    assert "--no-sandbox" in args
 
 
 def test_get_base_browser_config_returns_browserconfig():
@@ -86,7 +38,8 @@ def test_get_base_browser_config_with_proxy():
 
     config = get_base_browser_config(proxy_config=proxy)
 
-    assert config.proxy_config == proxy
+    assert config.proxy_config is not None
+    assert config.proxy_config.server == proxy["server"]
 
 
 def test_build_browser_config_from_fingerprint_adds_referer():
