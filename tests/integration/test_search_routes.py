@@ -127,17 +127,17 @@ def test_search_google_flights_extra_field_rejected(
 
 
 def test_search_kayak_returns_200_mock_response(
-    client_with_mock_search: TestClient, google_search_request_factory
+    client_with_mock_search: TestClient, kayak_search_request_factory
 ) -> None:
-    """Route Kayak accessible et retourne 200 (mock vide)."""
-    request_data = google_search_request_factory(as_dict=True)
+    """Route Kayak accessible et retourne 200 avec mock SearchService."""
+    request_data = kayak_search_request_factory(as_dict=True)
 
     response = client_with_mock_search.post(SEARCH_KAYAK_ENDPOINT, json=request_data)
 
     assert response.status_code == 200
     data = response.json()
     assert "results" in data
-    assert data["results"] == []
+    assert len(data["results"]) == 10
     assert "search_stats" in data
 
 

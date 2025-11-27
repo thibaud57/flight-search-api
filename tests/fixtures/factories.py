@@ -22,25 +22,31 @@ from tests.fixtures.helpers import (
 )
 
 
+def _create_segment_ranges(
+    days_segment1: int = 2, days_segment2: int = 2, offset_segment2: int = 10
+) -> list[DateRange]:
+    """Helper interne pour générer segments DateRange standards (2 segments)."""
+    tomorrow = get_future_date(1)
+    return [
+        DateRange(
+            start=tomorrow.isoformat(),
+            end=(tomorrow + timedelta(days=days_segment1)).isoformat(),
+        ),
+        DateRange(
+            start=(tomorrow + timedelta(days=offset_segment2)).isoformat(),
+            end=(
+                tomorrow + timedelta(days=offset_segment2 + days_segment2)
+            ).isoformat(),
+        ),
+    ]
+
+
 @pytest.fixture
 def google_search_request_factory():
     """Factory pour créer GoogleSearchRequest (objet ou dict) avec dates dynamiques."""
 
     def _create(days_segment1=2, days_segment2=2, offset_segment2=10, as_dict=False):
-        tomorrow = get_future_date(1)
-
-        segments = [
-            DateRange(
-                start=tomorrow.isoformat(),
-                end=(tomorrow + timedelta(days=days_segment1)).isoformat(),
-            ),
-            DateRange(
-                start=(tomorrow + timedelta(days=offset_segment2)).isoformat(),
-                end=(
-                    tomorrow + timedelta(days=offset_segment2 + days_segment2)
-                ).isoformat(),
-            ),
-        ]
+        segments = _create_segment_ranges(days_segment1, days_segment2, offset_segment2)
 
         if as_dict:
             return {
@@ -63,20 +69,7 @@ def kayak_search_request_factory():
     """Factory pour créer KayakSearchRequest (objet ou dict) avec dates dynamiques."""
 
     def _create(days_segment1=2, days_segment2=2, offset_segment2=10, as_dict=False):
-        tomorrow = get_future_date(1)
-
-        segments = [
-            DateRange(
-                start=tomorrow.isoformat(),
-                end=(tomorrow + timedelta(days=days_segment1)).isoformat(),
-            ),
-            DateRange(
-                start=(tomorrow + timedelta(days=offset_segment2)).isoformat(),
-                end=(
-                    tomorrow + timedelta(days=offset_segment2 + days_segment2)
-                ).isoformat(),
-            ),
-        ]
+        segments = _create_segment_ranges(days_segment1, days_segment2, offset_segment2)
 
         if as_dict:
             return {
@@ -161,8 +154,7 @@ def settings_env_factory(monkeypatch):
             "PROXY_PASSWORD": "password123",
             "PROXY_HOST": "proxy.example.com:40000",
             "PROXY_ROTATION_ENABLED": "true",
-            "CAPTCHA_DETECTION_ENABLED": "true",
-            "PROXY_ENABLED": "true",
+            "CAPTCHA_DETECTION_ENABLED": "true"
         }
         env_vars = {**defaults, **overrides}
         for key, value in env_vars.items():
@@ -192,12 +184,6 @@ def google_flight_parser_mock_factory():
         return parser
 
     return _create
-
-
-@pytest.fixture
-def google_flight_parser_mock_single_factory(google_flight_parser_mock_factory):
-    """Mock GoogleFlightParser retournant 1 vol valide (tests retry)."""
-    return google_flight_parser_mock_factory(num_flights=1, base_price=500.0)
 
 
 @pytest.fixture

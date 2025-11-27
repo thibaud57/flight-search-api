@@ -6,13 +6,14 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.models import SearchRequest, SearchResponse
+from app.models import GoogleSearchRequest, SearchRequest, SearchResponse
 from app.services import CombinationGenerator, SearchService
 from tests.fixtures.helpers import (
     GOOGLE_FLIGHT_TEMPLATE_URL,
     assert_results_sorted_by_price,
     create_date_combinations,
 )
+from tests.fixtures.mocks import create_mock_settings_context
 
 
 @pytest.fixture
@@ -32,7 +33,7 @@ def valid_search_request(google_search_request_factory):
 @pytest.fixture(autouse=True)
 def mock_settings(test_settings):
     """Mock get_settings pour tous les tests du module (CI compatibility)."""
-    with patch("app.services.search_service.get_settings", return_value=test_settings):
+    with create_mock_settings_context("app.services.search_service", test_settings):
         yield
 
 
@@ -451,7 +452,7 @@ async def test_search_with_real_generator_five_segments_asymmetric(
     mock_generate_google_flights_url,
 ):
     """5 segments asymetriques avec CombinationGenerator reel (15x2x2x2x2=240 combinaisons)."""
-    request = SearchRequest(
+    request = GoogleSearchRequest(
         template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[
             date_range_factory(start_offset=1, duration=14),

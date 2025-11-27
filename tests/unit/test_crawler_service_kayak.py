@@ -7,19 +7,14 @@ import pytest
 from app.models import Provider
 from app.services import CrawlerService
 from tests.fixtures.helpers import KAYAK_BASE_URL, KAYAK_TEMPLATE_URL
+from tests.fixtures.mocks import create_mock_settings_context
 
 
 @pytest.fixture(autouse=True)
 def mock_settings(test_settings):
     """Mock get_settings pour tous les tests du module."""
-    with patch("app.services.crawler_service.get_settings", return_value=test_settings):
+    with create_mock_settings_context("app.services.crawler_service", test_settings):
         yield
-
-
-@pytest.fixture
-def crawler_service():
-    """Instance CrawlerService."""
-    return CrawlerService()
 
 
 @pytest.fixture
