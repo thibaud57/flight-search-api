@@ -8,7 +8,7 @@ def test_proxy_config_valid_fields(proxy_config_factory) -> None:
     """ProxyConfig avec tous champs valides."""
     config = proxy_config_factory()
 
-    assert config.host == "fr.decodo.com"
+    assert config.host == "proxy.example.com"
     assert config.port == 40000
     assert config.username == "testuser"
     assert config.password.get_secret_value() == "testpass"
@@ -35,7 +35,7 @@ def test_proxy_config_generate_url_format(proxy_config_factory) -> None:
     """get_proxy_url() genere URL correcte."""
     config = proxy_config_factory()
 
-    assert config.get_proxy_url() == "http://testuser:testpass@fr.decodo.com:40000"
+    assert config.get_proxy_url() == "http://testuser:testpass@proxy.example.com:40000"
 
 
 def test_proxy_config_country_uppercase_conversion(proxy_config_factory) -> None:

@@ -6,21 +6,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.exceptions import CaptchaDetectedError, NetworkError
+from app.models import Provider
 from app.services import CrawlerService, ProxyService
 from tests.fixtures.helpers import GOOGLE_FLIGHT_BASE_URL
+from tests.fixtures.mocks import create_mock_settings_context
 
 
 @pytest.fixture(autouse=True)
 def mock_settings(test_settings):
     """Mock get_settings pour tous les tests du module (CI compatibility)."""
-    with patch("app.services.crawler_service.get_settings", return_value=test_settings):
+    with create_mock_settings_context("app.services.crawler_service", test_settings):
         yield
-
-
-@pytest.fixture
-def crawler_service():
-    """Instance CrawlerService."""
-    return CrawlerService()
 
 
 @pytest.mark.asyncio
@@ -31,47 +27,42 @@ async def test_crawl_success_dev_local(
     crawler = mock_async_web_crawler(mock_result=mock_crawl_result)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        result = await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+        result = await crawler_service.crawl_flights(
+            GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE
+        )
 
         assert result.success is True
         assert result.html is not None
         assert len(result.html) > 0
 
 
+@pytest.mark.parametrize(
+    "html_class,expected_captcha_type",
+    [
+        ("g-recaptcha", "recaptcha"),
+        ("h-captcha", "hcaptcha"),
+    ],
+)
 @pytest.mark.asyncio
-async def test_crawl_recaptcha_v2_detection(
-    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+async def test_crawl_captcha_detection(
+    crawler_service,
+    mock_async_web_crawler,
+    mock_crawl_result_factory,
+    html_class,
+    expected_captcha_type,
 ):
-    """HTML contient reCAPTCHA v2."""
+    """Detection captcha dans HTML."""
     mock_result = mock_crawl_result_factory(
-        html='<html><div class="g-recaptcha">Challenge</div></html>'
+        html=f'<html><div class="{html_class}">Challenge</div></html>'
     )
 
     crawler = mock_async_web_crawler(mock_result=mock_result)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
         with pytest.raises(CaptchaDetectedError) as exc_info:
-            await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+            await crawler_service.crawl_flights(GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE)
 
-        assert exc_info.value.captcha_type == "recaptcha"
-
-
-@pytest.mark.asyncio
-async def test_crawl_hcaptcha_detection(
-    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
-):
-    """HTML contient hCaptcha."""
-    mock_result = mock_crawl_result_factory(
-        html='<html><div class="h-captcha">Challenge</div></html>'
-    )
-
-    crawler = mock_async_web_crawler(mock_result=mock_result)
-
-    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        with pytest.raises(CaptchaDetectedError) as exc_info:
-            await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
-
-        assert exc_info.value.captcha_type == "hcaptcha"
+        assert exc_info.value.captcha_type == expected_captcha_type
 
 
 @pytest.mark.asyncio
@@ -81,7 +72,7 @@ async def test_crawl_network_timeout(crawler_service, mock_async_web_crawler):
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
         with pytest.raises(NetworkError) as exc_info:
-            await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+            await crawler_service.crawl_flights(GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE)
 
         assert exc_info.value.status_code is None
 
@@ -97,7 +88,7 @@ async def test_crawl_status_403(
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
         with pytest.raises(NetworkError) as exc_info:
-            await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+            await crawler_service.crawl_flights(GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE)
 
         assert exc_info.value.status_code == 403
 
@@ -112,7 +103,7 @@ async def test_crawl_stealth_mode_enabled(
     with patch(
         "app.services.crawler_service.AsyncWebCrawler", return_value=crawler
     ) as mock_crawler_class:
-        await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+        await crawler_service.crawl_flights(GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE)
 
         call_kwargs = mock_crawler_class.call_args
         assert call_kwargs is not None
@@ -130,7 +121,7 @@ async def test_crawl_structured_logging(
     crawler = mock_async_web_crawler(mock_result=mock_crawl_result)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+        await crawler_service.crawl_flights(GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE)
 
         assert any("crawl" in record.message.lower() for record in caplog.records)
 
@@ -152,8 +143,8 @@ async def test_crawl_with_proxy_service(
     with patch(
         "app.services.crawler_service.AsyncWebCrawler", return_value=crawler
     ) as mock_crawler_class:
-        result = await crawler_service.crawl_google_flights(
-            GOOGLE_FLIGHT_BASE_URL, use_proxy=True
+        result = await crawler_service.crawl_flights(
+            GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE, use_proxy=True
         )
 
         assert result.success is True
@@ -171,8 +162,8 @@ async def test_crawl_without_proxy_when_disabled(
     crawler = mock_async_web_crawler(mock_result=mock_crawl_result)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        result = await crawler_service.crawl_google_flights(
-            GOOGLE_FLIGHT_BASE_URL, use_proxy=False
+        result = await crawler_service.crawl_flights(
+            GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE, use_proxy=False
         )
 
         assert result.success is True
@@ -190,15 +181,15 @@ async def test_crawl_proxy_rotation_called(
     crawler = mock_async_web_crawler(mock_result=mock_crawl_result)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        await crawler_service.crawl_google_flights(
-            GOOGLE_FLIGHT_BASE_URL, use_proxy=True
+        await crawler_service.crawl_flights(
+            GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE, use_proxy=True
         )
 
         proxy_service_single.get_next_proxy.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_get_google_session_success(
+async def test_get_session_google_success(
     crawler_service, mock_async_web_crawler, mock_crawl_result_factory
 ):
     """Session capture réussie avec cookies."""
@@ -218,14 +209,14 @@ async def test_get_google_session_success(
     crawler.crawler_strategy = mock_strategy
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        await crawler_service.get_google_session()
+        await crawler_service.get_session(Provider.GOOGLE)
 
         assert crawler_service._captured_cookies == mock_cookies
         assert len(crawler_service._captured_cookies) == 2
 
 
 @pytest.mark.asyncio
-async def test_get_google_session_auto_click_consent(
+async def test_get_session_google_auto_click_consent(
     crawler_service, mock_async_web_crawler, mock_crawl_result_factory
 ):
     """Auto-click popup RGPD 'Tout accepter'."""
@@ -239,13 +230,13 @@ async def test_get_google_session_auto_click_consent(
     crawler = mock_async_web_crawler(mock_result=mock_result)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        await crawler_service.get_google_session()
+        await crawler_service.get_session(Provider.GOOGLE)
 
         assert mock_result.success is True
 
 
 @pytest.mark.asyncio
-async def test_get_google_session_no_consent_popup(
+async def test_get_session_google_no_consent_popup(
     crawler_service, mock_async_web_crawler, mock_crawl_result_factory, caplog
 ):
     """Popup RGPD absent - timeout sans erreur."""
@@ -254,7 +245,7 @@ async def test_get_google_session_no_consent_popup(
     crawler = mock_async_web_crawler(mock_result=mock_result)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        await crawler_service.get_google_session()
+        await crawler_service.get_session(Provider.GOOGLE)
 
         assert mock_result.success is True
 
@@ -272,7 +263,7 @@ async def test_crawl_status_429(
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
         with pytest.raises(NetworkError) as exc_info:
-            await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+            await crawler_service.crawl_flights(GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE)
 
         assert "429" in str(exc_info.value) or exc_info.value.status_code == 429
 
@@ -284,7 +275,7 @@ async def test_crawl_timeouts_configurable(mock_crawl_result, mock_async_web_cra
     crawler = mock_async_web_crawler(mock_result=mock_crawl_result)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+        await crawler_service.crawl_flights(GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE)
 
         assert crawler.arun.called
         call_kwargs = crawler.arun.call_args.kwargs
@@ -299,7 +290,9 @@ async def test_crawl_retry_success_no_retry(
     crawler = mock_async_web_crawler(mock_result=mock_crawl_result)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        result = await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+        result = await crawler_service.crawl_flights(
+            GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE
+        )
 
         assert result.success is True
         assert crawler.arun.call_count == 1
@@ -323,7 +316,9 @@ async def test_crawl_retry_on_500_error(
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
         with patch("time.sleep"):
-            result = await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+            result = await crawler_service.crawl_flights(
+                GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE
+            )
 
         assert result.success is True
         assert call_count == 2
@@ -347,7 +342,9 @@ async def test_crawl_retry_on_timeout(
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
         with patch("time.sleep"):
-            result = await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+            result = await crawler_service.crawl_flights(
+                GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE
+            )
 
         assert result.success is True
         assert call_count == 2
@@ -369,7 +366,7 @@ async def test_crawl_retry_max_retries_network_error(
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
         with patch("time.sleep"), pytest.raises(NetworkError) as exc_info:
-            await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+            await crawler_service.crawl_flights(GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE)
 
         assert call_count == 3
         assert exc_info.value.attempts == 3
@@ -390,7 +387,7 @@ async def test_crawl_retry_no_retry_on_404(
     crawler = mock_async_web_crawler(side_effect=mock_arun_side_effect)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
-        await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+        await crawler_service.crawl_flights(GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE)
 
         assert call_count == 1
 
@@ -416,7 +413,9 @@ async def test_crawl_retry_before_sleep_logging(
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
         with patch("time.sleep"):
-            result = await crawler_service.crawl_google_flights(GOOGLE_FLIGHT_BASE_URL)
+            result = await crawler_service.crawl_flights(
+                GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE
+            )
 
         assert result.success is True
         warning_logs = [r for r in caplog.records if r.levelname == "WARNING"]
@@ -454,8 +453,8 @@ async def test_crawl_retry_with_proxy_rotation(
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
         with patch("time.sleep"):
-            result = await crawler_service.crawl_google_flights(
-                GOOGLE_FLIGHT_BASE_URL, use_proxy=True
+            result = await crawler_service.crawl_flights(
+                GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE, use_proxy=True
             )
 
         assert result.success is True
@@ -478,8 +477,8 @@ async def test_crawl_proxy_logging_no_password(
         caplog.at_level(logging.INFO),
     ):
         for _ in range(3):
-            await crawler_service.crawl_google_flights(
-                GOOGLE_FLIGHT_BASE_URL, use_proxy=True
+            await crawler_service.crawl_flights(
+                GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE, use_proxy=True
             )
 
     log_text = " ".join(record.message for record in caplog.records)

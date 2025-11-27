@@ -6,7 +6,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.core import get_logger, get_settings
-from app.models import HealthResponse, SearchRequest, SearchResponse, SearchStats
+from app.models import (
+    GoogleSearchRequest,
+    HealthResponse,
+    KayakSearchRequest,
+    SearchResponse,
+)
 from app.services import (
     CombinationGenerator,
     CrawlerService,
@@ -39,7 +44,7 @@ def health_check() -> HealthResponse:
 
 @router.post("/api/v1/search-google-flights", tags=["search"])
 async def search_google_flights_endpoint(
-    request: SearchRequest,
+    request: GoogleSearchRequest,
     search_service: Annotated[SearchService, Depends(get_search_service)],
     logger: Annotated[Logger, Depends(get_logger)],
 ) -> SearchResponse:
@@ -67,22 +72,25 @@ async def search_google_flights_endpoint(
 
 @router.post("/api/v1/search-kayak", tags=["search"])
 async def search_kayak_endpoint(
-    request: SearchRequest,
+    request: KayakSearchRequest,
+    search_service: Annotated[SearchService, Depends(get_search_service)],
     logger: Annotated[Logger, Depends(get_logger)],
 ) -> SearchResponse:
-    """Endpoint recherche vols multi-city via Kayak (mock)."""
+    """Endpoint recherche vols multi-city via Kayak."""
     logger.info(
-        "Kayak search started (mock)",
+        "Kayak search started",
+        extra={"segments_count": len(request.segments_date_ranges)},
+    )
+
+    response = await search_service.search_flights(request)
+
+    logger.info(
+        "Kayak search completed",
         extra={
             "segments_count": len(request.segments_date_ranges),
+            "search_time_ms": response.search_stats.search_time_ms,
+            "total_results": response.search_stats.total_results,
         },
     )
 
-    return SearchResponse(
-        results=[],
-        search_stats=SearchStats(
-            total_results=0,
-            search_time_ms=0,
-            segments_count=len(request.segments_date_ranges),
-        ),
-    )
+    return response

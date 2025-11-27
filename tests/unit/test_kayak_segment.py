@@ -15,52 +15,23 @@ def test_segment_valid():
     assert segment.date == "2026-01-14"
 
 
-def test_segment_invalid_origin_lowercase():
-    """Codes IATA lowercase doivent etre rejetes."""
+@pytest.mark.parametrize(
+    "origin,destination,date,field_error",
+    [
+        ("par", "TYO", "2026-01-14", "origin"),  # lowercase
+        ("PARIS", "TYO", "2026-01-14", "origin"),  # longueur != 3
+        ("Par", "Tyo", "2026-01-14", "origin"),  # mixedcase
+        ("PAR", "", "2026-01-14", "destination"),  # destination vide
+        ("PAR", "TYO", "14/01/2026", "date"),  # format non ISO
+        ("PAR", "TYO", "2026-01", "date"),  # date incomplete
+    ],
+)
+def test_segment_validation_errors(origin, destination, date, field_error):
+    """Validation KayakSegment rejette valeurs invalides."""
     with pytest.raises(ValidationError) as exc_info:
-        KayakSegment(origin="par", destination="TYO", date="2026-01-14")
+        KayakSegment(origin=origin, destination=destination, date=date)
 
-    assert "origin" in str(exc_info.value).lower()
-
-
-def test_segment_invalid_origin_length():
-    """Codes IATA longueur != 3 doivent etre rejetes."""
-    with pytest.raises(ValidationError) as exc_info:
-        KayakSegment(origin="PARIS", destination="TYO", date="2026-01-14")
-
-    assert "origin" in str(exc_info.value).lower()
-
-
-def test_segment_invalid_destination_empty():
-    """Destination vide doit etre rejetee."""
-    with pytest.raises(ValidationError) as exc_info:
-        KayakSegment(origin="PAR", destination="", date="2026-01-14")
-
-    assert "destination" in str(exc_info.value).lower()
-
-
-def test_segment_invalid_date_format():
-    """Dates non ISO-8601 doivent etre rejetees."""
-    with pytest.raises(ValidationError) as exc_info:
-        KayakSegment(origin="PAR", destination="TYO", date="14/01/2026")
-
-    assert "date" in str(exc_info.value).lower()
-
-
-def test_segment_invalid_date_partial():
-    """Dates incompletes doivent etre rejetees."""
-    with pytest.raises(ValidationError) as exc_info:
-        KayakSegment(origin="PAR", destination="TYO", date="2026-01")
-
-    assert "date" in str(exc_info.value).lower()
-
-
-def test_segment_invalid_mixedcase_rejected():
-    """Codes IATA mixedcase doivent etre rejetes (strategie stricte)."""
-    with pytest.raises(ValidationError) as exc_info:
-        KayakSegment(origin="Par", destination="Tyo", date="2026-01-14")
-
-    assert "origin" in str(exc_info.value).lower()
+    assert field_error in str(exc_info.value).lower()
 
 
 def test_segment_valid_future_date():

@@ -165,9 +165,9 @@
 - [x] Remplir `.dockerignore`
 - [x] Créer `.env.example` avec variables :
       - LOG_LEVEL=INFO
-      - DECODO_USERNAME=customer-XXXX-country-FR
-      - DECODO_PASSWORD=your_password
-      - DECODO_PROXY_HOST=pr.decodo.com:8080
+      - PROXY_USERNAME=customer-XXXX-country-FR
+      - PROXY_PASSWORD=your_password
+      - PROXY_HOST=pr.decodo.com:8080
       - PROXY_ROTATION_ENABLED=true
       - CAPTCHA_DETECTION_ENABLED=true
 - [x] Commit : `chore: add system configuration files`
@@ -604,17 +604,18 @@
 
 **Branche** : `feature/story-10-crawler-kayak`
 
-- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-10-crawler-kayak.md`
-- [ ] **Implémentation TDD** :
-  - [ ] `get_kayak_session()` : Similaire pattern `get_google_session()`
-  - [ ] `crawl_kayak()` : Avec `capture_network_requests=True`
-  - [ ] `_handle_kayak_consent()` : Gestion popup RGPD Kayak
-  - [ ] Hook routing : `_after_goto_hook` route selon provider
-  - [ ] KayakConfig : Settings timeouts et sélecteurs
+- [x] **Specs complètes** : `docs/specs/epic-4-kayak/story-10-crawler-kayak.md`
+- [x] **Implémentation TDD** :
+  - [x] `get_kayak_session()` : Similaire pattern `get_google_session()`
+  - [x] `crawl_kayak()` : Avec `capture_network_requests=True`
+  - [x] `_handle_kayak_consent()` : Gestion popup RGPD Kayak
+  - [x] Hook routing : `_after_goto_hook` route selon provider
+  - [x] KayakConfig : Settings timeouts et sélecteurs
+  - [x] `_wait_for_kayak_polling_complete()` : Détection fin polling via progressbar
 - [ ] **Validation manuelle** : Session établie, consent géré, network capture actif
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(kayak): add crawler service with session and consent handling`
-- [ ] **PR** : feature/story-10 → develop
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80% (89%)
+- [x] **Commit** : `feat(kayak): add crawler service with session and consent handling`
+- [x] **PR** : feature/story-10 → develop
 
 📝 **Output** : Story 10 complétée (5 story points)
 
@@ -833,9 +834,9 @@
 - [ ] Configurer Dokploy : connecter repo GitHub
 - [ ] Ajouter env vars dans UI Dokploy :
       - LOG_LEVEL=INFO
-      - DECODO_USERNAME
-      - DECODO_PASSWORD
-      - DECODO_PROXY_HOST
+      - PROXY_USERNAME
+      - PROXY_PASSWORD
+      - PROXY_HOST
       - PROXY_ROTATION_ENABLED=true
       - CAPTCHA_DETECTION_ENABLED=true
 - [ ] **Build Docker** : `docker build -t flight-search-api:latest .`

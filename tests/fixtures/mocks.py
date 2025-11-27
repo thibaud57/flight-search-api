@@ -11,7 +11,7 @@ from app.models import (
     SearchResponse,
     SearchStats,
 )
-from app.services import CombinationGenerator, CrawlResult
+from app.services import CombinationGenerator, CrawlerService, CrawlResult
 from tests.fixtures.helpers import GOOGLE_FLIGHT_BASE_URL, get_future_date
 
 
@@ -124,7 +124,7 @@ def mock_proxy_pool():
     """Pool de 3 proxies pour tests."""
     return [
         ProxyConfig(
-            host=f"proxy{i}.decodo.com",
+            host=f"proxy{i}.example.com",
             port=40000 + i,
             username=f"proxy{i}user",
             password=f"proxy{i}pass",
@@ -138,7 +138,7 @@ def mock_proxy_pool():
 def mock_crawler_success():
     """Mock CrawlerService async avec HTML valide (partagé tests integration)."""
     crawler = AsyncMock()
-    crawler.crawl_google_flights.return_value = CrawlResult(
+    crawler.crawl_flights.return_value = CrawlResult(
         success=True, html="<html>valid</html>", status_code=200
     )
     return crawler
@@ -152,3 +152,14 @@ def mock_generate_google_flights_url():
     ) as mock_url_gen:
         mock_url_gen.return_value = GOOGLE_FLIGHT_BASE_URL
         yield mock_url_gen
+
+
+def create_mock_settings_context(module_path: str, test_settings):
+    """Helper pour créer context manager mock get_settings (évite duplication fixtures)."""
+    return patch(f"{module_path}.get_settings", return_value=test_settings)
+
+
+@pytest.fixture
+def crawler_service():
+    """Instance CrawlerService standard (mutualisé pour éviter duplication)."""
+    return CrawlerService()

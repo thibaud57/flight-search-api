@@ -6,34 +6,47 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.core import Settings
-from app.models import DateRange, GoogleFlightDTO, ProxyConfig, SearchRequest
+from app.models import (
+    DateRange,
+    GoogleFlightDTO,
+    GoogleSearchRequest,
+    KayakSearchRequest,
+    ProxyConfig,
+)
 from app.services import GoogleFlightParser
 from tests.fixtures.helpers import (
     GOOGLE_FLIGHT_TEMPLATE_URL,
+    KAYAK_TEMPLATE_URL,
     get_date_range,
     get_future_date,
 )
 
 
+def _create_segment_ranges(
+    days_segment1: int = 2, days_segment2: int = 2, offset_segment2: int = 10
+) -> list[DateRange]:
+    """Helper interne pour générer segments DateRange standards (2 segments)."""
+    tomorrow = get_future_date(1)
+    return [
+        DateRange(
+            start=tomorrow.isoformat(),
+            end=(tomorrow + timedelta(days=days_segment1)).isoformat(),
+        ),
+        DateRange(
+            start=(tomorrow + timedelta(days=offset_segment2)).isoformat(),
+            end=(
+                tomorrow + timedelta(days=offset_segment2 + days_segment2)
+            ).isoformat(),
+        ),
+    ]
+
+
 @pytest.fixture
-def search_request_factory():
-    """Factory pour créer SearchRequest (objet ou dict) avec dates dynamiques."""
+def google_search_request_factory():
+    """Factory pour créer GoogleSearchRequest (objet ou dict) avec dates dynamiques."""
 
     def _create(days_segment1=2, days_segment2=2, offset_segment2=10, as_dict=False):
-        tomorrow = get_future_date(1)
-
-        segments = [
-            DateRange(
-                start=tomorrow.isoformat(),
-                end=(tomorrow + timedelta(days=days_segment1)).isoformat(),
-            ),
-            DateRange(
-                start=(tomorrow + timedelta(days=offset_segment2)).isoformat(),
-                end=(
-                    tomorrow + timedelta(days=offset_segment2 + days_segment2)
-                ).isoformat(),
-            ),
-        ]
+        segments = _create_segment_ranges(days_segment1, days_segment2, offset_segment2)
 
         if as_dict:
             return {
@@ -43,8 +56,31 @@ def search_request_factory():
                 ],
             }
 
-        return SearchRequest(
+        return GoogleSearchRequest(
             template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
+            segments_date_ranges=segments,
+        )
+
+    return _create
+
+
+@pytest.fixture
+def kayak_search_request_factory():
+    """Factory pour créer KayakSearchRequest (objet ou dict) avec dates dynamiques."""
+
+    def _create(days_segment1=2, days_segment2=2, offset_segment2=10, as_dict=False):
+        segments = _create_segment_ranges(days_segment1, days_segment2, offset_segment2)
+
+        if as_dict:
+            return {
+                "template_url": KAYAK_TEMPLATE_URL,
+                "segments_date_ranges": [
+                    {"start": seg.start, "end": seg.end} for seg in segments
+                ],
+            }
+
+        return KayakSearchRequest(
+            template_url=KAYAK_TEMPLATE_URL,
             segments_date_ranges=segments,
         )
 
@@ -114,12 +150,11 @@ def settings_env_factory(monkeypatch):
     def _create(**overrides):
         defaults = {
             "LOG_LEVEL": "INFO",
-            "DECODO_USERNAME": "testuser",
-            "DECODO_PASSWORD": "password123",
-            "DECODO_PROXY_HOST": "fr.decodo.com:40000",
+            "PROXY_USERNAME": "testuser",
+            "PROXY_PASSWORD": "password123",
+            "PROXY_HOST": "proxy.example.com:40000",
             "PROXY_ROTATION_ENABLED": "true",
             "CAPTCHA_DETECTION_ENABLED": "true",
-            "DECODO_PROXY_ENABLED": "true",
         }
         env_vars = {**defaults, **overrides}
         for key, value in env_vars.items():
@@ -152,12 +187,6 @@ def google_flight_parser_mock_factory():
 
 
 @pytest.fixture
-def google_flight_parser_mock_single_factory(google_flight_parser_mock_factory):
-    """Mock GoogleFlightParser retournant 1 vol valide (tests retry)."""
-    return google_flight_parser_mock_factory(num_flights=1, base_price=500.0)
-
-
-@pytest.fixture
 def google_flight_parser_mock_10_flights_factory(google_flight_parser_mock_factory):
     """Mock GoogleFlightParser retournant 10 vols."""
     return google_flight_parser_mock_factory(num_flights=10, base_price=1000.0)
@@ -168,7 +197,7 @@ def proxy_config_factory():
     """Factory pour créer ProxyConfig avec paramètres configurables."""
 
     def _create(
-        host="fr.decodo.com",
+        host="proxy.example.com",
         port=40000,
         username="testuser",
         password="testpass",
@@ -215,5 +244,152 @@ def google_flights_html_factory():
         if include_wrapper:
             return f"<html><body><ul>{flights_html}</ul></body></html>"
         return flights_html
+
+    return _create
+
+
+@pytest.fixture
+def kayak_poll_data_factory():
+    """Factory pour générer poll_data Kayak avec structure réelle."""
+
+    def _create(
+        num_results: int = 3,
+        base_price: float = 1000.0,
+        price_increment: float = 100.0,
+        with_multi_segment: bool = True,
+        with_layover: bool = True,
+        with_missing_fields: bool = True,
+    ):
+        """Génère poll_data JSON Kayak avec structure réelle dénormalisée."""
+        results = []
+        legs = {}
+        segments = {}
+
+        for i in range(num_results):
+            result_id = f"result_{i}"
+            leg_id = f"leg_{i}"
+            price = base_price + i * price_increment
+
+            # Result avec bookingOptions
+            results.append(
+                {
+                    "resultId": result_id,
+                    "type": "core",
+                    "bookingOptions": [
+                        {
+                            "bookingId": f"booking_{i}",
+                            "providerCode": "kayak",
+                            "displayPrice": {
+                                "price": price,
+                                "currency": "EUR",
+                                "localizedPrice": f"{int(price)} €",
+                            },
+                            "legFarings": [
+                                {
+                                    "legId": leg_id,
+                                    "approxDepartureTime": "10:00",
+                                    "approxArrivalTime": "20:00",
+                                }
+                            ],
+                        }
+                    ],
+                }
+            )
+
+            # Leg avec segments
+            if i == 0 and with_multi_segment:
+                # Premier result : multi-segments avec layover
+                segment_ids = [f"segment_{i}_1", f"segment_{i}_2"]
+                leg_segments = [
+                    {
+                        "id": segment_ids[0],
+                        "layover": {"duration": 120, "isLong": False}
+                        if with_layover
+                        else None,
+                    },
+                    {"id": segment_ids[1]},
+                ]
+                # Filtrer None si pas de layover
+                leg_segments = [
+                    {k: v for k, v in seg.items() if v is not None}
+                    for seg in leg_segments
+                ]
+
+                legs[leg_id] = {
+                    "duration": 1650,
+                    "segments": leg_segments,
+                    "arrival": "2026-05-07T06:00:00",
+                    "departure": "2026-05-06T09:30:00",
+                }
+
+                # Segments correspondants
+                segments[segment_ids[0]] = {
+                    "airline": "AF",
+                    "flightNumber": "123",
+                    "origin": "CDG",
+                    "destination": "JFK",
+                    "departure": "2026-05-06T09:30:00",
+                    "arrival": "2026-05-06T12:45:00",
+                    "duration": 465,
+                }
+                segments[segment_ids[1]] = {
+                    "airline": "VN",
+                    "flightNumber": "311",
+                    "origin": "JFK",
+                    "destination": "NRT",
+                    "departure": "2026-05-06T16:00:00",
+                    "arrival": "2026-05-07T06:00:00",
+                    "duration": 840,
+                    "isOvernight": True,
+                }
+
+            elif i == num_results - 1 and with_missing_fields:
+                # Dernier result : champs optionnels manquants
+                segment_id = f"segment_{i}"
+                legs[leg_id] = {
+                    "duration": 480,
+                    "segments": [{"id": segment_id}],
+                    "arrival": "2026-02-01T22:00:00",
+                    "departure": "2026-02-01T14:00:00",
+                }
+                segments[segment_id] = {
+                    "airline": "BA",
+                    "departure": "2026-02-01T14:00:00",
+                    "arrival": "2026-02-01T22:00:00",
+                    "duration": 480,
+                }
+
+            else:
+                # Autres results : vol direct simple
+                segment_id = f"segment_{i}"
+                legs[leg_id] = {
+                    "duration": 600,
+                    "segments": [{"id": segment_id}],
+                    "arrival": "2026-02-17T20:00:00",
+                    "departure": "2026-02-17T10:00:00",
+                }
+                segments[segment_id] = {
+                    "airline": "CZ",
+                    "flightNumber": f"{5664 + i}",
+                    "origin": "SHA",
+                    "destination": "PKX",
+                    "departure": "2026-02-17T10:00:00",
+                    "arrival": "2026-02-17T20:00:00",
+                    "duration": 600,
+                }
+
+        return {
+            "searchId": "test_search_id",
+            "searchUrl": {
+                "url": "/flights/PAR-TYO/2026-02-06",
+                "urlType": "relative",
+            },
+            "pageNumber": 1,
+            "pageSize": 15,
+            "sortMode": "price_a",
+            "results": results,
+            "legs": legs,
+            "segments": segments,
+        }
 
     return _create

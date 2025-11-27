@@ -259,12 +259,12 @@ class CrawlerService:
 
 ```python
 class Settings(BaseSettings):
-    """Configuration application avec support proxies Decodo."""
+    """Configuration application avec support proxy provider."""
 
-    DECODO_USERNAME: str
-    DECODO_PASSWORD: SecretStr
-    DECODO_PROXY_HOST: str = "fr.decodo.com:40000"
-    DECODO_PROXY_ENABLED: bool = True
+    PROXY_USERNAME: str
+    PROXY_PASSWORD: SecretStr
+    PROXY_HOST: str = "fr.decodo.com:40000"
+    PROXY_ROTATION_ENABLED: bool = True
 
     @model_validator(mode='after')
     def build_proxy_config(self) -> 'Settings':
@@ -275,28 +275,27 @@ class Settings(BaseSettings):
 
 | Champ | Type | Default | Description | Validation |
 |-------|------|---------|-------------|------------|
-| `DECODO_USERNAME` | `str` | - | Username Decodo (identifiant simple dashboard) | min_length 5 |
-| `DECODO_PASSWORD` | `SecretStr` | - | Password Decodo (masqué logs) | min_length 8, masqué automatiquement par SecretStr |
-| `DECODO_PROXY_HOST` | `str` | `"fr.decodo.com:40000"` | Hostname:port proxy Decodo France rotating | Format "host:port" avec validation contient "decodo.com" |
-| `DECODO_PROXY_ENABLED` | `bool` | `True` | Active/désactive proxies globalement | False désactive proxy |
+| `PROXY_USERNAME` | `str` | - | Username proxy provider (identifiant simple dashboard) | min_length 5 |
+| `PROXY_PASSWORD` | `SecretStr` | - | Password proxy provider (masqué logs) | min_length 8, masqué automatiquement par SecretStr |
+| `PROXY_HOST` | `str` | `"fr.decodo.com:40000"` | Hostname:port proxy France rotating | Format "host:port" avec validation |
+| `PROXY_ROTATION_ENABLED` | `bool` | `True` | Active/désactive proxies globalement | False désactive proxy |
 
 **Comportement** :
 
 - **Chargement variables** → Settings charge automatiquement variables depuis .env (Config.env_file=".env")
-- **Validation username** → min_length 5, identifiant simple fourni par dashboard Decodo
-- **Génération ProxyConfig** → model_validator génère ProxyConfig depuis DECODO_USERNAME, PASSWORD, HOST si DECODO_PROXY_ENABLED=True
-- **Sécurité password** → SecretStr masque automatiquement DECODO_PASSWORD dans logs (affiche "**********"), get_secret_value() utilisé uniquement pour génération ProxyConfig
-- **Mode désactivé** → Si DECODO_PROXY_ENABLED=False, pas de ProxyConfig généré
+- **Validation username** → min_length 5, identifiant simple fourni par dashboard proxy provider
+- **Génération ProxyConfig** → model_validator génère ProxyConfig depuis PROXY_USERNAME, PASSWORD, HOST
+- **Sécurité password** → SecretStr masque automatiquement PROXY_PASSWORD dans logs (affiche "**********"), get_secret_value() utilisé uniquement pour génération ProxyConfig
+- **Mode désactivé** → Si PROXY_ROTATION_ENABLED=False, pas de ProxyConfig généré
 - **Rotation server-side native Decodo** → Port 40000 (endpoint rotating France) change automatiquement l'IP à chaque requête HTTP. Pas de pool côté client nécessaire, ProxyService devient simple wrapper pour compatibilité CrawlerService. Documentation : https://help.decodo.com/docs/residential-proxy-endpoints-and-ports
 
 **Variables .env** :
 
 ```bash
-# Proxies Decodo Configuration
-DECODO_USERNAME=testuser
-DECODO_PASSWORD=my_secure_password_here
-DECODO_PROXY_HOST=fr.decodo.com:40000
-DECODO_PROXY_ENABLED=true
+# Proxy Provider Configuration
+PROXY_USERNAME=testuser
+PROXY_PASSWORD=my_secure_password_here
+PROXY_HOST=fr.decodo.com:40000
 ```
 
 
@@ -336,10 +335,10 @@ DECODO_PROXY_ENABLED=true
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 13 | `test_settings_proxy_config_generation` | model_validator génère ProxyConfig | .env avec DECODO_USERNAME, PASSWORD, HOST, ENABLED=true | `settings.proxy_config` valide avec credentials cohérents | Vérifie génération automatique ProxyConfig depuis env vars |
-| 14 | `test_settings_proxy_disabled` | Proxies désactivés génère None | .env avec DECODO_PROXY_ENABLED=false | `settings.proxy_config == None` | Vérifie comportement désactivation proxies |
-| 15 | `test_settings_username_too_short` | Username trop court rejette Settings | .env avec DECODO_USERNAME="abc" | Lève `ValidationError` "at least 5 characters" | Vérifie validation username min_length |
-| 16 | `test_settings_secret_str_password_masked` | SecretStr masque password dans logs | Settings avec DECODO_PASSWORD="secret123" | `str(settings.DECODO_PASSWORD) == "**********"` (masqué) | Vérifie sécurité SecretStr Pydantic |
+| 13 | `test_settings_proxy_config_generation` | model_validator génère ProxyConfig | .env avec PROXY_USERNAME, PASSWORD, HOST, ENABLED=true | `settings.proxy_config` valide avec credentials cohérents | Vérifie génération automatique ProxyConfig depuis env vars |
+| 14 | `test_settings_proxy_disabled` | Proxies désactivés génère None | .env avec PROXY_ROTATION_ENABLED=false | `settings.proxy_config == None` | Vérifie comportement désactivation proxies |
+| 15 | `test_settings_username_too_short` | Username trop court rejette Settings | .env avec PROXY_USERNAME="abc" | Lève `ValidationError` "at least 5 characters" | Vérifie validation username min_length |
+| 16 | `test_settings_secret_str_password_masked` | SecretStr masque password dans logs | Settings avec PROXY_PASSWORD="secret123" | `str(settings.PROXY_PASSWORD) == "**********"` (masqué) | Vérifie sécurité SecretStr Pydantic |
 
 **Total tests unitaires** : 6 (ProxyConfig) + 3 (ProxyService) + 4 (Settings) = **13 tests**
 
@@ -352,10 +351,10 @@ DECODO_PROXY_ENABLED=true
 | # | Nom test | Prérequis (Given) | Action (When) | Résultat attendu (Then) |
 |---|----------|-------------------|---------------|-------------------------|
 | 1 | `test_integration_crawler_with_proxy_rotation` | Mock AsyncWebCrawler, ProxyService avec pool 3 proxies, CrawlerService initialisé avec proxy_service | Appeler `crawl_google_flights(url)` 3 fois consécutives | 3 crawls utilisent 3 proxies différents (proxy0, proxy1, proxy2 vérifiés via BrowserConfig.proxy), logs INFO contiennent proxy_host distinct pour chaque crawl |
-| 2 | `test_integration_settings_load_from_env` | Fichier .env avec DECODO_USERNAME, PASSWORD, HOST, ENABLED=true | Charger Settings() depuis env | `settings.proxy_config` valide, aucune exception ValidationError |
+| 2 | `test_integration_settings_load_from_env` | Fichier .env avec PROXY_USERNAME, PASSWORD, HOST, ENABLED=true | Charger Settings() depuis env | `settings.proxy_config` valide, aucune exception ValidationError |
 | 3 | `test_integration_proxy_service_injected_crawler` | Settings avec proxies enabled, ProxyService créé depuis settings.proxy_pool, CrawlerService reçoit proxy_service via DI | Appeler `crawler_service.crawl_google_flights(url, use_proxy=True)` | CrawlerService appelle `proxy_service.get_next_proxy()` 1 fois (vérifié mock spy), BrowserConfig.proxy contient URL proxy complète, crawl success |
 | 4 | `test_integration_proxy_rotation_logging_observability` | ProxyService pool 3 proxies, CrawlerService avec logging structuré activé | Crawler 10 URLs consécutives | Logs contiennent 10 entrées INFO avec extra fields proxy_host, proxy_index, proxy_country, distribution équitable proxies (3-3-4 ou 3-4-3 count), aucun password loggé |
-| 5 | `test_integration_proxy_service_disabled_no_injection` | Settings avec DECODO_PROXY_ENABLED=false, CrawlerService initialisé sans proxy_service (None) | Appeler `crawl_google_flights(url, use_proxy=True)` | CrawlerService détecte proxy_service==None, BrowserConfig.proxy==None (pas de proxy utilisé), logs contiennent proxy_host="no_proxy", crawl success en mode direct |
+| 5 | `test_integration_proxy_service_disabled_no_injection` | Settings avec PROXY_ROTATION_ENABLED=false, CrawlerService initialisé sans proxy_service (None) | Appeler `crawl_google_flights(url, use_proxy=True)` | CrawlerService détecte proxy_service==None, BrowserConfig.proxy==None (pas de proxy utilisé), logs contiennent proxy_host="no_proxy", crawl success en mode direct |
 
 **Total tests intégration** : 5 tests
 
@@ -396,20 +395,19 @@ DECODO_PROXY_ENABLED=true
 **Exemple 3 : Settings .env exemple (variables environnement)**
 
 ```bash
-# Decodo Proxies Configuration (Story 5)
-DECODO_USERNAME=testuser
-DECODO_PASSWORD=my_secure_password_here
-DECODO_PROXY_HOST=fr.decodo.com:40000
-DECODO_PROXY_ENABLED=true
+# Proxy Provider Configuration (Story 5)
+PROXY_USERNAME=testuser
+PROXY_PASSWORD=my_secure_password_here
+PROXY_HOST=fr.decodo.com:40000
 ```
 
 **Notes** :
-- `DECODO_USERNAME` : Identifiant simple fourni par dashboard Decodo
-- `DECODO_PASSWORD` : Mot de passe Decodo (masqué par SecretStr en logs)
-- `DECODO_PROXY_HOST` : Hostname:port France rotating (default "fr.decodo.com:40000")
-- `DECODO_PROXY_ENABLED` : Boolean active/désactive proxies (false pour dev local)
+- `PROXY_USERNAME` : Identifiant simple fourni par dashboard proxy provider
+- `PROXY_PASSWORD` : Mot de passe proxy provider (masqué par SecretStr en logs)
+- `PROXY_HOST` : Hostname:port France rotating (default "fr.decodo.com:40000")
+- `PROXY_ROTATION_ENABLED` : Boolean active/désactive proxies (false pour dev local)
 
-**Valeurs masquées production** : Remplacer credentials par vraies valeurs Decodo (stockées dans Dokploy secrets UI, pas committées dans git).
+**Valeurs masquées production** : Remplacer credentials par vraies valeurs proxy provider (stockées dans Dokploy secrets UI, pas committées dans git).
 
 ---
 
@@ -447,9 +445,9 @@ DECODO_PROXY_ENABLED=true
 
 4. **Retry captcha change proxy automatiquement** : Si CaptchaDetectedError détectée → retry logic Tenacity (Story 4) appelle get_next_proxy() pour rotation IP automatique, 2ème tentative utilise proxy différent (vérifié proxy_index logs différents entre tentative 1 et 2)
 
-5. **Settings génère ProxyConfig automatiquement** : model_validator génère `settings.proxy_config` ProxyConfig depuis variables env (DECODO_USERNAME, PASSWORD, HOST) si DECODO_PROXY_ENABLED=True
+5. **Settings génère ProxyConfig automatiquement** : model_validator génère `settings.proxy_config` ProxyConfig depuis variables env (PROXY_USERNAME, PASSWORD, HOST)
 
-6. **Mode proxies désactivé fonctionne** : Si DECODO_PROXY_ENABLED=false → settings.proxy_config==None, CrawlerService initialise sans proxy, BrowserConfig.proxy==None, crawls réussissent en mode direct sans proxy (vérifié logs proxy_host=="no_proxy")
+6. **Mode proxies désactivé fonctionne** : Si PROXY_ROTATION_ENABLED=false → settings.proxy_config==None, CrawlerService initialise sans proxy, BrowserConfig.proxy==None, crawls réussissent en mode direct sans proxy (vérifié logs proxy_host=="no_proxy")
 
 7. **URL proxy format correct** : ProxyConfig.get_proxy_url() retourne exactement `"http://{username}:{password}@{host}:{port}"`, utilisable directement par BrowserConfig Crawl4AI (vérifié regex matching URL + test crawl mock réussi)
 
@@ -461,7 +459,7 @@ DECODO_PROXY_ENABLED=true
 
 10. **Pydantic v2 BaseModel ProxyConfig** : Utilise Field pour contraintes validation, field_validator mode='after' pour username/host/port, field_validator mode='before' pour country normalisation (lowercase→uppercase)
 
-11. **Pydantic v2 BaseSettings extension** : Settings hérite BaseSettings avec env_file='.env', nouveaux champs DECODO_*, model_validator mode='after' pour génération proxy_pool automatique
+11. **Pydantic v2 BaseSettings extension** : Settings hérite BaseSettings avec env_file='.env', nouveaux champs PROXY_*, model_validator mode='after' pour génération proxy_pool automatique
 
 12. **field_validator username min_length** : Validation min_length=5 obligatoire, lève ValidationError avec message explicite si trop court
 
@@ -471,7 +469,7 @@ DECODO_PROXY_ENABLED=true
 
 15. **Logging structuré JSON complet** : Tous logs ProxyService et CrawlerService incluent contexte proxy : proxy_host (hostname sans credentials), proxy_country, proxy_index, pool_size, use_proxy boolean (vérifié assertions extra fields présents)
 
-16. **SecretStr Pydantic sécurité** : DECODO_PASSWORD défini comme `SecretStr`, masqué automatiquement dans logs (`str(settings.DECODO_PASSWORD) == "**********"`), `get_secret_value()` utilisé uniquement génération ProxyConfig
+16. **SecretStr Pydantic sécurité** : PROXY_PASSWORD défini comme `SecretStr`, masqué automatiquement dans logs (`str(settings.PROXY_PASSWORD) == "**********"`), `get_secret_value()` utilisé uniquement génération ProxyConfig
 
 17. **Référence Story 4 interface** : CrawlerService extension référence explicitement `docs/specs/epic-2-google-flights/story-4-crawler-parser.md` pour interface existante (crawl_google_flights signature), pas de redéfinition complète
 

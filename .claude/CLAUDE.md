@@ -8,7 +8,7 @@
 
 **Nom** : flight-search-api
 
-**Description** : API FastAPI pour recherche de vols multi-destinations via Google Flights (scraping avec Crawl4AI + proxies Decodo)
+**Description** : API FastAPI pour recherche de vols multi-destinations via Google Flights (scraping avec Crawl4AI + proxy provider)
 
 **Stack Technique** :
 - Python 3.13.1+
@@ -16,7 +16,7 @@
 - Pydantic v2.12.4+ (Settings)
 - Crawl4AI 0.7.7+ (AsyncWebCrawler + Playwright intégré)
 - Tenacity 9.1.2+ (retry logic async)
-- Decodo Proxies (résidentiels, France targeting)
+- Proxy Provider (résidentiels, France targeting)
 
 **Architecture** : API async, scraping stealth, extraction CSS (pas de LLM), Top 10 résultats en mémoire (pas de DB)
 
@@ -472,7 +472,7 @@ docker run -p 8000:8000 --env-file .env flight-search-api
 # Run avec override env vars
 docker run -p 8000:8000 \
   -e LOG_LEVEL=DEBUG \
-  -e DECODO_USERNAME=customer-XXX-country-FR \
+  -e PROXY_USERNAME=customer-XXX-country-FR \
   flight-search-api
 ```
 
@@ -542,10 +542,10 @@ vim .env  # Remplir avec vraies valeurs
 # Logging
 LOG_LEVEL=INFO  # DEBUG en dev, INFO en prod
 
-# Decodo Proxies
-DECODO_USERNAME=customer-{api_key}-country-FR
-DECODO_PASSWORD=your_password
-DECODO_PROXY_HOST=pr.decodo.com:8080
+# Proxy Provider
+PROXY_USERNAME=customer-{api_key}-country-FR
+PROXY_PASSWORD=your_password
+PROXY_HOST=pr.decodo.com:8080
 
 # Features
 PROXY_ROTATION_ENABLED=true
@@ -747,15 +747,15 @@ def test_health_endpoint(client: TestClient):
 
 **Caractéristiques** :
 - Testent flow complet avec vraies dépendances
-- Utilisent vraie clé Decodo (bandwidth coûteux)
+- Utilisent vraie clé proxy provider (bandwidth coûteux)
 - Exécutés manuellement avant release
 - Pas dans CI (coût + lenteur)
 
 **Exemple** :
 ```bash
 # .env avec vraies clés
-DECODO_USERNAME=customer-REAL_KEY-country-FR
-DECODO_PASSWORD=real_password
+PROXY_USERNAME=customer-REAL_KEY-country-FR
+PROXY_PASSWORD=real_password
 
 # Run app
 fastapi dev app/main.py

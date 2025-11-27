@@ -1,38 +1,39 @@
 """Tests unitaires SearchService async."""
 
 import logging
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.models import SearchRequest, SearchResponse
+from app.models import GoogleSearchRequest, SearchResponse
 from app.services import CombinationGenerator, SearchService
 from tests.fixtures.helpers import (
     GOOGLE_FLIGHT_TEMPLATE_URL,
     assert_results_sorted_by_price,
     create_date_combinations,
 )
+from tests.fixtures.mocks import create_mock_settings_context
 
 
 @pytest.fixture
 def mock_crawler_service(mock_crawl_result):
     """Mock CrawlerService async."""
     crawler = AsyncMock()
-    crawler.crawl_google_flights.return_value = mock_crawl_result
+    crawler.crawl_flights.return_value = mock_crawl_result
     return crawler
 
 
 @pytest.fixture
-def valid_search_request(search_request_factory):
+def valid_search_request(google_search_request_factory):
     """SearchRequest valide 2 segments."""
-    return search_request_factory(days_segment1=6, days_segment2=5)
+    return google_search_request_factory(days_segment1=6, days_segment2=5)
 
 
 @pytest.fixture(autouse=True)
 def mock_settings(test_settings):
     """Mock get_settings pour tous les tests du module (CI compatibility)."""
-    with patch("app.services.search_service.get_settings", return_value=test_settings):
+    with create_mock_settings_context("app.services.search_service", test_settings):
         yield
 
 
@@ -90,7 +91,7 @@ async def test_search_flights_crawls_all_urls(
 
     await service.search_flights(valid_search_request)
 
-    assert mock_crawler_service.crawl_google_flights.call_count == 42
+    assert mock_crawler_service.crawl_flights.call_count == 42
 
 
 @pytest.mark.asyncio
@@ -109,7 +110,7 @@ async def test_search_flights_parallel_crawling_asyncio_gather(
 
     response = await service.search_flights(valid_search_request)
 
-    assert mock_crawler_service.crawl_google_flights.call_count == 10
+    assert mock_crawler_service.crawl_flights.call_count == 10
     assert response is not None
 
 
@@ -290,7 +291,7 @@ async def test_search_flights_handles_partial_crawl_failures(
             raise CaptchaDetectedError(url=url, captcha_type="recaptcha")
         return mock_crawl_result
 
-    mock_crawler_service.crawl_google_flights.side_effect = mock_crawl
+    mock_crawler_service.crawl_flights.side_effect = mock_crawl
     service = SearchService(
         combination_generator=mock_combination_generator,
         crawler_service=mock_crawler_service,
@@ -311,7 +312,7 @@ async def test_search_flights_returns_empty_all_crawls_failed(
     valid_search_request,
 ):
     """Retourne response vide si tous crawls echouent."""
-    mock_crawler_service.crawl_google_flights.side_effect = NetworkError(
+    mock_crawler_service.crawl_flights.side_effect = NetworkError(
         url="test", status_code=500
     )
     service = SearchService(
@@ -425,11 +426,11 @@ async def test_search_flights_less_than_10_results(
 async def test_search_with_real_generator_two_segments(
     mock_crawler_success,
     google_flight_parser_mock_10_flights_factory,
-    search_request_factory,
+    google_search_request_factory,
     mock_generate_google_flights_url,
 ):
     """Orchestration avec CombinationGenerator reel - 2 segments (7x6=42 combinaisons)."""
-    request = search_request_factory(days_segment1=6, days_segment2=5)
+    request = google_search_request_factory(days_segment1=6, days_segment2=5)
     service = SearchService(
         combination_generator=CombinationGenerator(),
         crawler_service=mock_crawler_success,
@@ -440,7 +441,7 @@ async def test_search_with_real_generator_two_segments(
 
     assert len(response.results) == 10
     assert_results_sorted_by_price(response.results)
-    assert mock_crawler_success.crawl_google_flights.call_count == 42
+    assert mock_crawler_success.crawl_flights.call_count == 42
 
 
 @pytest.mark.asyncio
@@ -451,7 +452,7 @@ async def test_search_with_real_generator_five_segments_asymmetric(
     mock_generate_google_flights_url,
 ):
     """5 segments asymetriques avec CombinationGenerator reel (15x2x2x2x2=240 combinaisons)."""
-    request = SearchRequest(
+    request = GoogleSearchRequest(
         template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[
             date_range_factory(start_offset=1, duration=14),
@@ -470,4 +471,4 @@ async def test_search_with_real_generator_five_segments_asymmetric(
     response = await service.search_flights(request)
 
     assert len(response.results) == 10
-    assert mock_crawler_success.crawl_google_flights.call_count == 240
+    assert mock_crawler_success.crawl_flights.call_count == 240

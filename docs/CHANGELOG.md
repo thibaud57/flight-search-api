@@ -133,7 +133,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - `.dockerignore` : Exclusion fichiers inutiles pour build
 - `.env.example` : Template variables environnement :
   - Logging : LOG_LEVEL
-  - Decodo Proxies : DECODO_USERNAME, DECODO_PASSWORD, DECODO_PROXY_HOST
+  - Proxy Provider : PROXY_USERNAME, PROXY_PASSWORD, PROXY_HOST
   - Features : PROXY_ROTATION_ENABLED, CAPTCHA_DETECTION_ENABLED
 
 **Documentation Standards**
@@ -289,7 +289,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 - **Story 2 : Configuration & Logging** :
   - Configuration Pydantic Settings v2 (`app/core/config.py`)
-  - Variables environnement validées (LOG_LEVEL, DECODO credentials, features flags)
+  - Variables environnement validées (LOG_LEVEL, proxy credentials, features flags)
   - Structured logging JSON avec pythonjsonlogger (`app/core/logger.py`)
   - Contexte métier dans logs (extra fields pour search_id, destinations, etc.)
 
@@ -336,10 +336,10 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
   - Tests unitaires : CrawlerService (13 tests), FlightParser (10 tests)
   - Tests intégration : Crawler + Parser end-to-end (2 tests)
 
-- **Story 5 : Proxies Decodo (anti-détection)** :
+- **Story 5 : Proxy Provider (anti-détection)** :
   - ProxyConfig : Modèle Pydantic avec validations (port, country normalization)
-  - ProxyService : Rotation round-robin proxies résidentiels Decodo
-  - Extension Settings : Variables DECODO_USERNAME, DECODO_PASSWORD, DECODO_PROXY_HOST
+  - ProxyService : Rotation round-robin proxies résidentiels
+  - Extension Settings : Variables PROXY_USERNAME, PROXY_PASSWORD, PROXY_HOST
   - Integration CrawlerService : Injection ProxyService, headers proxy automatiques
   - Tests unitaires : ProxyConfig (6 tests), ProxyService (3 tests), Settings (4 tests)
   - Tests intégration : Proxy rotation + crawler (5 tests)

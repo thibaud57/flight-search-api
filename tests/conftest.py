@@ -19,8 +19,8 @@ pytest_plugins = [
 def test_settings() -> Settings:
     """Settings mocké pour tests avec valeurs par défaut."""
     return Settings(
-        DECODO_USERNAME="customer-test-country-FR",
-        DECODO_PASSWORD="test_password",
+        PROXY_USERNAME="customer-test-country-FR",
+        PROXY_PASSWORD="test_password",
         LOG_LEVEL="INFO",
     )
 

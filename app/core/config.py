@@ -24,9 +24,9 @@ class CrawlerTimeouts(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    crawl_page_timeout_ms: int = 30000
+    crawl_page_timeout_ms: int = 60000
     crawl_delay_s: float = 5.0
-    crawl_global_timeout_s: float = 40.0
+    crawl_global_timeout_s: float = 70.0
 
 
 class Settings(BaseSettings):
@@ -42,10 +42,10 @@ class Settings(BaseSettings):
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     MAX_CONCURRENCY: int = 10
 
-    DECODO_USERNAME: str = Field(..., min_length=5)
-    DECODO_PASSWORD: SecretStr
-    DECODO_PROXY_HOST: str = "fr.decodo.com:40000"
-    DECODO_PROXY_ENABLED: bool = True
+    PROXY_USERNAME: str = Field(..., min_length=5)
+    PROXY_PASSWORD: SecretStr
+    PROXY_HOST: str = "fr.decodo.com:40000"
+
     PROXY_ROTATION_ENABLED: bool = True
     CAPTCHA_DETECTION_ENABLED: bool = True
 
@@ -53,13 +53,13 @@ class Settings(BaseSettings):
 
     proxy_config: ProxyConfig | None = None
 
-    @field_validator("DECODO_PROXY_HOST", mode="after")
+    @field_validator("PROXY_HOST", mode="after")
     @classmethod
     def validate_proxy_host_format(cls, v: str) -> str:
-        """Valide format DECODO_PROXY_HOST host:port."""
+        """Valide format PROXY_HOST host:port."""
         parts = v.split(":")
         if len(parts) != 2:
-            raise ValueError("DECODO_PROXY_HOST must follow format: host:port")
+            raise ValueError("PROXY_HOST must follow format: host:port")
         return v
 
     @model_validator(mode="after")
@@ -70,13 +70,13 @@ class Settings(BaseSettings):
                 "Risky configuration: Both proxy rotation and captcha detection are disabled"
             )
 
-        if self.DECODO_PROXY_ENABLED:
-            host_parts = self.DECODO_PROXY_HOST.split(":")
+        if self.PROXY_ROTATION_ENABLED:
+            host_parts = self.PROXY_HOST.split(":")
             self.proxy_config = ProxyConfig(
                 host=host_parts[0],
                 port=int(host_parts[1]),
-                username=self.DECODO_USERNAME,
-                password=self.DECODO_PASSWORD,
+                username=self.PROXY_USERNAME,
+                password=self.PROXY_PASSWORD,
                 country="FR",
             )
 
