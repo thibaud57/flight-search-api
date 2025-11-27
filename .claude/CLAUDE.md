@@ -598,22 +598,6 @@ debugpy.wait_for_client()
 - Espace disque suffisant (~500MB)
 - Permissions écriture dans cache directory
 
-### Fixtures Kayak (poll_data)
-
-**⚠️ Note** : Le fichier `tests/fixtures/kayak/poll_data_example.json` est dans `.gitignore` (non commité, ~5KB)
-
-**Recréer le fichier si manquant** :
-1. Le fichier contient une version simplifiée mais représentative de la structure poll_data Kayak
-2. Structure : 3 results avec cas edge (multi-segments, layover, champs optionnels manquants)
-3. Utilisé pour test end-to-end `test_parse_real_kayak_response_fixture`
-
-**Capturer de nouvelles données réelles** (optionnel, pour debugging) :
-```bash
-# Via kayak_poll_capture.py (déjà présent dans utils)
-# Place dans tests/fixtures/kayak/poll_data_debug.json
-# Utiliser pour debugging si parser échoue en prod
-```
-
 **Tests échouent avec `ModuleNotFoundError`** :
 ```bash
 # Réinstaller deps
