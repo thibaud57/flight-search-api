@@ -168,7 +168,7 @@ class CrawlerService:
         if provider == Provider.KAYAK:
             self._kayak_poll_data = None
 
-        @retry(**RetryStrategy.get_crawler_retry())
+        @retry(**RetryStrategy.get_crawler_retry())  # type: ignore[misc]
         async def _crawl_with_retry() -> CrawlResult:
             nonlocal attempt_count
             attempt_count += 1

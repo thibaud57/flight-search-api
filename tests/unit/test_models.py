@@ -277,7 +277,9 @@ def test_search_request_model_dump_json_valid():
 
 def test_search_request_type_hints_pep695_compliant():
     """Type hints code conforme PEP 695."""
-    segments_annotation = GoogleSearchRequest.model_fields["segments_date_ranges"].annotation
+    segments_annotation = GoogleSearchRequest.model_fields[
+        "segments_date_ranges"
+    ].annotation
 
     assert "list" in str(segments_annotation)
 

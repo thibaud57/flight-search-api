@@ -31,6 +31,7 @@ class CrawlerTimeouts(BaseModel):
 
 class Settings(BaseSettings):
     """Configuration application chargee depuis variables d'environnement."""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

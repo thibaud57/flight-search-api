@@ -154,7 +154,7 @@ def settings_env_factory(monkeypatch):
             "PROXY_PASSWORD": "password123",
             "PROXY_HOST": "proxy.example.com:40000",
             "PROXY_ROTATION_ENABLED": "true",
-            "CAPTCHA_DETECTION_ENABLED": "true"
+            "CAPTCHA_DETECTION_ENABLED": "true",
         }
         env_vars = {**defaults, **overrides}
         for key, value in env_vars.items():
