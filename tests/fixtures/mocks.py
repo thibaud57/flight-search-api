@@ -194,3 +194,46 @@ def mock_priceprediction_response():
     response.url = "https://www.kayak.fr/s/horizon/api/priceprediction?id=xyz"
     response.status = 200
     return response
+
+
+@pytest.fixture
+def mock_search_service_network_error():
+    """Mock SearchService qui lève NetworkError."""
+    from app.exceptions import NetworkError
+
+    service = MagicMock()
+
+    async def raise_network_error(request):
+        raise NetworkError(url=GOOGLE_FLIGHT_BASE_URL, status_code=500)
+
+    service.search_flights = raise_network_error
+    return service
+
+
+@pytest.fixture
+def mock_search_service_session_error():
+    """Mock SearchService qui lève SessionCaptureError."""
+    from app.exceptions import SessionCaptureError
+    from app.models import Provider
+
+    service = MagicMock()
+
+    async def raise_session_error(request):
+        raise SessionCaptureError(provider=Provider.GOOGLE.value, reason="No cookies captured")
+
+    service.search_flights = raise_session_error
+    return service
+
+
+@pytest.fixture
+def mock_search_service_captcha_error():
+    """Mock SearchService qui lève CaptchaDetectedError."""
+    from app.exceptions import CaptchaDetectedError
+
+    service = MagicMock()
+
+    async def raise_captcha_error(request):
+        raise CaptchaDetectedError(url=GOOGLE_FLIGHT_BASE_URL, captcha_type="recaptcha")
+
+    service.search_flights = raise_captcha_error
+    return service
