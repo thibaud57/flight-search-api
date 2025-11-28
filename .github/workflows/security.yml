@@ -52,26 +52,21 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install pip-audit
-        run: pip install pip-audit
+      - name: Install uv
+        run: pip install uv
 
-      - name: Generate requirements from pyproject.toml
+      - name: Scan Python dependencies for CVEs with uv
         run: |
-          pip install uv
-          uv pip compile pyproject.toml -o requirements.txt
+          uv pip compile pyproject.toml | uv audit --stdin --format json --output uv-audit.json
+          uv pip compile pyproject.toml | uv audit --stdin
+        continue-on-error: false
 
-      - name: Scan Python dependencies for CVEs
-        run: |
-          pip-audit -r requirements.txt --desc --format json --output pip-audit.json || true
-          pip-audit -r requirements.txt --desc
-        continue-on-error: true
-
-      - name: Upload pip-audit results
+      - name: Upload uv audit results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pip-audit-results
-          path: pip-audit.json
+          name: uv-audit-results
+          path: uv-audit.json
           retention-days: 30
 
       # ========================================
@@ -86,7 +81,7 @@ jobs:
           image-ref: flight-search-api:test
           format: 'sarif'
           output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL'
           exit-code: '1'
 
       - name: Upload Trivy results to GitHub Security
