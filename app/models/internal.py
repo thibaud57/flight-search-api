@@ -4,7 +4,8 @@ from collections.abc import Sequence
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from app.models import GoogleFlightDTO, KayakFlightDTO
+from app.models.google_flight_dto import GoogleFlightDTO
+from app.models.kayak_flight_dto import KayakFlightDTO
 from app.models.request import validate_iso_date
 
 # Type alias pour supporter Google ET Kayak
