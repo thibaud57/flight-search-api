@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.models import MultiCitySearchRequestBase
+from tests.fixtures.helpers import GOOGLE_FLIGHT_TEMPLATE_URL
 
 
 def test_multi_city_base_valid_two_segments(date_range_factory):
@@ -10,7 +11,7 @@ def test_multi_city_base_valid_two_segments(date_range_factory):
     segment2 = date_range_factory(start_offset=7, duration=6)
 
     request = MultiCitySearchRequestBase(
-        template_url="https://example.com/flights",
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[segment1, segment2],
     )
 
@@ -23,7 +24,7 @@ def test_multi_city_base_max_days_validation_ok(date_range_factory):
     segment2 = date_range_factory(start_offset=16, duration=15)
 
     request = MultiCitySearchRequestBase(
-        template_url="https://example.com/flights",
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[segment1, segment2],
     )
 
@@ -49,7 +50,7 @@ def test_multi_city_base_chronological_order_ok(date_range_factory):
     segment2 = date_range_factory(start_offset=8, duration=7)
 
     request = MultiCitySearchRequestBase(
-        template_url="https://example.com/flights",
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[segment1, segment2],
     )
 
@@ -76,7 +77,7 @@ def test_multi_city_base_explosion_combinatoire_ok(date_range_factory):
     segment2 = date_range_factory(start_offset=11, duration=10)
 
     request = MultiCitySearchRequestBase(
-        template_url="https://example.com/flights",
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[segment1, segment2],
     )
 
@@ -105,7 +106,7 @@ def test_multi_city_base_extra_forbid(date_range_factory):
 
     with pytest.raises(ValidationError) as exc_info:
         MultiCitySearchRequestBase(
-            template_url="https://example.com/flights",
+            template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
             segments_date_ranges=[segment],
             extra_field="invalid",
         )
@@ -118,12 +119,12 @@ def test_multi_city_base_serialization(date_range_factory):
     segment = date_range_factory(start_offset=1, duration=7)
 
     request = MultiCitySearchRequestBase(
-        template_url="https://example.com/flights",
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[segment],
     )
 
     json_data = request.model_dump()
 
-    assert json_data["template_url"] == "https://example.com/flights"
+    assert json_data["template_url"] == GOOGLE_FLIGHT_TEMPLATE_URL
     assert len(json_data["segments_date_ranges"]) == 1
     assert json_data["segments_date_ranges"][0]["start"] == segment.start

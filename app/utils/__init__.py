@@ -1,5 +1,6 @@
 """Utilitaires du projet."""
 
+from app.core import DATE_PATTERN_YYYY_MM_DD
 from app.utils.browser_fingerprint import (
     build_browser_config_from_fingerprint,
     get_base_browser_config,
@@ -15,6 +16,7 @@ from app.utils.kayak_poll_capture import (
 from app.utils.kayak_url import KayakUrlError, generate_kayak_url
 
 __all__ = [
+    "DATE_PATTERN_YYYY_MM_DD",
     "GoogleFlightsUrlError",
     "KayakPollCaptureError",
     "KayakUrlError",

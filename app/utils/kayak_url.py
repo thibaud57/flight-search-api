@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+from app.core import DATE_PATTERN_YYYY_MM_DD
+
 
 class KayakUrlError(Exception):
     """Erreur lors de la génération d'URL Kayak."""
@@ -11,9 +13,8 @@ class KayakUrlError(Exception):
 
 def generate_kayak_url(template_url: str, new_dates: list[str]) -> str:
     """Génère une URL Kayak en remplaçant les dates dans le path."""
-    date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
     for date in new_dates:
-        if not date_pattern.match(date):
+        if not DATE_PATTERN_YYYY_MM_DD.match(date):
             msg = f"Date invalide '{date}'. Format attendu : YYYY-MM-DD"
             raise KayakUrlError(msg)
 

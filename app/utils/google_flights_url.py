@@ -7,6 +7,8 @@ import binascii
 import re
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
+from app.core import DATE_PATTERN_YYYY_MM_DD
+
 
 class GoogleFlightsUrlError(Exception):
     """Erreur lors de la génération d'URL Google Flights."""
@@ -16,9 +18,8 @@ def generate_google_flights_url(template_url: str, new_dates: list[str]) -> str:
     """
     Génère une URL Google Flights en remplaçant les dates dans le paramètre tfs encodé.
     """
-    date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
     for date in new_dates:
-        if not date_pattern.match(date):
+        if not DATE_PATTERN_YYYY_MM_DD.match(date):
             msg = f"Date invalide '{date}'. Format attendu : YYYY-MM-DD"
             raise GoogleFlightsUrlError(msg)
 

@@ -1,6 +1,8 @@
 import pytest
 from pydantic import ValidationError
 
+from app.models import GoogleFlightDTO
+
 
 def test_google_flight_dto_creation(google_flight_dto_factory):
     """Test création GoogleFlightDTO valide."""
@@ -36,8 +38,6 @@ def test_google_flight_dto_custom_values(google_flight_dto_factory):
 
 def test_google_flight_dto_required_fields():
     """Test GoogleFlightDTO échoue sans champs requis."""
-    from app.models import GoogleFlightDTO
-
     with pytest.raises(ValidationError) as exc_info:
         GoogleFlightDTO(
             price=1000.0,
@@ -52,8 +52,6 @@ def test_google_flight_dto_required_fields():
 
 def test_google_flight_dto_price_optional(google_flight_dto_factory):
     """Test GoogleFlightDTO accepte price=None (optionnel)."""
-    from app.models import GoogleFlightDTO
-
     dto = GoogleFlightDTO(
         price=None,
         airline="Test",
@@ -68,8 +66,6 @@ def test_google_flight_dto_price_optional(google_flight_dto_factory):
 
 def test_google_flight_dto_optional_fields(google_flight_dto_factory):
     """Test GoogleFlightDTO champs optionnels (departure/arrival_airport)."""
-    from app.models import GoogleFlightDTO
-
     dto = GoogleFlightDTO(
         price=1000.0,
         airline="Test",
@@ -85,8 +81,6 @@ def test_google_flight_dto_optional_fields(google_flight_dto_factory):
 
 def test_google_flight_dto_extra_forbid(google_flight_dto_factory):
     """Test GoogleFlightDTO rejette champs extra."""
-    from app.models import GoogleFlightDTO
-
     with pytest.raises(ValidationError) as exc_info:
         GoogleFlightDTO(
             price=1000.0,
@@ -118,8 +112,6 @@ def test_google_flight_dto_serialization(google_flight_dto_factory):
 
 def test_google_flight_dto_deserialization():
     """Test GoogleFlightDTO désérialisation depuis dict."""
-    from app.models import GoogleFlightDTO
-
     data = {
         "price": 999.99,
         "airline": "Lufthansa",
@@ -140,8 +132,6 @@ def test_google_flight_dto_deserialization():
 
 def test_google_flight_dto_stops_optional(google_flight_dto_factory):
     """Test GoogleFlightDTO accepte stops=None (optionnel)."""
-    from app.models import GoogleFlightDTO
-
     dto = GoogleFlightDTO(
         price=1000.0,
         airline="Test",

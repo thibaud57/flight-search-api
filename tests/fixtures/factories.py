@@ -8,12 +8,14 @@ import pytest
 from app.core import Settings
 from app.models import (
     DateRange,
+    FlightCombinationResult,
     GoogleFlightDTO,
     GoogleSearchRequest,
     KayakFlightDTO,
     KayakSearchRequest,
     LayoverInfo,
     ProxyConfig,
+    SearchStats,
 )
 from app.services import GoogleFlightParser
 from tests.fixtures.helpers import (
@@ -444,5 +446,51 @@ def kayak_poll_data_factory():
             "legs": legs,
             "segments": segments,
         }
+
+    return _create
+
+
+@pytest.fixture
+def search_stats_factory():
+    """Factory pour créer SearchStats avec paramètres configurables."""
+
+    def _create(total_results=10, search_time_ms=100, segments_count=2):
+        return SearchStats(
+            total_results=total_results,
+            search_time_ms=search_time_ms,
+            segments_count=segments_count,
+        )
+
+    return _create
+
+
+@pytest.fixture
+def flight_combination_result_factory(google_flight_dto_factory):
+    """Factory pour créer FlightCombinationResult avec paramètres configurables."""
+
+    def _create(
+        num_flights=1,
+        base_price=800.0,
+        price_increment=100.0,
+        segment_dates=None,
+    ):
+        if segment_dates is None:
+            segment_dates = [
+                get_future_date(1).isoformat(),
+                get_future_date(15).isoformat(),
+            ]
+
+        flights = [
+            google_flight_dto_factory(price=base_price + i * price_increment)
+            for i in range(num_flights)
+        ]
+
+        total_price = sum(f.price or 0.0 for f in flights)
+
+        return FlightCombinationResult(
+            segment_dates=segment_dates,
+            flights=flights,
+            total_price=total_price if total_price > 0 else base_price,
+        )
 
     return _create
