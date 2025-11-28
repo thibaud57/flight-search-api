@@ -1,10 +1,10 @@
 ---
-title: "Story 12: Per-Segment Filters (Kayak only)"
+title: "Story 12: Per-Segment Filters (Generic)"
 epic: "Epic 4: Kayak Integration"
 story_points: 5
 dependencies: ["epic-4/story-11"]
-date: "2025-11-26"
-keywords: ["filters", "per-segment", "max-duration", "max-stops", "min-layover", "duration-parsing", "filter-service", "segment-model", "pydantic-validation", "user-preferences", "kayak-request"]
+date: "2025-11-28"
+keywords: ["filters", "per-segment", "max-duration", "max-stops", "min-layover", "max-layover", "duration-parsing", "filter-service", "pydantic-validation", "kayak", "generic"]
 scope: ["specs"]
 technologies: ["Pydantic v2", "Python", "regex"]
 ---
@@ -14,33 +14,35 @@ technologies: ["Pydantic v2", "Python", "regex"]
 ## Besoin utilisateur
 
 - **Filtres personnalisés par segment** : Utilisateurs recherchant vols multi-city (ex: Paris→Tokyo→Kyoto→Paris) veulent appliquer filtres différents par segment selon contraintes voyage (ex: segment 1 max 12h car travail lendemain, segment 2 accepte escales pour économiser, segment 3 min 1h30 layover pour confort)
-- **Contrôle granulaire itinéraire** : Planification voyage complexe nécessite flexibilité filtres : segment business direct sans escale, segment loisir accepte vols longs économiques, segment retour évite layovers courts stressants (<1h30)
+- **Contrôle granulaire itinéraire** : Planification voyage complexe nécessite flexibilité filtres : segment business direct sans escale, segment loisir accepte vols longs économiques, segment retour évite layovers courts stressants (<1h30) ou trop longs (>6h)
 - **Format durée intuitif** : Utilisateurs grand public attendent format durée humain-lisible "12h", "1h30" (pas 720 minutes format technique), similaire affichage Kayak UI
 - **Filtres optionnels** : Utilisateurs débutants ne veulent pas complexité, filtres doivent être optionnels avec comportement par défaut permissif (sans filtres = tous vols retournés)
+- **Filtres indépendants par segment** : Chaque segment peut avoir ses propres filtres ou aucun (ex: filtres segment 2 et 3 uniquement, segment 1 sans filtre)
 
 ## Contraintes métier
 
-- **Route Kayak uniquement** : Les filtres per-segment ne sont implémentés que sur `/search-kayak` (pas `/search-google-flights`) car l'extraction des données nécessaires (durée exacte, stops, layover) n'est fiable que via API interne Kayak
+- **Route Kayak MVP** : Les filtres per-segment sont implémentés sur `/search-kayak` en priorité car l'extraction des données nécessaires (durée exacte, layovers) est fiable via API interne Kayak
+- **Architecture générique** : SegmentFilters doit être générique (pas spécifique Kayak) pour réutilisation future sur route Google Flights quand scraping layovers sera implémenté
 - **Validation format durée stricte** : Regex `^\d{1,2}h(\d{2})?$` doit accepter uniquement formats valides ("12h", "1h30") et rejeter formats ambigus ("1h3", "72", "12h60") pour éviter erreurs parsing silencieuses
 - **Limites escales réalistes** : Kayak affiche maximum 3 escales par segment, filtrer au-delà (ex: `max_stops=5`) inutile et confus pour utilisateurs
+- **Validation layover cohérente** : max_layover doit être **strictement supérieur** à min_layover si les deux sont définis
 - **Pas de validation cross-segment** : Filtres appliqués indépendamment par segment (pas de règles globales "total escales <5" ou "durée totale itinéraire <30h"), simplicité MVP prioritaire
-- **Deux SearchRequest distincts** : `SearchRequest` existant pour Google Flights (inchangé), `SearchRequestKayak` nouveau pour route Kayak avec support filtres per-segment
 
 ## Valeur business
 
-- **Réduction bruit résultats** : Filtres permettent exclure vols non-pertinents (ex: 20h transit, 3 escales épuisantes) avant ranking, améliore qualité Top 10 retournés (satisfaction utilisateur +30-40%)
+- **Réduction bruit résultats** : Filtres permettent exclure vols non-pertinents (ex: 20h transit, 3 escales épuisantes, layover trop court/long) avant ranking, améliore qualité Top 10 retournés (satisfaction utilisateur +30-40%)
 - **Foundation préférences utilisateur** : Architecture per-segment filters réutilisable pour futurs critères (preferred airlines, departure time windows, cabin class) sans refonte structurelle
 - **Parity agrégateurs premium** : Kayak/Skyscanner offrent filtres granulaires, notre API doit matcher fonctionnalités pour compétitivité B2B (partenariats agences voyage)
+- **Évolutivité multi-provider** : SegmentFilters générique permet extension future Google Flights quand scraping layovers sera implémenté (pas de refonte modèles)
 - **Métriques comportement utilisateur** : Filters appliqués observables via logs (quels filtres populaires, valeurs fréquentes) pour optimiser UX futures versions
-- **Pas de breaking change** : Route Google existante inchangée, aucune migration client nécessaire pour utilisateurs Google Flights existants
 
 ## Métriques succès
 
-- **Taux adoption filtres** : 40-60% requêtes SearchRequestKayak incluent au moins 1 filtre segment (baseline adoption attendue post-lancement)
+- **Taux adoption filtres** : 40-60% requêtes KayakSearchRequest incluent au moins 1 filtre segment (baseline adoption attendue post-lancement)
 - **Taux filtrage efficace** : Filtres réduisent résultats moyens ~20-40% (ex: 500 vols avant filtrage → 300-400 après, élimination vols non-pertinents)
 - **Zéro erreur format durée** : Validation regex rejette 100% formats invalides ("1h3", "12h60") avec messages clairs (pas de parsing silencieux incorrect)
-- **Backward compatibility** : Route `/search-google-flights` avec SearchRequest existant continue à fonctionner sans modification
-- **Coverage tests** : ≥80% sur SegmentFilters, KayakSegment model, parse_duration utility, FilterService apply_filters
+- **Validation layover cohérente** : 100% erreurs si max_layover ≤ min_layover (validation Pydantic robuste)
+- **Coverage tests** : ≥80% sur SegmentFilters, parse_duration utility, FilterService apply_filters, stops computed property
 
 ---
 
@@ -48,16 +50,14 @@ technologies: ["Pydantic v2", "Python", "regex"]
 
 ## 1. SegmentFilters (Pydantic Model)
 
-**Rôle** : Définir filtres optionnels applicables à un segment individuel itinéraire multi-city avec validation format durée humain-lisible.
+**Rôle** : Définir filtres optionnels applicables à un segment individuel itinéraire multi-city avec validation format durée humain-lisible. Modèle générique réutilisable pour tous providers (Kayak, Google Flights futur).
+
+**Fichier** : `app/models/filters.py` (nouveau fichier)
 
 **Interface** :
 ```python
 class SegmentFilters(BaseModel):
-    """Filtres optionnels par segment avec validation format durée."""
-
-    max_duration: str | None = None
-    max_stops: int | None = None
-    min_layover: str | None = None
+    """Filtres génériques par segment (tous providers)."""
 ```
 
 **Champs** :
@@ -66,7 +66,8 @@ class SegmentFilters(BaseModel):
 |-------|------|-------------|-------------|-------------------|
 | `max_duration` | `str \| None` | Durée maximale vol segment (format "Xh" ou "XhYY") | Regex `^\d{1,2}h(\d{2})?$`, minutes ≤ 1440 (24h) | `None` (pas de filtre) |
 | `max_stops` | `int \| None` | Nombre maximal escales segment | 0 ≤ value ≤ 3 | `None` (pas de filtre) |
-| `min_layover` | `str \| None` | Durée minimale escale/layover (format "Xh" ou "XhYY") | Regex `^\d{1,2}h(\d{2})?$`, minutes ≤ 720 (12h layover raisonnable) | `None` (pas de filtre) |
+| `min_layover` | `str \| None` | Durée minimale escale/layover (format "Xh" ou "XhYY") | Regex `^\d{1,2}h(\d{2})?$`, minutes ≤ 720 (12h) | `None` (pas de filtre) |
+| `max_layover` | `str \| None` | Durée maximale escale/layover (format "Xh" ou "XhYY") | Regex `^\d{1,2}h(\d{2})?$`, minutes ≤ 1440 (24h), doit être > min_layover | `None` (pas de filtre) |
 
 **Validations Pydantic** :
 
@@ -112,11 +113,23 @@ def validate_min_layover(cls, v: str | None) -> str | None:
     """Valide format + limite min_layover ≤ 12h."""
 ```
 
-- **Comportement** : Identique `max_duration` validation
-- **Limite** : ≤ 720 minutes (12h layover maximum raisonnable)
-- **Justification** : Layover >12h = overnight, rare et edge case
+- **Comportement** : Identique `max_duration` validation format
+- **Limite** : ≤ 720 minutes (12h layover minimum maximum raisonnable)
+- **Justification** : Layover min >12h = edge case très rare
 
-**4. Validation `max_stops` range** :
+**4. Validation `max_layover` format et limites** :
+```python
+@field_validator('max_layover', mode='after')
+@classmethod
+def validate_max_layover(cls, v: str | None) -> str | None:
+    """Valide format + limite max_layover ≤ 24h."""
+```
+
+- **Comportement** : Identique `max_duration` validation format
+- **Limite** : ≤ 1440 minutes (24h layover maximum pour couvrir overnight)
+- **Justification** : Layover max 24h couvre cas overnight connections
+
+**5. Validation `max_stops` range** :
 ```python
 @field_validator('max_stops', mode='after')
 @classmethod
@@ -128,14 +141,33 @@ def validate_max_stops_range(cls, v: int | None) -> int | None:
   - `None` → Skip validation
   - 0 ≤ v ≤ 3 → ✅ Valide
   - v < 0 → ❌ Lève `ValueError` (escales négatives impossibles)
-  - v > 3 → ❌ Lève `ValueError` (Google Flights max 3 escales affichées)
+  - v > 3 → ❌ Lève `ValueError` (Kayak max 3 escales affichées)
 - **Error message** : `"max_stops must be between 0 and 3 (got: X)"`
+
+**6. Validation cross-field layover cohérence** :
+```python
+@model_validator(mode='after')
+def validate_layover_range(self) -> Self:
+    """Valide que max_layover > min_layover (strictement supérieur)."""
+```
+
+- **Comportement** :
+  - Si `min_layover` ET `max_layover` définis :
+    - Convertir les deux en minutes via `parse_duration()`
+    - Si `max_layover_minutes <= min_layover_minutes` → Lève `ValueError`
+  - Si un seul défini ou les deux `None` → Skip validation
+- **Exemples** :
+  - `min_layover="1h30"`, `max_layover="6h"` → ✅ Valide (6h > 1h30)
+  - `min_layover="12h"`, `max_layover="12h"` → ❌ ValueError (égal interdit)
+  - `min_layover="12h"`, `max_layover="13h"` → ✅ Valide (strictement supérieur)
+  - `min_layover="2h"`, `max_layover="1h"` → ❌ ValueError (max < min)
+- **Error message** : `"max_layover must be strictly greater than min_layover (got min: X, max: Y)"`
 
 **Comportement** :
 
 - **Filtres optionnels** : Tous champs `None` par défaut, aucun filtre obligatoire
 - **Validation stricte** : ConfigDict `extra="forbid"` rejette champs inconnus avec ValidationError (protection contre typos)
-- **Validation indépendante** : Chaque filtre validé séparément, pas de cross-validation (ex: pas de règle "min_layover < max_duration")
+- **Validation indépendante** : Chaque filtre validé séparément, sauf validation cross-field layover
 - **Immutabilité** : Model Pydantic peut être frozen via `frozen=True` dans ConfigDict (optionnel, simplicité MVP)
 
 **Edge cases** :
@@ -143,153 +175,126 @@ def validate_max_stops_range(cls, v: int | None) -> int | None:
 - **Tous filtres None** : SegmentFilters vide valide, équivalent "aucun filtre appliqué"
 - **Durée "0h"** : Valide format regex mais invalide métier (vol instantané impossible), géré par FilterService (skip vols durée 0)
 - **Minutes "00"** : `"12h00"` valide mais redondant vs `"12h"`, accepté pour flexibilité user input
+- **Layover égaux** : `min_layover="6h"`, `max_layover="6h"` → ❌ ValueError (strictement supérieur requis)
 
 **Erreurs levées** :
-- `ValidationError` : Si format durée invalide, valeur hors range, ou type incorrect
+- `ValidationError` : Si format durée invalide, valeur hors range, type incorrect, ou max_layover ≤ min_layover
 
 **Logging structuré** :
 - DEBUG : SegmentFilters créé avec valeurs non-None (ex: `{"max_duration": "12h", "max_stops": 1}`)
 
 ---
 
-## 2. KayakSegment (Pydantic Model)
+## 2. KayakFlightDTO - Propriété `stops` (Computed)
 
-**Rôle** : Représenter un segment itinéraire multi-city pour route Kayak avec plage dates + filtres optionnels appliqués à ce segment.
+**Rôle** : Ajouter propriété computed `stops` sur KayakFlightDTO pour calculer nombre d'escales depuis longueur du tableau `layovers`.
 
-**Fichier** : `app/models/kayak_segment.py`
+**Fichier** : `app/models/kayak_flight_dto.py` (modification existant)
 
 **Interface** :
 ```python
-class KayakSegment(BaseModel):
-    """Segment itinéraire multi-city Kayak : date range + filtres optionnels."""
+class KayakFlightDTO(BaseModel):
+    """Modèle Pydantic d'un vol extrait depuis Kayak."""
 
-    date_range: DateRange
-    filters: SegmentFilters | None = None
+    # ... champs existants ...
+    layovers: list[LayoverInfo] = []
+
+    @property
+    def stops(self) -> int:
+        """Nombre d'escales = longueur du tableau layovers."""
+```
+
+**Comportement** :
+
+- **Computed property** : Pas de champ stocké, calculé à la volée depuis `len(self.layovers)`
+- **Read-only** : Property sans setter, immutable
+- **Performance** : O(1) car `len()` sur liste Python
+- **Exemples** :
+  - `layovers=[]` → `stops=0` (vol direct)
+  - `layovers=[LayoverInfo(...)]` → `stops=1` (1 escale)
+  - `layovers=[LayoverInfo(...), LayoverInfo(...)]` → `stops=2` (2 escales)
+
+**Edge cases** :
+- `layovers=None` impossible car champ défini avec `= []` default (toujours liste)
+
+**Erreurs levées** :
+- Aucune (property triviale)
+
+**Logging structuré** :
+- Aucun (computed property, pas de side-effect)
+
+---
+
+## 3. KayakSearchRequest - Ajout `segments_filters`
+
+**Rôle** : Étendre KayakSearchRequest existant avec champ `segments_filters` optionnel permettant filtres per-segment.
+
+**Fichier** : `app/models/request.py` (modification existant)
+
+**Interface** :
+```python
+class KayakSearchRequest(MultiCitySearchRequestBase):
+    """Requête recherche vols multi-city Kayak avec filtres per-segment."""
+
+    template_url: Annotated[str, "URL Kayak template"]
+    segments_date_ranges: Annotated[list[DateRange], "Plages dates par segment (2-6 segments)"]
+    segments_filters: Annotated[
+        list[SegmentFilters | None] | None,
+        "Filtres optionnels par segment (doit matcher longueur segments_date_ranges)"
+    ] = None
 ```
 
 **Champs** :
 
 | Champ | Type | Description | Contraintes | Valeur par défaut |
 |-------|------|-------------|-------------|-------------------|
-| `date_range` | `DateRange` | Plage dates départ segment (start/end ISO 8601) | DateRange validations existantes (end ≥ start, start ≥ today, max 15 jours) | Obligatoire |
-| `filters` | `SegmentFilters \| None` | Filtres optionnels segment | SegmentFilters validations | `None` (pas de filtre) |
+| `segments_filters` | `list[SegmentFilters \| None] \| None` | Filtres optionnels par segment | Si défini, longueur doit être égale à `len(segments_date_ranges)` | `None` (aucun filtre) |
 
 **Validations Pydantic** :
 
-Pas de validation custom au-delà des champs (délégation validations à `DateRange` et `SegmentFilters`).
+**Validation longueur segments_filters** :
+```python
+@model_validator(mode='after')
+def validate_segments_filters_length(self) -> Self:
+    """Valide que segments_filters match longueur segments_date_ranges."""
+```
+
+- **Comportement** :
+  - Si `segments_filters is None` → Skip validation (pas de filtres appliqués)
+  - Si `segments_filters` défini :
+    - `len(segments_filters) == len(segments_date_ranges)` → ✅ Valide
+    - `len(segments_filters) != len(segments_date_ranges)` → ❌ Lève `ValueError`
+- **Exemples** :
+  - `segments_date_ranges=[DateRange(...), DateRange(...)]`, `segments_filters=[SegmentFilters(...), None]` → ✅ Valide (longueurs égales 2)
+  - `segments_date_ranges=[DateRange(...), DateRange(...)]`, `segments_filters=[SegmentFilters(...)]` → ❌ ValueError (longueurs différentes 2 vs 1)
+  - `segments_date_ranges=[DateRange(...), DateRange(...)]`, `segments_filters=None` → ✅ Valide (pas de filtres)
+- **Error message** : `"segments_filters length (X) must match segments_date_ranges length (Y)"`
 
 **Comportement** :
 
-- **Validation stricte** : ConfigDict `extra="forbid"` rejette champs inconnus avec ValidationError (protection contre typos)
-- **Composition models** : KayakSegment encapsule `DateRange` (réutilise validation existante Story 2-3) + `SegmentFilters` (nouveau)
-- **Exclusif route Kayak** : Ce model est utilisé uniquement par `SearchRequestKayak`, pas par `SearchRequest` Google
-- **Filtres optionnels par défaut** : Si `filters=None` → comportement équivalent ancien système (tous vols acceptés)
+- **Filtres optionnels** : `segments_filters=None` → Aucun filtre appliqué sur aucun segment (comportement par défaut)
+- **Filtres partiels** : `segments_filters=[None, SegmentFilters(...), SegmentFilters(...)]` → Segment 1 sans filtre, segments 2-3 avec filtres
+- **Filtres complets** : `segments_filters=[SegmentFilters(...), SegmentFilters(...), SegmentFilters(...)]` → Tous segments avec filtres
+- **Backward compatible** : Champ optionnel (`= None`), requêtes existantes sans `segments_filters` continuent à fonctionner
 
 **Edge cases** :
 
-- **KayakSegment sans filtres** : `KayakSegment(date_range=DateRange(...), filters=None)` → Valide, comportement permissif
-- **DateRange invalide propagation** : Si `date_range` invalide → ValidationError levée par DateRange (pas géré par KayakSegment)
+- **Tous filtres None dans liste** : `segments_filters=[None, None, None]` → Valide, équivalent à `segments_filters=None` (aucun filtrage appliqué)
+- **Liste vide** : `segments_filters=[]` → ❌ ValueError si `segments_date_ranges` non vide (longueurs différentes)
 
 **Erreurs levées** :
-- `ValidationError` : Si `date_range` invalide ou `filters` invalide (propagation validation sous-models)
+- `ValidationError` : Si longueur `segments_filters` ne match pas `segments_date_ranges`
 
 **Logging structuré** :
-- DEBUG : KayakSegment créé avec filtres non-None (contexte métier : segment N a filtres spécifiques)
-
----
-
-## 3. SearchRequestKayak (Nouveau Model)
-
-**Rôle** : Nouveau model de requête pour route `/search-kayak` avec support filtres per-segment. Le `SearchRequest` existant pour Google Flights reste **INCHANGÉ**.
-
-**Fichier** : `app/models/request.py` (ajout à côté de SearchRequest existant)
-
-**SearchRequest existant (INCHANGÉ - Route Google)** :
-```python
-class SearchRequest(BaseModel):
-    """Requête recherche vols multi-city Google Flights avec URL template."""
-
-    template_url: str
-    segments_date_ranges: list[DateRange]  # ✅ Conservé inchangé
-```
-
-**SearchRequestKayak (NOUVEAU - Route Kayak)** :
-```python
-class SearchRequestKayak(BaseModel):
-    """Requête recherche vols Kayak avec URL template + filtres per-segment."""
-
-    template_url: str
-    segments: list[KayakSegment]  # ✅ Nouveau champ avec filtres
-```
-
-**Comparaison Models** :
-
-| Aspect | SearchRequest (Google) | SearchRequestKayak (Kayak) |
-|--------|------------------------|---------------------------|
-| Route | `/search-google-flights` | `/search-kayak` |
-| Champ segments | `segments_date_ranges: list[DateRange]` | `segments: list[KayakSegment]` |
-| Support filtres | ❌ Non | ✅ Oui (via `KayakSegment.filters`) |
-| Breaking change | ❌ Aucun | ❌ Nouveau model |
-| Tests existants | ✅ Inchangés | ✅ Nouveaux tests |
-
-**Validations Pydantic SearchRequestKayak** :
-
-Validations similaires à SearchRequest existant mais adaptées pour `segments: list[KayakSegment]` :
-
-```python
-@field_validator('segments', mode='after')
-@classmethod
-def validate_segments_count(cls, v: list[KayakSegment]) -> list[KayakSegment]:
-    """Valide 2 à 5 segments (même règle que SearchRequest)."""
-```
-
-**Validations à implémenter** :
-
-- **validate_segments_count** : 2 ≤ len(segments) ≤ 5
-- **validate_date_ranges_max_days** : Itérer sur `segments[i].date_range`
-- **validate_segments_chronological_order** : Itérer sur `segments[i].date_range`
-- **validate_explosion_combinatoire** : Calculer days depuis `segments[i].date_range`
-
-**Format Request SearchRequestKayak** :
-
-```json
-{
-  "template_url": "https://www.kayak.fr/flights/...",
-  "segments": [
-    {
-      "date_range": {"start": "2026-01-10", "end": "2026-01-18"},
-      "filters": {"max_duration": "12h", "max_stops": 1}
-    },
-    {
-      "date_range": {"start": "2026-02-16", "end": "2026-02-18"}
-    }
-  ]
-}
-```
-
-**Avantages deux models distincts** :
-
-- ✅ **Pas de breaking change** : Route Google existante fonctionne sans modification
-- ✅ **Tests existants préservés** : ~20 tests SearchRequest continuent à passer
-- ✅ **Séparation responsabilités** : Chaque route a son model adapté à ses besoins
-- ✅ **Évolution indépendante** : SearchRequestKayak peut évoluer sans impacter Google
-
-**Edge cases** :
-
-- **KayakSegments sans filtres** : `{"segments": [{"date_range": {...}}]}` → ✅ Valide (filters optionnels)
-- **Mauvais model sur mauvaise route** : Route `/search-kayak` avec format SearchRequest → ValidationError (champ `segments` manquant)
-
-**Erreurs levées** :
-- `ValidationError` : Si `segments` count invalide ou format incorrect
-
-**Logging structuré** :
-- INFO : SearchRequestKayak reçu avec X segments, Y segments avec filtres appliqués
+- INFO : KayakSearchRequest reçu avec X segments, Y segments avec filtres non-None appliqués
 
 ---
 
 ## 4. parse_duration (Utility Function)
 
-**Rôle** : Convertir string durée format humain-lisible ("12h", "1h30") en minutes (int) pour comparaison numérique dans FilterService.
+**Rôle** : Convertir string durée format humain-lisible ("12h", "1h30") en minutes (int) pour comparaison numérique dans FilterService et validations Pydantic.
+
+**Fichier** : `app/utils/duration.py` (nouveau fichier)
 
 **Interface** :
 ```python
@@ -304,7 +309,7 @@ def parse_duration(value: str) -> int:
         Durée totale en minutes (int)
 
     Raises:
-        ValueError: Si format invalide (regex mismatch)
+        ValueError: Si format invalide (regex mismatch) ou minutes ≥ 60
     """
 ```
 
@@ -363,7 +368,9 @@ def parse_duration(value: str) -> int:
 
 ## 5. FilterService
 
-**Rôle** : Appliquer filtres SegmentFilters sur liste vols GoogleFlightDTO pour éliminer vols non-conformes critères utilisateur.
+**Rôle** : Appliquer filtres SegmentFilters sur liste vols KayakFlightDTO pour éliminer vols non-conformes critères utilisateur.
+
+**Fichier** : `app/services/filter_service.py` (nouveau fichier)
 
 **Interface** :
 ```python
@@ -372,9 +379,9 @@ class FilterService:
 
     def apply_filters(
         self,
-        flights: list[GoogleFlightDTO],
+        flights: list[KayakFlightDTO],
         filters: SegmentFilters | None
-    ) -> list[GoogleFlightDTO]:
+    ) -> list[KayakFlightDTO]:
         """
         Filtre vols selon critères SegmentFilters.
 
@@ -391,7 +398,7 @@ class FilterService:
 
 **Étape 1 : Early return si aucun filtre**
 1. Si `filters is None` → Retourner `flights` inchangé (aucun filtrage appliqué)
-2. Si `filters` tous champs None (`max_duration=None, max_stops=None, min_layover=None`) → Retourner `flights` inchangé
+2. Si `filters` tous champs None (`max_duration=None, max_stops=None, min_layover=None, max_layover=None`) → Retourner `flights` inchangé
 
 **Étape 2 : Filtrage max_duration**
 3. Si `filters.max_duration is not None` :
@@ -402,17 +409,26 @@ class FilterService:
 **Étape 3 : Filtrage max_stops**
 4. Si `filters.max_stops is not None` :
    - Filtrer vols : garder seulement `flight` où `flight.stops ≤ filters.max_stops`
+   - `flight.stops` utilise propriété computed sur `len(flight.layovers)`
    - Exemple : `max_stops=1` → Exclure vols avec `stops=2` ou `stops=3`
 
 **Étape 4 : Filtrage min_layover**
 5. Si `filters.min_layover is not None` :
-   - **Note** : GoogleFlightDTO ne contient pas champ `layover_duration` (données Google Flights limitées)
-   - **Comportement Story 12 MVP** : Skip filtrage min_layover (log WARNING feature non implémentée)
-   - **Future Story** : Requiert parsing détaillé escales depuis network API responses (field GoogleFlightDTO extended)
+   - Convertir `filters.min_layover` en minutes via `parse_duration()`
+   - Pour chaque vol, vérifier TOUTES les escales : `flight.layovers[].duration`
+   - Filtrer vols : garder seulement `flight` où **TOUTES** escales ont `parse_duration(layover.duration) ≥ min_layover_minutes`
+   - Exemple : `min_layover="1h30"` → Exclure vol si une escale "1h 15min" (75 min < 90 min)
 
-**Étape 5 : Retour liste filtrée**
-6. Retourner liste vols restants après tous filtres appliqués
-7. Si aucun vol ne passe filtres → Retourner liste vide `[]` (pas d'exception)
+**Étape 5 : Filtrage max_layover**
+6. Si `filters.max_layover is not None` :
+   - Convertir `filters.max_layover` en minutes via `parse_duration()`
+   - Pour chaque vol, vérifier TOUTES les escales : `flight.layovers[].duration`
+   - Filtrer vols : garder seulement `flight` où **TOUTES** escales ont `parse_duration(layover.duration) ≤ max_layover_minutes`
+   - Exemple : `max_layover="6h"` → Exclure vol si une escale "8h" (480 min > 360 min)
+
+**Étape 6 : Retour liste filtrée**
+7. Retourner liste vols restants après tous filtres appliqués
+8. Si aucun vol ne passe filtres → Retourner liste vide `[]` (pas d'exception)
 
 **Exemples Filtrage** :
 
@@ -426,22 +442,33 @@ class FilterService:
 - Filters : `SegmentFilters(max_stops=1)`
 - Output : `[flight1, flight2]` (flight3 exclu car stops=2 > max_stops=1)
 
-**Scenario 3 : Multiple filtres combinés**
+**Scenario 3 : min_layover appliqué**
+- Input : `flights=[flight1(layovers=[LayoverInfo(duration="2h")]), flight2(layovers=[LayoverInfo(duration="1h")])]`
+- Filters : `SegmentFilters(min_layover="1h30")`
+- Output : `[flight1]` (flight2 exclu car layover 1h < 1h30)
+
+**Scenario 4 : max_layover appliqué**
+- Input : `flights=[flight1(layovers=[LayoverInfo(duration="3h")]), flight2(layovers=[LayoverInfo(duration="8h")])]`
+- Filters : `SegmentFilters(max_layover="6h")`
+- Output : `[flight1]` (flight2 exclu car layover 8h > 6h)
+
+**Scenario 5 : Multiple filtres combinés**
 - Input : `flights=[flight1(duration="10h", stops=0), flight2(duration="11h", stops=1), flight3(duration="9h", stops=2)]`
 - Filters : `SegmentFilters(max_duration="12h", max_stops=1)`
 - Output : `[flight1, flight2]` (flight3 exclu car stops=2 > max_stops=1 malgré durée OK)
 
-**Scenario 4 : Aucun vol ne passe filtres**
+**Scenario 6 : Aucun vol ne passe filtres**
 - Input : `flights=[flight1(duration="15h", stops=2), flight2(duration="16h", stops=3)]`
 - Filters : `SegmentFilters(max_duration="12h", max_stops=1)`
 - Output : `[]` (liste vide, aucun vol conforme)
 
 **Edge cases** :
 
-- **GoogleFlightDTO.duration format invalide** : Si `flight.duration` format non parseable (ex: "Unknown") → Skip vol (exclude silencieusement, log WARNING)
+- **KayakFlightDTO.duration format invalide** : Si `flight.duration` format non parseable (ex: "Unknown") → Skip vol (exclude silencieusement, log WARNING)
 - **Filtres None partiel** : `SegmentFilters(max_duration="12h", max_stops=None)` → Applique seulement filtre duration, ignore stops
 - **Durée exacte limite** : `max_duration="12h"` (720 min), `flight.duration="12h 00min"` (720 min) → ✅ Inclus (≤ pas <)
-- **min_layover non implémenté** : Log WARNING feature not implemented, skip filtre (pas d'exception bloquante)
+- **Layover avec plusieurs escales** : Filtrage min/max_layover vérifie **TOUTES** les escales (logic AND : toutes doivent passer critères)
+- **Vols directs (stops=0)** : Filtres min/max_layover ignorés si `len(flight.layovers) == 0` (pas d'escale à vérifier)
 
 **Erreurs levées** :
 - Aucune exception levée (filtrage silencieux, retourne liste vide si aucun match)
@@ -449,8 +476,8 @@ class FilterService:
 **Logging structuré** :
 - INFO : Filtrage appliqué avec résultat (X vols input → Y vols output, Z vols filtrés)
 - DEBUG : Détail filtres appliqués (max_duration=X, max_stops=Y, vols exclus : [flight_ids])
-- WARNING : min_layover filter skipped (feature not implemented yet)
 - WARNING : Vol avec duration format invalide exclu du filtrage
+- WARNING : Vol avec layover duration format invalide exclu du filtrage
 
 ---
 
@@ -460,7 +487,7 @@ class FilterService:
 
 **Format recommandé : AAA (Arrange/Act/Assert)**
 
-### SegmentFilters Validation (8 tests)
+### SegmentFilters Validation (12 tests)
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
@@ -472,37 +499,54 @@ class FilterService:
 | 6 | `test_segment_filters_max_stops_valid` | max_stops entre 0-3 valide | `SegmentFilters(max_stops=1)` | Model créé, `max_stops == 1` | Vérifie validation range escales |
 | 7 | `test_segment_filters_max_stops_out_of_range` | max_stops >3 invalide | `SegmentFilters(max_stops=5)` | Lève `ValidationError` message "must be between 0 and 3" | Vérifie limite max 3 escales |
 | 8 | `test_segment_filters_min_layover_exceeds_limit` | min_layover >12h invalide | `SegmentFilters(min_layover="13h")` | Lève `ValidationError` message "exceeds limit" | Vérifie limite 720 minutes layover |
+| 9 | `test_segment_filters_max_layover_exceeds_limit` | max_layover >24h invalide | `SegmentFilters(max_layover="25h")` | Lève `ValidationError` message "exceeds limit" | Vérifie limite 1440 minutes layover |
+| 10 | `test_segment_filters_layover_range_valid` | max_layover > min_layover valide | `SegmentFilters(min_layover="1h30", max_layover="6h")` | Model créé sans exception | Vérifie validation cross-field OK si max > min |
+| 11 | `test_segment_filters_layover_range_equal_invalid` | max_layover == min_layover invalide | `SegmentFilters(min_layover="6h", max_layover="6h")` | Lève `ValidationError` message "must be strictly greater" | Vérifie égalité rejetée (strictement supérieur requis) |
+| 12 | `test_segment_filters_layover_range_inverted_invalid` | max_layover < min_layover invalide | `SegmentFilters(min_layover="6h", max_layover="2h")` | Lève `ValidationError` message "must be strictly greater" | Vérifie inversion rejetée |
 
-### KayakSegment Model (3 tests)
+### KayakFlightDTO stops property (3 tests)
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 9 | `test_kayak_segment_with_filters` | KayakSegment avec date_range + filtres valide | `KayakSegment(date_range=DateRange(...), filters=SegmentFilters(...))` | Model créé avec `date_range` et `filters` non-None | Vérifie composition models |
-| 10 | `test_kayak_segment_without_filters` | KayakSegment avec date_range seulement (filters None) | `KayakSegment(date_range=DateRange(...), filters=None)` | Model créé avec `filters == None` | Vérifie filtres optionnels |
-| 11 | `test_kayak_segment_invalid_date_range` | DateRange invalide propagation | `KayakSegment(date_range=DateRange(start="2026-02-01", end="2026-01-01"))` | Lève `ValidationError` depuis DateRange (end < start) | Vérifie validation DateRange propagée |
+| 13 | `test_kayak_flight_stops_zero_direct` | Vol direct sans escale | `KayakFlightDTO(layovers=[])` | `flight.stops == 0` | Vérifie computed property stops=0 si liste vide |
+| 14 | `test_kayak_flight_stops_one_layover` | Vol avec 1 escale | `KayakFlightDTO(layovers=[LayoverInfo(...)])` | `flight.stops == 1` | Vérifie computed property stops=len(layovers) |
+| 15 | `test_kayak_flight_stops_multiple_layovers` | Vol avec 2 escales | `KayakFlightDTO(layovers=[LayoverInfo(...), LayoverInfo(...)])` | `flight.stops == 2` | Vérifie computed property multi-escales |
+
+### KayakSearchRequest segments_filters validation (4 tests)
+
+| # | Nom test | Scénario | Input | Output attendu | Vérification |
+|---|----------|----------|-------|----------------|--------------|
+| 16 | `test_kayak_search_request_no_filters` | Requête sans filtres (segments_filters=None) | `KayakSearchRequest(segments_date_ranges=[...], segments_filters=None)` | Model créé, `segments_filters == None` | Vérifie filtres optionnels par défaut |
+| 17 | `test_kayak_search_request_filters_match_length` | segments_filters match segments_date_ranges longueur | `KayakSearchRequest(segments_date_ranges=[DR1, DR2], segments_filters=[SF1, None])` | Model créé sans exception | Vérifie validation longueur OK si égales |
+| 18 | `test_kayak_search_request_filters_length_mismatch` | segments_filters ne match pas longueur | `KayakSearchRequest(segments_date_ranges=[DR1, DR2], segments_filters=[SF1])` | Lève `ValidationError` message "length must match" | Vérifie validation longueur rejette si différentes |
+| 19 | `test_kayak_search_request_filters_partial` | Filtres partiels (certains segments None) | `KayakSearchRequest(segments_date_ranges=[DR1, DR2, DR3], segments_filters=[None, SF2, SF3])` | Model créé, segment 1 sans filtre, 2-3 avec filtres | Vérifie filtres partiels acceptés |
 
 ### parse_duration Utility (5 tests)
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 12 | `test_parse_duration_hours_only` | Parse format "12h" | `parse_duration("12h")` | `720` (minutes) | Vérifie conversion heures → minutes |
-| 13 | `test_parse_duration_hours_minutes` | Parse format "1h30" | `parse_duration("1h30")` | `90` (minutes) | Vérifie conversion heures + minutes → total minutes |
-| 14 | `test_parse_duration_zero` | Parse "0h" edge case | `parse_duration("0h")` | `0` (minutes) | Vérifie parsing OK (validation métier ailleurs) |
-| 15 | `test_parse_duration_invalid_format` | Format invalide "72" sans unité | `parse_duration("72")` | Lève `ValueError` message "Expected format" | Vérifie regex rejette format invalide |
-| 16 | `test_parse_duration_minutes_out_of_range` | Minutes ≥60 invalide "12h60" | `parse_duration("12h60")` | Lève `ValueError` message "minutes" | Vérifie validation minutes <60 |
+| 20 | `test_parse_duration_hours_only` | Parse format "12h" | `parse_duration("12h")` | `720` (minutes) | Vérifie conversion heures → minutes |
+| 21 | `test_parse_duration_hours_minutes` | Parse format "1h30" | `parse_duration("1h30")` | `90` (minutes) | Vérifie conversion heures + minutes → total minutes |
+| 22 | `test_parse_duration_zero` | Parse "0h" edge case | `parse_duration("0h")` | `0` (minutes) | Vérifie parsing OK (validation métier ailleurs) |
+| 23 | `test_parse_duration_invalid_format` | Format invalide "72" sans unité | `parse_duration("72")` | Lève `ValueError` message "Expected format" | Vérifie regex rejette format invalide |
+| 24 | `test_parse_duration_minutes_out_of_range` | Minutes ≥60 invalide "12h60" | `parse_duration("12h60")` | Lève `ValueError` message "minutes" | Vérifie validation minutes <60 |
 
-### FilterService apply_filters (6 tests)
+### FilterService apply_filters (10 tests)
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 17 | `test_apply_filters_none` | Aucun filtre appliqué (filters=None) | `flights=[flight1, flight2], filters=None` | `[flight1, flight2]` inchangé | Vérifie early return si filters None |
-| 18 | `test_apply_filters_max_duration` | Filtre max_duration exclut vols longs | `flights=[flight1(duration="11h"), flight2(duration="14h")], filters=SegmentFilters(max_duration="12h")` | `[flight1]` (flight2 exclu) | Vérifie filtrage durée correctement appliqué |
-| 19 | `test_apply_filters_max_stops` | Filtre max_stops exclut vols avec escales | `flights=[flight1(stops=0), flight2(stops=2)], filters=SegmentFilters(max_stops=1)` | `[flight1]` (flight2 exclu) | Vérifie filtrage escales correctement appliqué |
-| 20 | `test_apply_filters_combined` | Multiple filtres combinés (AND logic) | `flights=[flight1(duration="10h", stops=0), flight2(duration="11h", stops=2)], filters=SegmentFilters(max_duration="12h", max_stops=1)` | `[flight1]` (flight2 exclu car stops>1) | Vérifie logic combinaison filtres |
-| 21 | `test_apply_filters_no_match` | Aucun vol ne passe filtres | `flights=[flight1(duration="15h", stops=2)], filters=SegmentFilters(max_duration="12h", max_stops=1)` | `[]` liste vide | Vérifie comportement aucun match (pas d'exception) |
-| 22 | `test_apply_filters_invalid_duration_format` | Vol avec duration invalide exclu silencieusement | `flights=[flight1(duration="Unknown"), flight2(duration="10h")], filters=SegmentFilters(max_duration="12h")` | `[flight2]` (flight1 exclu car format invalide) | Vérifie handling duration non parseable |
+| 25 | `test_apply_filters_none` | Aucun filtre appliqué (filters=None) | `flights=[flight1, flight2], filters=None` | `[flight1, flight2]` inchangé | Vérifie early return si filters None |
+| 26 | `test_apply_filters_max_duration` | Filtre max_duration exclut vols longs | `flights=[flight1(duration="11h"), flight2(duration="14h")], filters=SegmentFilters(max_duration="12h")` | `[flight1]` (flight2 exclu) | Vérifie filtrage durée correctement appliqué |
+| 27 | `test_apply_filters_max_stops` | Filtre max_stops exclut vols avec escales | `flights=[flight1(stops=0), flight2(stops=2)], filters=SegmentFilters(max_stops=1)` | `[flight1]` (flight2 exclu) | Vérifie filtrage escales correctement appliqué |
+| 28 | `test_apply_filters_min_layover` | Filtre min_layover exclut escales courtes | `flights=[flight1(layovers=[LI(duration="2h")]), flight2(layovers=[LI(duration="1h")])], filters=SegmentFilters(min_layover="1h30")` | `[flight1]` (flight2 exclu) | Vérifie filtrage layover min correctement appliqué |
+| 29 | `test_apply_filters_max_layover` | Filtre max_layover exclut escales longues | `flights=[flight1(layovers=[LI(duration="3h")]), flight2(layovers=[LI(duration="8h")])], filters=SegmentFilters(max_layover="6h")` | `[flight1]` (flight2 exclu) | Vérifie filtrage layover max correctement appliqué |
+| 30 | `test_apply_filters_combined` | Multiple filtres combinés (AND logic) | `flights=[flight1(duration="10h", stops=0), flight2(duration="11h", stops=2)], filters=SegmentFilters(max_duration="12h", max_stops=1)` | `[flight1]` (flight2 exclu car stops>1) | Vérifie logic combinaison filtres |
+| 31 | `test_apply_filters_no_match` | Aucun vol ne passe filtres | `flights=[flight1(duration="15h", stops=2)], filters=SegmentFilters(max_duration="12h", max_stops=1)` | `[]` liste vide | Vérifie comportement aucun match (pas d'exception) |
+| 32 | `test_apply_filters_invalid_duration_format` | Vol avec duration invalide exclu silencieusement | `flights=[flight1(duration="Unknown"), flight2(duration="10h")], filters=SegmentFilters(max_duration="12h")` | `[flight2]` (flight1 exclu car format invalide) | Vérifie handling duration non parseable |
+| 33 | `test_apply_filters_direct_flight_ignores_layover` | Vol direct (stops=0) ignore filtres layover | `flights=[flight1(stops=0, layovers=[])], filters=SegmentFilters(min_layover="1h30")` | `[flight1]` inclus | Vérifie vols directs ignorent filtres layover |
+| 34 | `test_apply_filters_multiple_layovers_all_must_pass` | Multiple escales : TOUTES doivent passer critères | `flights=[flight1(layovers=[LI("2h"), LI("1h")])], filters=SegmentFilters(min_layover="1h30")` | `[]` (exclu car une escale 1h < 1h30) | Vérifie logic AND sur toutes escales |
 
-**Total tests unitaires** : 8 (SegmentFilters) + 3 (KayakSegment) + 5 (parse_duration) + 6 (FilterService) = **22 tests**
+**Total tests unitaires** : 12 (SegmentFilters) + 3 (stops property) + 4 (KayakSearchRequest) + 5 (parse_duration) + 10 (FilterService) = **34 tests**
 
 ---
 
@@ -512,52 +556,41 @@ class FilterService:
 
 | # | Nom test | Prérequis (Given) | Action (When) | Résultat attendu (Then) |
 |---|----------|-------------------|---------------|-------------------------|
-| 1 | `test_integration_search_kayak_with_segment_filters` | Mock SearchService avec 3 KayakSegments dont 2 avec filtres, 10 vols par combinaison | POST `/api/v1/search-kayak` avec body `SearchRequestKayak` format `segments` | Status 200, `SearchResponse.results` contient vols filtrés correctement (segment 1 max 12h appliqué, segment 2 sans filtres, segment 3 max_stops=1 appliqué) |
-| 2 | `test_integration_kayak_validation_invalid_filters` | App FastAPI TestClient | POST `/api/v1/search-kayak` avec `segments[0].filters.max_duration="invalid"` | Status 422, JSON error contient message "Invalid duration format" |
-| 3 | `test_integration_google_route_unchanged` | App FastAPI TestClient | POST `/api/v1/search-google-flights` avec format `SearchRequest` existant (`segments_date_ranges`) | Status 200, route Google continue à fonctionner sans modification |
-| 4 | `test_integration_kayak_filters_reduce_results` | Mock SearchService sans filtres baseline (100 vols total), puis avec filtres stricts | Comparer résultats sans filtres vs avec `max_duration="10h", max_stops=0` sur tous segments | Résultats filtrés ~30-40% moins nombreux (filtrage efficace), Top 10 ranking fonctionne sur résultats filtrés |
-| 5 | `test_integration_kayak_segments_without_filters` | App FastAPI TestClient | POST `/api/v1/search-kayak` avec `segments[i].filters=null` pour tous KayakSegments | Status 200, comportement équivalent ancien système (tous vols retournés sans filtrage) |
+| 1 | `test_integration_search_kayak_with_segment_filters` | Mock SearchService avec 3 segments, segments_filters=[SF1, None, SF2] | POST `/api/v1/search-kayak` avec body `KayakSearchRequest` | Status 200, `SearchResponse.results` contient vols filtrés (segment 1 max 12h appliqué, segment 2 sans filtres, segment 3 max_stops=1 appliqué) |
+| 2 | `test_integration_kayak_validation_invalid_filters` | App FastAPI TestClient | POST `/api/v1/search-kayak` avec `segments_filters[0].max_duration="invalid"` | Status 422, JSON error contient message "Invalid duration format" |
+| 3 | `test_integration_kayak_filters_reduce_results` | Mock SearchService sans filtres baseline (100 vols total), puis avec filtres stricts | Comparer résultats sans filtres vs avec `max_duration="10h", max_stops=0` sur tous segments | Résultats filtrés ~30-40% moins nombreux (filtrage efficace), Top 10 ranking fonctionne sur résultats filtrés |
+| 4 | `test_integration_kayak_segments_without_filters` | App FastAPI TestClient | POST `/api/v1/search-kayak` avec `segments_filters=null` | Status 200, comportement équivalent ancien système (tous vols retournés sans filtrage) |
+| 5 | `test_integration_kayak_layover_range_validation` | App FastAPI TestClient | POST `/api/v1/search-kayak` avec `segments_filters[0]={min_layover: "6h", max_layover: "6h"}` | Status 422, JSON error contient message "must be strictly greater" |
 
 **Total tests intégration** : 5 tests
 
 ---
 
-**TOTAL TESTS** : 22 unitaires + 5 intégration = **27 tests**
+**TOTAL TESTS** : 34 unitaires + 5 intégration = **39 tests**
 
 ---
 
 ## Exemples JSON
 
-**Exemple 1 : SearchRequestKayak avec Per-Segment Filters (Route `/search-kayak`)**
+**Exemple 1 : KayakSearchRequest avec Per-Segment Filters**
 
 ```json
 {
   "template_url": "https://www.kayak.fr/flights/PAR-TYO/2026-01-10/TYO-KYO/2026-02-16/KYO-PAR/2026-03-30",
-  "segments": [
+  "segments_date_ranges": [
+    {"start": "2026-01-10", "end": "2026-01-18"},
+    {"start": "2026-02-16", "end": "2026-02-18"},
+    {"start": "2026-03-30", "end": "2026-04-01"}
+  ],
+  "segments_filters": [
     {
-      "date_range": {
-        "start": "2026-01-10",
-        "end": "2026-01-18"
-      },
-      "filters": {
-        "max_duration": "12h",
-        "max_stops": 1
-      }
+      "max_duration": "12h",
+      "max_stops": 1
     },
+    null,
     {
-      "date_range": {
-        "start": "2026-02-16",
-        "end": "2026-02-18"
-      }
-    },
-    {
-      "date_range": {
-        "start": "2026-03-30",
-        "end": "2026-04-01"
-      },
-      "filters": {
-        "min_layover": "1h30"
-      }
+      "min_layover": "1h30",
+      "max_layover": "6h"
     }
   ]
 }
@@ -566,66 +599,34 @@ class FilterService:
 **Contexte** : Requête Kayak multi-city 3 segments (Paris→Tokyo→Kyoto→Paris) avec filtres différents par segment :
 - Segment 1 : Max 12h vol direct ou 1 escale (business trip, rapidité prioritaire)
 - Segment 2 : Aucun filtre (loisir, flexibilité totale)
-- Segment 3 : Min 1h30 layover si escale (confort, éviter stress connexions courtes)
+- Segment 3 : Layover entre 1h30 et 6h (confort, éviter connexions courtes stressantes ou overnight trop longues)
 
 ---
 
-**Exemple 2 : SearchRequest Google (Route `/search-google-flights` - INCHANGÉ)**
+**Exemple 2 : KayakSearchRequest Sans Filtres**
 
 ```json
 {
-  "template_url": "https://www.google.com/travel/flights?tfs=CBwQAh...",
+  "template_url": "https://www.kayak.fr/flights/PAR-TYO/2026-01-10/TYO-PAR/2026-02-16",
   "segments_date_ranges": [
-    {
-      "start": "2026-01-10",
-      "end": "2026-01-18"
-    },
-    {
-      "start": "2026-02-16",
-      "end": "2026-02-18"
-    }
+    {"start": "2026-01-10", "end": "2026-01-18"},
+    {"start": "2026-02-16", "end": "2026-02-18"}
   ]
 }
 ```
 
-**Contexte** : Route Google Flights utilise toujours l'ancien format `SearchRequest` avec `segments_date_ranges`. Aucun changement requis pour clients existants.
+**Contexte** : Requête Kayak sans aucun filtre appliqué (segments_filters omis), tous vols retournés. Comportement backward-compatible.
 
 ---
 
-**Exemple 3 : SearchRequestKayak Sans Filtres**
-
-```json
-{
-  "template_url": "https://www.kayak.fr/flights/...",
-  "segments": [
-    {
-      "date_range": {
-        "start": "2026-01-10",
-        "end": "2026-01-18"
-      }
-    },
-    {
-      "date_range": {
-        "start": "2026-02-16",
-        "end": "2026-02-18"
-      }
-    }
-  ]
-}
-```
-
-**Contexte** : Requête Kayak sans aucun filtre appliqué (filters=null implicite), tous vols retournés.
-
----
-
-**Exemple 4 : ValidationError Format Durée Invalide (Route Kayak)**
+**Exemple 3 : ValidationError Format Durée Invalide**
 
 ```json
 {
   "detail": [
     {
       "type": "value_error",
-      "loc": ["body", "segments", 0, "filters", "max_duration"],
+      "loc": ["body", "segments_filters", 0, "max_duration"],
       "msg": "Value error, Invalid duration format '1h3'. Expected format: 'Xh' or 'XhYY' (e.g., '12h', '1h30')",
       "input": "1h3",
       "ctx": {
@@ -636,7 +637,29 @@ class FilterService:
 }
 ```
 
-**Contexte** : Client envoie format durée invalide "1h3" sur route Kayak (minutes doit être 2 chiffres "1h03"), ValidationError Pydantic avec message clair explicitant format attendu.
+**Contexte** : Client envoie format durée invalide "1h3" (minutes doit être 2 chiffres "1h03"), ValidationError Pydantic avec message clair explicitant format attendu.
+
+---
+
+**Exemple 4 : ValidationError Layover Range Invalide**
+
+```json
+{
+  "detail": [
+    {
+      "type": "value_error",
+      "loc": ["body", "segments_filters", 0],
+      "msg": "Value error, max_layover must be strictly greater than min_layover (got min: 360 minutes, max: 360 minutes)",
+      "input": {"min_layover": "6h", "max_layover": "6h"},
+      "ctx": {
+        "error": "max_layover must be strictly greater than min_layover"
+      }
+    }
+  ]
+}
+```
+
+**Contexte** : Client envoie min_layover et max_layover égaux (6h == 6h), validation cross-field rejette car égalité interdite (strictement supérieur requis).
 
 ---
 
@@ -644,14 +667,16 @@ class FilterService:
 
 ```json
 {
-  "timestamp": "2025-11-25T10:30:00Z",
+  "timestamp": "2025-11-28T10:30:00Z",
   "level": "INFO",
   "service": "FilterService",
   "message": "Filters applied to segment",
   "segment_index": 0,
   "filters": {
     "max_duration": "12h",
-    "max_stops": 1
+    "max_stops": 1,
+    "min_layover": null,
+    "max_layover": null
   },
   "flights_input": 15,
   "flights_output": 8,
@@ -670,76 +695,88 @@ class FilterService:
 
 1. **SegmentFilters validation format durée** : Regex `^\d{1,2}h(\d{2})?$` accepte "12h", "1h30", rejette "1h3", "72", "12h60" avec messages clairs (vérifié tests validation)
 
-2. **SegmentFilters validation limites** : `max_duration` ≤ 24h (1440 min), `min_layover` ≤ 12h (720 min), `max_stops` entre 0-3 (vérifié ValidationError si hors range)
+2. **SegmentFilters validation limites** : `max_duration` ≤ 24h (1440 min), `min_layover` ≤ 12h (720 min), `max_layover` ≤ 24h (1440 min), `max_stops` entre 0-3 (vérifié ValidationError si hors range)
 
-3. **SegmentFilters optionnels** : Tous champs `None` par défaut, SegmentFilters vide valide `SegmentFilters()` créé sans exception (vérifié comportement permissif)
+3. **SegmentFilters validation layover cohérente** : max_layover doit être **strictement supérieur** à min_layover si les deux définis (vérifié ValidationError si égal ou inférieur)
 
-4. **KayakSegment composition** : KayakSegment encapsule `date_range: DateRange` (obligatoire) + `filters: SegmentFilters | None` (optionnel) avec validations propagées (vérifié DateRange invalid → ValidationError)
+4. **SegmentFilters optionnels** : Tous champs `None` par défaut, SegmentFilters vide valide `SegmentFilters()` créé sans exception (vérifié comportement permissif)
 
-5. **Deux SearchRequest distincts** : `SearchRequest` existant pour Google (inchangé avec `segments_date_ranges`), `SearchRequestKayak` nouveau pour Kayak (avec `segments: list[KayakSegment]`)
+5. **SegmentFilters générique** : Model réutilisable pour tous providers (Kayak MVP, Google Flights futur) sans modification (vérifié aucun code spécifique Kayak dans model)
 
-6. **SearchRequest Google inchangé** : Route `/search-google-flights` continue à utiliser `SearchRequest` avec `segments_date_ranges: list[DateRange]`, aucune modification nécessaire (vérifié tests existants passent)
+6. **KayakFlightDTO stops property** : Propriété computed `stops` retourne `len(self.layovers)` (vérifié stops=0 si liste vide, stops=N si N layovers)
 
-7. **SearchRequestKayak validations** : Validations similaires à SearchRequest (2-5 segments, max 15 jours, chronologie, explosion combinatoire) fonctionnent sur `segments[i].date_range`
+7. **KayakSearchRequest segments_filters optionnel** : Champ `segments_filters: list[SegmentFilters | None] | None = None` optionnel (vérifié backward compatibility requêtes sans segments_filters)
 
-8. **parse_duration conversion** : Convertit "12h" → 720 minutes, "1h30" → 90 minutes, lève ValueError si format invalide ou minutes ≥60 (vérifié tests unitaires)
+8. **KayakSearchRequest validation longueur** : `len(segments_filters) == len(segments_date_ranges)` si segments_filters défini (vérifié ValidationError si longueurs différentes)
 
-9. **FilterService filtrage max_duration** : Exclut vols avec `parse_duration(flight.duration) > max_duration_minutes` (vérifié flight "14h" exclu si max "12h")
+9. **KayakSearchRequest filtres partiels** : segments_filters peut contenir None pour certains segments (vérifié filtres partiels acceptés)
 
-10. **FilterService filtrage max_stops** : Exclut vols avec `flight.stops > max_stops` (vérifié flight stops=2 exclu si max_stops=1)
+10. **parse_duration conversion** : Convertit "12h" → 720 minutes, "1h30" → 90 minutes, lève ValueError si format invalide ou minutes ≥60 (vérifié tests unitaires)
 
-11. **FilterService filtrage combiné** : Multiple filtres appliqués en AND logic, vol doit passer TOUS les filtres pour être inclus (vérifié tests combined filters)
+11. **FilterService filtrage max_duration** : Exclut vols avec `parse_duration(flight.duration) > max_duration_minutes` (vérifié flight "14h" exclu si max "12h")
 
-12. **FilterService aucun match** : Si aucun vol ne passe filtres → retourne liste vide `[]` sans exception (vérifié comportement gracieux)
+12. **FilterService filtrage max_stops** : Exclut vols avec `flight.stops > max_stops` (vérifié flight stops=2 exclu si max_stops=1)
 
-13. **FilterService filters None** : Si `filters=None` ou tous champs None → retourne `flights` inchangé (vérifié early return, aucun filtrage appliqué)
+13. **FilterService filtrage min_layover** : Exclut vols si **UNE** escale a `duration < min_layover` (vérifié logic AND sur toutes escales)
+
+14. **FilterService filtrage max_layover** : Exclut vols si **UNE** escale a `duration > max_layover` (vérifié logic AND sur toutes escales)
+
+15. **FilterService filtrage combiné** : Multiple filtres appliqués en AND logic, vol doit passer TOUS les filtres pour être inclus (vérifié tests combined filters)
+
+16. **FilterService aucun match** : Si aucun vol ne passe filtres → retourne liste vide `[]` sans exception (vérifié comportement gracieux)
+
+17. **FilterService filters None** : Si `filters=None` ou tous champs None → retourne `flights` inchangé (vérifié early return, aucun filtrage appliqué)
+
+18. **FilterService vols directs** : Filtres min/max_layover ignorés si `flight.stops == 0` (vérifié vols directs passent toujours filtres layover)
 
 ## Critères techniques
 
-14. **Type hints PEP 695** : SegmentFilters, KayakSegment, SearchRequestKayak, parse_duration, FilterService annotés avec type hints modernes (`str | None`, `list[KayakSegment]`, `list[GoogleFlightDTO]`)
+19. **Type hints PEP 695** : SegmentFilters, KayakFlightDTO, KayakSearchRequest, parse_duration, FilterService annotés avec type hints modernes (`str | None`, `list[SegmentFilters | None]`, `list[KayakFlightDTO]`)
 
-15. **Pydantic v2 validations** : `field_validator` mode='after' sur champs SegmentFilters, validators réutilisent fonction `parse_duration` pour cohérence (vérifié validation pipeline)
+20. **Pydantic v2 validations** : `field_validator` mode='after' sur champs SegmentFilters, `model_validator` mode='after' pour validation cross-field layover
 
-16. **ConfigDict extra="forbid"** : SegmentFilters, KayakSegment, SearchRequestKayak rejettent champs inconnus avec ValidationError explicite
+21. **ConfigDict extra="forbid"** : SegmentFilters, KayakSearchRequest rejettent champs inconnus avec ValidationError explicite
 
-17. **Regex compilation optimisée** : Regex `^\d{1,2}h(\d{2})?$` compilé une fois au niveau module pour performance (avoid re-compilation par validation)
+22. **Regex compilation optimisée** : Regex `^\d{1,2}h(\d{2})?$` compilé une fois au niveau module pour performance (avoid re-compilation par validation)
 
-18. **parse_duration pure function** : Pas de side-effects, retourne int ou lève ValueError, pas de logging interne (testabilité isolation)
+23. **parse_duration pure function** : Pas de side-effects, retourne int ou lève ValueError, pas de logging interne (testabilité isolation)
 
-19. **FilterService stateless** : Méthode `apply_filters` pure sans état interne, pas de mutation input `flights` liste (retourne nouvelle liste filtrée)
+24. **FilterService stateless** : Méthode `apply_filters` pure sans état interne, pas de mutation input `flights` liste (retourne nouvelle liste filtrée)
 
-20. **Logging structuré JSON complet** : Logs filtrage incluent : segment_index, filters appliqués, flights_input/output counts, filter_efficiency % (format pythonjsonlogger)
+25. **stops computed property** : Property read-only sans setter, O(1) performance via `len()` (vérifié immutabilité)
 
-21. **ValidationError messages clairs** : Messages UX-friendly avec exemples formats attendus ("Expected format: 'Xh' or 'XhYY' (e.g., '12h', '1h30')"), pas juste "invalid"
+26. **Logging structuré JSON complet** : Logs filtrage incluent : segment_index, filters appliqués, flights_input/output counts, filter_efficiency % (format pythonjsonlogger)
 
-22. **min_layover feature flag** : min_layover skip avec log WARNING "not implemented yet" (future story), pas d'exception bloquante (dégradation gracieuse MVP)
+27. **ValidationError messages clairs** : Messages UX-friendly avec exemples formats attendus ("Expected format: 'Xh' or 'XhYY' (e.g., '12h', '1h30')"), pas juste "invalid"
+
+28. **Architecture générique réutilisable** : SegmentFilters dans fichier séparé `app/models/filters.py`, parse_duration dans `app/utils/duration.py` (séparation responsabilités)
 
 ## Critères qualité
 
-23. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% code SegmentFilters, KayakSegment, parse_duration, FilterService apply_filters (pytest-cov)
+29. **Coverage ≥80%** : Tests unitaires + intégration couvrent minimum 80% code SegmentFilters, parse_duration, FilterService, stops property (pytest-cov)
 
-24. **27 tests passent** : 22 tests unitaires (8 SegmentFilters + 3 KayakSegment + 5 parse_duration + 6 FilterService) + 5 tests intégration tous verts (pytest -v)
+30. **39 tests passent** : 34 tests unitaires (12 SegmentFilters + 3 stops + 4 KayakSearchRequest + 5 parse_duration + 10 FilterService) + 5 tests intégration tous verts (pytest -v)
 
-25. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type
+31. **Ruff + Mypy passent** : `ruff check .` et `ruff format .` sans erreur, `mypy app/` strict mode sans erreur type
 
-26. **Tests TDD format AAA** : Tests unitaires suivent strictement Arrange/Act/Assert, tableaux specs complétés avec 6 colonnes (N°, Nom, Scénario, Input, Output, Vérification)
+32. **Tests TDD format AAA** : Tests unitaires suivent strictement Arrange/Act/Assert, tableaux specs complétés avec 6 colonnes (N°, Nom, Scénario, Input, Output, Vérification)
 
-27. **Tests intégration format Given/When/Then** : Tests intégration suivent BDD avec 5 colonnes (N°, Nom, Prérequis, Action, Résultat), mocks SearchService configurés
+33. **Tests intégration format Given/When/Then** : Tests intégration suivent BDD avec 5 colonnes (N°, Nom, Prérequis, Action, Résultat)
 
-28. **Docstrings 1 ligne** : SegmentFilters, KayakSegment, SearchRequestKayak, parse_duration, FilterService avec docstring descriptive, focus POURQUOI pas QUOI
+34. **Docstrings 1 ligne** : SegmentFilters, KayakFlightDTO, KayakSearchRequest, parse_duration, FilterService avec docstring descriptive, focus POURQUOI pas QUOI
 
-29. **Aucun code production dans specs** : Ce document contient uniquement signatures, tableaux tests, descriptions comportements, exemples JSON (pas d'implémentation complète)
+35. **Aucun code production dans specs** : Ce document contient uniquement signatures, tableaux tests, descriptions comportements, exemples JSON (pas d'implémentation complète)
 
-30. **Commits conventional** : Story 12 committée avec message `feat(kayak): add per-segment filters (max_duration, max_stops, min_layover)` conforme Conventional Commits
+36. **Commits conventional** : Story 12 committée avec message `feat(filters): add per-segment filters (max_duration, max_stops, min/max_layover)` conforme Conventional Commits
 
 ---
 
-**Note importante** : Story complexité moyenne (5 story points) → 30 critères couvrent exhaustivement architecture per-segment filters (13 fonctionnels avec deux models distincts + min_layover feature flag), parsing durée résilient + validation Pydantic v2 (9 techniques), qualité tests TDD (8 qualité).
+**Note importante** : Story complexité moyenne (5 story points) → 36 critères couvrent exhaustivement architecture per-segment filters générique (18 fonctionnels avec validation layover cohérente + stops computed + architecture réutilisable), parsing durée résilient + validations Pydantic v2 (10 techniques), qualité tests TDD (8 qualité).
 
-**Principe SMART** : Chaque critère est **S**pécifique (regex format, limites 24h/12h/3 stops, deux models SearchRequest), **M**esurable (27 tests passent, coverage ≥80%, filtrage réduit ~20-40% vols), **A**tteignable (Pydantic v2 validation mature, regex standard Python), **R**elevant (filtres granulaires = valeur UX premium, foundation préférences utilisateur), **T**emporel (MVP Phase 5, après Epics 1-3 déjà implémentés).
+**Principe SMART** : Chaque critère est **S**pécifique (regex format, limites 24h/12h/3 stops, max_layover > min_layover, architecture générique), **M**esurable (39 tests passent, coverage ≥80%, filtrage réduit ~20-40% vols), **A**tteignable (Pydantic v2 validation mature, regex standard Python, computed property triviale), **R**elevant (filtres granulaires = valeur UX premium, foundation multi-provider), **T**emporel (MVP Phase 5 Kayak, extension Google Flights Phase 6+).
 
-**Avantages deux models distincts** :
-- ✅ **Pas de breaking change** : Tests existants (~20) continuent à passer sans modification
-- ✅ **Évolution indépendante** : SearchRequestKayak peut évoluer sans impacter Google
-- ✅ **Séparation responsabilités** : Chaque route a son model adapté
-- ✅ **Architecture scalable** : Futurs filtres (preferred airlines, time windows) facilement ajoutables sur Kayak
+**Architecture générique** :
+- ✅ **SegmentFilters réutilisable** : Tous providers (Kayak MVP, Google Flights futur)
+- ✅ **Pas de code spécifique Kayak** : Model générique dans `app/models/filters.py`
+- ✅ **Extension future sans refonte** : Ajout min/max_layover Google Flights sans modification SegmentFilters
+- ✅ **Séparation responsabilités** : parse_duration dans `app/utils/duration.py` (réutilisable autres parsers)
