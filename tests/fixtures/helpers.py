@@ -54,9 +54,9 @@ def assert_results_sorted_by_price(results: list[FlightCombinationResult]) -> No
     for i in range(len(results) - 1):
         current_price = results[i].total_price
         next_price = results[i + 1].total_price
-        assert current_price <= next_price, (
-            f"Results not sorted: {current_price} > {next_price} at index {i}"
-        )
+        assert (
+            current_price <= next_price
+        ), f"Results not sorted: {current_price} > {next_price} at index {i}"
 
 
 def assert_flight_dto_valid(flight: GoogleFlightDTO) -> None:
@@ -89,9 +89,9 @@ def assert_log_field_value(
     parsed_log: dict[str, Any], field: str, expected_value: Any
 ) -> None:
     """Vérifie valeur exacte champ log."""
-    assert parsed_log[field] == expected_value, (
-        f"Expected {field}={expected_value}, got {parsed_log.get(field)}"
-    )
+    assert (
+        parsed_log[field] == expected_value
+    ), f"Expected {field}={expected_value}, got {parsed_log.get(field)}"
 
 
 def assert_log_captured(
@@ -103,9 +103,9 @@ def assert_log_captured(
         for r in caplog.records
         if message in r.message and (level is None or r.levelno == level)
     ]
-    assert len(matching_records) > 0, (
-        f"No log found with message '{message}' (level={level})"
-    )
+    assert (
+        len(matching_records) > 0
+    ), f"No log found with message '{message}' (level={level})"
 
 
 def assert_log_not_captured(
@@ -117,9 +117,9 @@ def assert_log_not_captured(
         for r in caplog.records
         if message in r.message and (level is None or r.levelno == level)
     ]
-    assert len(matching_records) == 0, (
-        f"Found {len(matching_records)} log(s) with message '{message}' (level={level})"
-    )
+    assert (
+        len(matching_records) == 0
+    ), f"Found {len(matching_records)} log(s) with message '{message}' (level={level})"
 
 
 def create_date_combinations(num_combinations: int) -> list:

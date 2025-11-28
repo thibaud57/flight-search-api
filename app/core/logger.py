@@ -5,7 +5,9 @@ import sys
 from functools import lru_cache
 from typing import ClassVar
 
-from pythonjsonlogger import jsonlogger  # type: ignore[import-untyped]  # pythonjsonlogger has no type stubs
+from pythonjsonlogger import (
+    jsonlogger,  # type: ignore[import-untyped]  # pythonjsonlogger has no type stubs
+)
 
 
 class SensitiveDataFilter(logging.Filter):

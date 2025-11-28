@@ -81,7 +81,7 @@ class CrawlerService:
         self.provider: Provider = Provider.GOOGLE
         self._kayak_poll_data: dict[str, object] | None = None
 
-    @retry(**RetryStrategy.get_session_retry())  # type: ignore[misc]  # Tenacity decorator incompatible with mypy strict
+    @retry(**RetryStrategy.get_session_retry())
     async def get_session(
         self,
         provider: Provider,
@@ -189,7 +189,7 @@ class CrawlerService:
         if provider == Provider.KAYAK:
             self._kayak_poll_data = None
 
-        @retry(**RetryStrategy.get_crawler_retry())  # type: ignore[misc]  # Tenacity decorator incompatible with mypy strict
+        @retry(**RetryStrategy.get_crawler_retry())
         async def _crawl_with_retry() -> CrawlResult:
             nonlocal attempt_count
             attempt_count += 1

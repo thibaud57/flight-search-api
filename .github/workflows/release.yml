@@ -6,7 +6,15 @@ on:
       - 'v*'
 
 jobs:
+  security:
+    name: Security Scans before Release
+    uses: ./.github/workflows/security.yml
+    permissions:
+      contents: read
+      security-events: write
+
   release:
+    needs: security
     runs-on: ubuntu-latest
     permissions:
       contents: write

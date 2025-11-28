@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import base64
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from playwright.async_api import Cookie
@@ -167,7 +167,9 @@ class TestGoogleFlightsUrl:
         """Test que les autres params query sont préservés."""
         tfs_data = b"flight-2025-01-15"
         tfs_encoded = base64.urlsafe_b64encode(tfs_data).decode().rstrip("=")
-        template = f"https://www.google.com/travel/flights?tfs={tfs_encoded}&hl=fr&curr=EUR"
+        template = (
+            f"https://www.google.com/travel/flights?tfs={tfs_encoded}&hl=fr&curr=EUR"
+        )
         new_dates = ["2025-02-10"]
 
         result = generate_google_flights_url(template, new_dates)
@@ -296,9 +298,7 @@ class TestKayakPollCapture:
                 mock_poll_response = MagicMock()
                 mock_poll_response.url = "https://www.kayak.com/s/horizon/poll"
                 mock_poll_response.status = 200
-                mock_poll_response.text = AsyncMock(
-                    return_value="invalid json{{{["
-                )
+                mock_poll_response.text = AsyncMock(return_value="invalid json{{{[")
 
                 mock_price_response = MagicMock()
                 mock_price_response.url = (

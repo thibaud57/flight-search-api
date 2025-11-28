@@ -1,0 +1,126 @@
+name: Security Scans
+
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+    branches: [develop]
+  schedule:
+    # Scan hebdomadaire le lundi à 2h du matin
+    - cron: '0 2 * * 1'
+  workflow_call:
+    # Permet d'être appelé depuis release.yml ou manuellement
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  codeql:
+    name: CodeQL Python Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: python
+          queries: security-extended
+          # Détection avancée : injections SQL, command injection, XSS, path traversal, SSRF
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:python"
+
+  python-dependencies:
+    name: Python Dependencies Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Generate requirements from pyproject.toml
+        run: |
+          pip install uv
+          uv pip compile pyproject.toml -o requirements.txt
+
+      - name: Scan Python dependencies for CVEs
+        run: |
+          pip-audit -r requirements.txt --desc --format json --output pip-audit.json || true
+          pip-audit -r requirements.txt --desc
+        continue-on-error: true
+
+      - name: Upload pip-audit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pip-audit-results
+          path: pip-audit.json
+          retention-days: 30
+
+  docker-security:
+    name: Docker Image Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t flight-search-api:test .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: flight-search-api:test
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'trivy-docker'
+
+      - name: Run Trivy secret scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: flight-search-api:test
+          format: 'table'
+          scanners: 'secret'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+      - name: Generate SBOM (Software Bill of Materials)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: flight-search-api:test
+          format: 'cyclonedx'
+          output: 'sbom.json'
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json
+          retention-days: 90

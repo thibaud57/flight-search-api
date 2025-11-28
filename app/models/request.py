@@ -179,4 +179,4 @@ class KayakSearchRequest(MultiCitySearchRequestBase):
 
 
 # Type alias pour le service (accepte les deux)
-SearchRequest = GoogleSearchRequest | KayakSearchRequest
+type SearchRequest = GoogleSearchRequest | KayakSearchRequest
