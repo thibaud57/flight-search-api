@@ -16,8 +16,8 @@ permissions:
   security-events: write
 
 jobs:
-  codeql:
-    name: CodeQL Python Analysis
+  security:
+    name: Security (CodeQL + Dependencies + Docker)
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -28,6 +28,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ========================================
+      # 1. CodeQL Analysis
+      # ========================================
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
@@ -40,14 +43,9 @@ jobs:
         with:
           category: "/language:python"
 
-  python-dependencies:
-    name: Python Dependencies Scan
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
+      # ========================================
+      # 2. Python Dependencies Scan
+      # ========================================
       - name: Setup Python 3.13
         uses: actions/setup-python@v5
         with:
@@ -75,14 +73,9 @@ jobs:
           path: pip-audit.json
           retention-days: 30
 
-  docker-security:
-    name: Docker Image Security
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
+      # ========================================
+      # 3. Docker Image Security
+      # ========================================
       - name: Build Docker image
         run: docker build -t flight-search-api:test .
 
@@ -93,7 +86,7 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
-          exit-code: '0'
+          exit-code: '1'
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
