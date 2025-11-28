@@ -63,13 +63,13 @@ jobs:
           key: ${{ runner.os }}-uv-3.13-${{ hashFiles('**/pyproject.toml') }}
 
       - name: Install uv
-        run: pip install uv
+        run: pip install --upgrade uv
 
       - name: Sync dependencies from uv.lock
         run: uv sync --frozen
 
       - name: Scan uv.lock for CVEs with uv-secure
-        run: uvx uv-secure --skip-uv-check
+        run: uvx uv-secure
         continue-on-error: true
 
       # ========================================
