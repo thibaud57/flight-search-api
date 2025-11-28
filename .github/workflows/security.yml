@@ -51,19 +51,16 @@ jobs:
       # ========================================
       # 2. Python Dependencies Scan
       # ========================================
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.9.13"
+          enable-cache: true
+
       - name: Setup Python 3.13
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-3.13-${{ hashFiles('**/pyproject.toml') }}
-
-      - name: Install uv
-        run: pip install --upgrade uv
 
       - name: Sync dependencies from uv.lock
         run: uv sync --frozen
