@@ -171,11 +171,13 @@ class SearchService:
                     if not result.poll_data:
                         crawls_failed += 1
                         continue
-                    all_kayak_flights = self._kayak_flight_parser.parse(
+                    all_kayak_results = self._kayak_flight_parser.parse(
                         result.poll_data
                     )
-                    segments_count = len(combo.segment_dates)
-                    flights = all_kayak_flights[:segments_count]
+                    if not all_kayak_results:
+                        crawls_failed += 1
+                        continue
+                    flights = all_kayak_results[0]
                 else:
                     raise ValueError(f"Unknown provider: {provider}")
 

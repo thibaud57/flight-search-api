@@ -17,8 +17,8 @@ class KayakFlightParser:
         remaining_minutes = minutes % 60
         return f"{hours}h {remaining_minutes}min"
 
-    def parse(self, json_data: dict[str, Any]) -> list[KayakFlightDTO]:
-        """Parse JSON Kayak et retourne liste vols au format KayakFlightDTO."""
+    def parse(self, json_data: dict[str, Any]) -> list[list[KayakFlightDTO]]:
+        """Parse JSON Kayak et retourne liste de résultats groupés par résultat."""
         if "results" not in json_data:
             raise ValueError("Missing 'results' key in Kayak JSON")
         if "legs" not in json_data:
@@ -33,12 +33,12 @@ class KayakFlightParser:
         if not results_data:
             return []
 
-        flights = []
+        results_grouped = []
         for result in results_data:
             parsed_flights = self._parse_result(result, legs_data, segments_data)
-            flights.extend(parsed_flights)
+            results_grouped.append(parsed_flights)
 
-        return flights
+        return results_grouped
 
     def _parse_result(
         self,
