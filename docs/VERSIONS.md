@@ -426,6 +426,328 @@ python -c "import crawl4ai; print(crawl4ai.__version__)"
 
 ---
 
+## Migration Guides
+
+### Upgrade Python 3.12 → 3.13
+
+**Breaking Changes**:
+- PEP 749: `@deprecated` decorator natif
+- Improved error messages (impacts tests assertions)
+- 19 modules stdlib supprimés (`aifc`, `cgi`, `cgitb`, `telnetlib`, etc.)
+- `2to3` et `lib2to3` complètement supprimés
+
+**Steps**:
+1. Update pyproject.toml: `requires-python = ">=3.13"`
+2. Run mypy: `mypy app/` (vérifier nouveaux warnings)
+3. Update CI: `.github/workflows/ci.yml` (python-version: "3.13")
+4. Test suite complète: `pytest -v`
+5. Vérifier dépendances compatibles (notamment Pydantic ≥ 2.8.0)
+
+**Rollback Plan**:
+```bash
+# Si problèmes critiques, retour Python 3.12
+pyenv install 3.12.7
+pyenv local 3.12.7
+# OU
+conda install python=3.12
+```
+
+### Upgrade FastAPI 0.115.6 → 0.121.2
+
+**Breaking Changes**:
+- Pydantic v2 required (≥2.8.0)
+- `jsonable_encoder` deprecated (use `model_dump()`)
+- Cycle de vie dépendances `yield` modifié (v0.118.0)
+
+**Steps**:
+1. Update dependencies: `uv add fastapi@0.121.2`
+2. Replace deprecated calls:
+   ```python
+   # Before
+   from fastapi.encoders import jsonable_encoder
+   data = jsonable_encoder(model)
+
+   # After
+   data = model.model_dump(mode="json")
+   ```
+3. Vérifier cycle de vie `yield`:
+   ```python
+   # Code après yield s'exécute APRÈS envoi réponse (v0.118.0+)
+   async def get_db():
+       db = SessionLocal()
+       try:
+           yield db
+       finally:
+           await db.close()  # Exécuté APRÈS réponse envoyée
+   ```
+4. Run tests: `pytest -v`
+
+**Rollback Plan**:
+```bash
+uv add fastapi@0.115.6
+```
+
+### Upgrade Pydantic v1 → v2
+
+**Breaking Changes** (Top 5):
+
+| V1 | V2 | Impact |
+|----|-----|--------|
+| `.dict()` | `.model_dump()` | 🔴 Très haut |
+| `.json()` | `.model_dump_json()` | 🔴 Très haut |
+| `.parse_obj()` | `.model_validate()` | 🔴 Très haut |
+| `class Config` | `model_config = ConfigDict(...)` | 🔴 Haut |
+| `@validator` | `@field_validator` | 🔴 Haut |
+| `@root_validator` | `@model_validator` | 🔴 Haut |
+| `BaseSettings` intégré | `pip install pydantic-settings` | 🔴 Très haut |
+
+**Steps**:
+1. Install migration tool:
+   ```bash
+   pip install bump-pydantic
+   ```
+2. Run automated migration:
+   ```bash
+   bump-pydantic app/  # Dry-run
+   bump-pydantic app/ --diff
+   bump-pydantic app/ --write  # Apply changes
+   ```
+3. Manual fixes:
+   ```python
+   # Before (v1)
+   from pydantic import BaseSettings
+
+   class Settings(BaseSettings):
+       class Config:
+           env_file = ".env"
+
+   # After (v2)
+   from pydantic_settings import BaseSettings, SettingsConfigDict
+
+   class Settings(BaseSettings):
+       model_config = SettingsConfigDict(env_file=".env")
+   ```
+4. Install pydantic-settings:
+   ```bash
+   uv add pydantic-settings>=2.0
+   ```
+5. Run full test suite: `pytest -v`
+
+**Performance Gains**:
+- ✅ **17x plus rapide** en moyenne
+- ✅ Jusqu'à **50x** dans certains cas
+- ✅ Validation Rust (pydantic-core)
+
+**Time Estimate**: 2-5 jours selon taille codebase
+
+**Rollback Plan**:
+```bash
+uv add pydantic@^1.10.18
+git revert <commit-hash>
+```
+
+---
+
+## Extended Compatibility Matrix
+
+### OS Support
+
+| OS | Python 3.13 | Crawl4AI | Playwright | Notes |
+|----|-------------|----------|------------|-------|
+| Windows 10/11 | ✅ | ✅ | ✅ | Testé |
+| Ubuntu 22.04+ | ✅ | ✅ | ✅ | Testé |
+| macOS 13+ | ✅ | ✅ | ✅ | Non testé |
+| Alpine Linux | ⚠️ | ⚠️ | ❌ | Playwright incompatible (glibc requis) |
+
+**Alpine Workaround**:
+```dockerfile
+# Utiliser Debian slim au lieu d'Alpine pour Playwright
+FROM python:3.13-slim-bookworm
+```
+
+### Docker Base Images
+
+| Image | Size | Python | Playwright | Recommandé |
+|-------|------|--------|------------|------------|
+| python:3.13-slim | 125MB | 3.13.1 | ❌ (install requis) | ✅ Prod |
+| python:3.13-bookworm | 870MB | 3.13.1 | ✅ (deps système) | ⚠️ Dev only |
+| playwright/python:v1.48 | 2.1GB | 3.13.0 | ✅ | ❌ Trop gros |
+
+**Recommandation**:
+```dockerfile
+FROM python:3.13-slim-bookworm
+# Install Playwright deps manuellement (contrôle size)
+RUN apt-get update && apt-get install -y \
+    libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 \
+    libcups2 libdrm2 libxkbcommon0 libxcomposite1 \
+    && rm -rf /var/lib/apt/lists/*
+```
+
+### Architecture Support
+
+| Architecture | Python 3.13 | Docker | Playwright | Notes |
+|--------------|-------------|--------|------------|-------|
+| x86_64 (amd64) | ✅ | ✅ | ✅ | Support complet |
+| ARM64 (aarch64) | ✅ | ✅ | ⚠️ | Playwright expérimental |
+| ARM32 | ❌ | ❌ | ❌ | Non supporté |
+
+**ARM64 Notes**:
+- Python 3.13 fonctionne nativement
+- Playwright ARM64 en beta (chromium uniquement)
+- Préférer x86_64 pour production
+
+---
+
+## Troubleshooting Dependencies
+
+### Pydantic v1 Detected
+
+**Error**: `ImportError: cannot import name 'BaseSettings' from 'pydantic'`
+
+**Cause**: Autre package utilise Pydantic v1 ou upgrade incomplet
+
+**Fix**:
+```bash
+# Lister packages dépendant de Pydantic
+uv pip list | grep pydantic
+
+# Upgrade tous vers v2
+uv add pydantic@^2.12.4 --upgrade-package pydantic
+
+# Install pydantic-settings séparé
+uv add pydantic-settings>=2.0
+```
+
+**Diagnostic**:
+```bash
+python -c "import pydantic; print(pydantic.__version__)"
+# Doit afficher 2.12.4 ou supérieur
+```
+
+### Crawl4AI Installation Fails
+
+**Error**: `playwright install` échoue
+
+**Cause**: Dépendances système manquantes (Linux)
+
+**Fix Ubuntu/Debian**:
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+    libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 \
+    libcups2 libdrm2 libxkbcommon0 libxcomposite1 \
+    libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2
+```
+
+**Fix Alpine** (non recommandé):
+```bash
+# Alpine incompatible, utiliser Debian
+apk add --no-cache \
+    chromium \
+    chromium-chromedriver
+# Puis configurer crawl4ai pour utiliser chromium système
+```
+
+**Diagnostic**:
+```bash
+crawl4ai-doctor
+# Vérifie installation Playwright et dépendances
+```
+
+### Python 3.13 ImportError
+
+**Error**: `ModuleNotFoundError: No module named 'X'` (ancien module stdlib)
+
+**Cause**: Modules supprimés dans Python 3.13 (aifc, cgi, cgitb, etc.)
+
+**Fix**:
+```bash
+# Modules supprimés doivent être installés via PyPI
+pip install aifc  # Si besoin (rare)
+```
+
+**Modules Supprimés** (liste complète):
+- `aifc`, `audioop`, `cgi`, `cgitb`, `chunk`, `crypt`, `imghdr`, `mailcap`
+- `msilib`, `nis`, `nntplib`, `ossaudiodev`, `pipes`, `sndhdr`, `spwd`
+- `sunau`, `telnetlib`, `uu`, `xdrlib`, `lib2to3`, `2to3`
+
+**Alternative**: Downgrade Python 3.12 si dépendance critique non migrée
+
+### Mypy Untyped Decorator
+
+**Error**: `error: Untyped decorator makes function "X" untyped`
+
+**Cause**: Library sans type stubs (ex: tenacity)
+
+**Fix Option 1** (type ignore ciblé):
+```python
+from tenacity import retry
+
+@retry(...)  # type: ignore[misc]  # tenacity missing typed stubs
+async def my_function():
+    ...
+```
+
+**Fix Option 2** (mypy override global):
+```toml
+# pyproject.toml
+[[tool.mypy.overrides]]
+module = "tenacity.*"
+ignore_missing_imports = true
+```
+
+**Recommandation**: Option 1 (plus ciblé, meilleur contrôle)
+
+### Docker Build Slow on Apple Silicon
+
+**Error**: Build très lent (émulation x86_64)
+
+**Cause**: Image x86_64 émulée sur ARM64
+
+**Fix**:
+```bash
+# Build multi-platform avec buildx
+docker buildx build --platform linux/arm64 -t flight-search-api .
+
+# OU utiliser image ARM64 native
+FROM --platform=linux/arm64 python:3.13-slim
+```
+
+**Performance**:
+- x86_64 émulé: ~15 min build
+- ARM64 natif: ~3 min build
+
+### Proxy Connection Failed
+
+**Error**: `ProxyError: Cannot connect to proxy`
+
+**Cause**: Credentials invalides, bandwidth épuisé, format incorrect
+
+**Debug**:
+```bash
+# Test proxy manuellement
+curl -x http://customer-XXX-country-FR:password@pr.decodo.com:8080 https://ipinfo.io
+
+# Vérifier format .env
+# PROXY_HOST=pr.decodo.com
+# PROXY_PORT=8080
+# PROXY_USERNAME=customer-XXX-country-FR
+# PROXY_PASSWORD=your_password
+```
+
+**Fix Format**:
+```python
+# Format correct
+proxy_url = f"http://{username}:{password}@{host}:{port}"
+
+# Encode caractères spéciaux
+from urllib.parse import quote
+password_encoded = quote(password, safe="")
+proxy_url = f"http://{username}:{password_encoded}@{host}:{port}"
+```
+
+---
+
 # Ressources
 
 ## Documentation Officielle

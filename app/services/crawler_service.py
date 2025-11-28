@@ -17,7 +17,7 @@ from tenacity import retry
 from app.core import get_settings
 from app.exceptions import CaptchaDetectedError, NetworkError, SessionCaptureError
 from app.models import Provider, ProxyConfig
-from app.services.retry_strategy import RetryStrategy
+from app.services import RetryStrategy
 from app.utils import (
     build_browser_config_from_fingerprint,
     capture_kayak_poll_data,
@@ -81,7 +81,7 @@ class CrawlerService:
         self.provider: Provider = Provider.GOOGLE
         self._kayak_poll_data: dict[str, object] | None = None
 
-    @retry(**RetryStrategy.get_session_retry())
+    @retry(**RetryStrategy.get_session_retry())  # type: ignore[misc]  # Tenacity decorator incompatible with mypy strict
     async def get_session(
         self,
         provider: Provider,
@@ -189,7 +189,7 @@ class CrawlerService:
         if provider == Provider.KAYAK:
             self._kayak_poll_data = None
 
-        @retry(**RetryStrategy.get_crawler_retry())
+        @retry(**RetryStrategy.get_crawler_retry())  # type: ignore[misc]  # Tenacity decorator incompatible with mypy strict
         async def _crawl_with_retry() -> CrawlResult:
             nonlocal attempt_count
             attempt_count += 1

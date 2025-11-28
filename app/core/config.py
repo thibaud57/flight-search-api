@@ -88,4 +88,4 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """Retourne instance Settings cached (singleton via lru_cache)."""
-    return Settings()  # type: ignore[call-arg]  # Pydantic BaseSettings auto-load .env
+    return Settings()  # type: ignore[call-arg]  # Pydantic v2 loads .env vars automatically, no args needed

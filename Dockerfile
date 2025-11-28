@@ -57,7 +57,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     ca-certificates \
     fonts-liberation \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Creer utilisateur non-root pour securite
@@ -84,9 +83,9 @@ ENV LOG_LEVEL=INFO
 # Exposer port application
 EXPOSE 8000
 
-# Healthcheck natif Docker
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+# Healthcheck natif Docker (sans dépendance externe curl)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3).read()" || exit 1
 
 # Commande demarrage production
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

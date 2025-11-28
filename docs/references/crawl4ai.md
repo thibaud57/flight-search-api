@@ -846,6 +846,279 @@ poll_data = await capture_kayak_poll_data(
 # ❌ MAUVAIS : https://www.kayak.fr/hotels/...  (pas flights)
 ```
 
+# Exemples Projet flight-search-api
+
+Cette section documente des exemples concrets d'utilisation de Crawl4AI dans ce projet, incluant la configuration complète pour Google Flights et Kayak.
+
+## Configuration Complète Google Flights
+
+```python
+from app.services import CrawlerService
+from app.models import Provider
+from app.core import get_settings
+from app.exceptions import CaptchaDetectedError, NetworkError
+
+# Setup service
+settings = get_settings()
+crawler_service = CrawlerService(proxy_service=proxy_service)
+
+# 1. Capture session (cookies + headers)
+await crawler_service.get_session(
+    provider=Provider.GOOGLE,
+    use_proxy=True  # Utilise Decodo proxies
+)
+
+# 2. Crawl URL recherche vols
+url = "https://www.google.com/travel/flights?hl=fr&tfs=..."
+result = await crawler_service.crawl_flights(
+    url=url,
+    provider=Provider.GOOGLE,
+    use_proxy=True
+)
+
+# 3. Traiter résultat
+if result.success:
+    html = result.html
+    # Parser avec GoogleFlightParser
+else:
+    logger.error("Crawl failed", extra={"status": result.status_code})
+```
+
+**Points clés** :
+- `get_session()` capture cookies nécessaires (consent GDPR)
+- `crawl_flights()` utilise cookies capturés + stealth mode
+- Détection automatique captcha dans HTML
+- Retry logic 3 tentatives avec backoff exponentiel
+
+## Configuration Complète Kayak
+
+```python
+from app.services import CrawlerService
+from app.models import Provider
+
+# Setup service
+crawler_service = CrawlerService(proxy_service=proxy_service)
+
+# 1. Capture session Kayak
+await crawler_service.get_session(
+    provider=Provider.KAYAK,
+    use_proxy=True
+)
+
+# 2. Crawl avec capture poll_data
+url = "https://www.kayak.fr/flights/PAR-NYC/2025-06-01"
+result = await crawler_service.crawl_flights(
+    url=url,
+    provider=Provider.KAYAK,
+    use_proxy=True
+)
+
+# 3. Accéder poll_data capturé
+if result.success and result.poll_data:
+    poll_data = result.poll_data  # Dict JSON brut
+    # Parser avec KayakFlightParser
+else:
+    logger.warning("Poll data not captured", extra={"url": url})
+```
+
+**Points clés** :
+- `provider=Provider.KAYAK` active `magic=True` automatiquement
+- Poll data capturé via hook `after_goto` (network monitoring)
+- Timeout poll data : 60s (configurable via settings)
+- `result.poll_data` contient JSON brut du endpoint `/poll`
+
+## Retry Logic avec Tenacity
+
+Le projet utilise une stratégie de retry centralisée via `RetryStrategy` :
+
+```python
+from app.services import RetryStrategy
+from tenacity import retry
+
+# Configuration session (capture cookies)
+@retry(**RetryStrategy.get_session_retry())
+async def get_session():
+    # ... code get_session ...
+    pass
+
+# Configuration crawler (recherche vols)
+@retry(**RetryStrategy.get_crawler_retry())
+async def crawl_flights():
+    # ... code crawl_flights ...
+    pass
+```
+
+**Paramètres retry** :
+- **Max attempts** : 3
+- **Wait strategy** : Exponential backoff (2s → 4s → 8s pour session, 4s → 8s → 16s pour crawler)
+- **Exceptions retryable** : `NetworkError`, `SessionCaptureError`, `CaptchaDetectedError`
+- **Logging** : Callback `before_sleep` pour tracer chaque tentative
+
+# Troubleshooting Spécifique Projet
+
+Cette section documente les erreurs courantes rencontrées dans ce projet et leurs solutions.
+
+## Erreur "Proxy Connection Failed"
+
+**Symptôme** : `NetworkError: Proxy connection failed` ou `ProxyError`
+
+**Causes** :
+1. Credentials Decodo invalides (username/password)
+2. Bandwidth proxy épuisé (limite mensuelle atteinte)
+3. Country targeting incorrect (proxy demandé non FR)
+4. Proxy hostname/port incorrect
+
+**Debug** :
+```bash
+# Tester proxy manuellement avec curl
+curl -x http://customer-{api_key}-country-FR:{password}@pr.decodo.com:8080 https://ipinfo.io
+
+# Vérifier réponse JSON contient "country": "FR"
+```
+
+**Fix** :
+```python
+# 1. Vérifier .env contient bonnes credentials
+PROXY_USERNAME=customer-XXX-country-FR
+PROXY_PASSWORD=your_actual_password
+PROXY_HOST=pr.decodo.com:8080
+
+# 2. Désactiver proxy temporairement pour tester
+result = await crawler_service.crawl_flights(
+    url=url,
+    provider=Provider.GOOGLE,
+    use_proxy=False  # Bypass proxy
+)
+```
+
+## Erreur "TimeoutError after 60s"
+
+**Symptôme** : `asyncio.TimeoutError` ou `NetworkError` avec `status_code=None`
+
+**Causes** :
+1. Google Flights/Kayak charge très lent (JS heavy, connexion lente)
+2. Proxy avec latence élevée (>500ms)
+3. Captcha silencieux non détecté bloque page
+4. Wait selector introuvable (page structure changée)
+
+**Fix** :
+```python
+# 1. Augmenter timeout global via settings
+# Dans .env ou config
+CRAWLER_CRAWL_GLOBAL_TIMEOUT_S=120  # Au lieu de 60s
+
+# 2. Augmenter timeout page
+CRAWLER_CRAWL_PAGE_TIMEOUT_MS=90000  # Au lieu de 45000ms
+
+# 3. Utiliser wait moins strict (remove wait_for selector)
+# Modifier run_config dans crawler_service.py temporairement
+run_config = CrawlerRunConfig(
+    wait_for=None,  # Ne pas attendre selector spécifique
+    delay_before_return_html=5.0,  # Augmenter delay
+)
+```
+
+## Erreur "Session Capture Failed - No Cookies"
+
+**Symptôme** : `SessionCaptureError: No cookies captured (consent may have failed)`
+
+**Causes** :
+1. Consent popup non détecté/cliqué (sélecteurs changés)
+2. Hook `_extract_cookies_hook` non exécuté
+3. Page Google/Kayak charge mais sans cookies (rare)
+
+**Debug** :
+```python
+# Activer DEBUG logs pour voir consent flow
+import logging
+logging.getLogger("flight-search-api").setLevel(logging.DEBUG)
+
+# Logs attendus :
+# - "Auto-clicked consent button" → Consent OK
+# - "Cookies extracted via hook" → Cookies capturés
+```
+
+**Fix** :
+```python
+# 1. Vérifier sélecteurs consent dans crawler_service.py
+CONSENT_SELECTORS = {
+    Provider.GOOGLE: [
+        'button:has-text("Tout accepter")',
+        'button:has-text("Accept all")',
+        # Ajouter nouveau sélecteur si structure changée
+    ],
+}
+
+# 2. Augmenter timeout consent
+CONSENT_BUTTON_WAIT_TIMEOUT_MS = 15000  # Au lieu de 10000ms
+
+# 3. Désactiver consent temporairement pour tester
+# Commenter bloc consent dans _handle_consent()
+```
+
+## Erreur "Poll Data is None" (Kayak uniquement)
+
+**Symptôme** : Crawl réussit mais `result.poll_data` est `None`
+
+**Causes** :
+1. Network capture non activé (`capture_network_requests=False`)
+2. Timeout poll capture trop court (poll arrive après 60s)
+3. URL Kayak invalide (ne déclenche pas requête `/poll`)
+4. Hook `_crawl_after_goto_hook` non configuré
+
+**Debug** :
+```python
+# Vérifier logs rechercher :
+# - "Poll_data captured successfully" → OK
+# - "Poll_data capture failed in hook" → Erreur timeout/network
+```
+
+**Fix** :
+```python
+# 1. Vérifier network capture activé dans run_config
+run_config = CrawlerRunConfig(
+    capture_network_requests=True,  # CRITIQUE pour Kayak
+    magic=True,  # Active aussi network monitoring
+)
+
+# 2. Augmenter timeout poll capture
+# Dans capture_kayak_poll_data (kayak_poll_capture.py)
+KAYAK_POLL_TIMEOUT_S = 90.0  # Au lieu de 60.0
+
+# 3. Vérifier URL Kayak valide
+# ✅ BON : https://www.kayak.fr/flights/PAR-NYC/2025-06-01?...
+# ❌ MAUVAIS : https://www.kayak.fr/hotels/... (pas flights)
+```
+
+## Erreur "Captcha Detected"
+
+**Symptôme** : `CaptchaDetectedError: Captcha recaptcha detected at ...`
+
+**Causes** :
+1. Google/Kayak détecte bot (stealth mode insuffisant)
+2. Trop de requêtes depuis même IP (rate limiting)
+3. Proxy bannered/flagged
+4. Fingerprint navigateur suspect
+
+**Fix** :
+```python
+# 1. Activer proxy rotation si pas déjà fait
+PROXY_ROTATION_ENABLED=true
+
+# 2. Utiliser country targeting différent
+PROXY_USERNAME=customer-XXX-country-DE  # Tester Allemagne
+
+# 3. Augmenter delay entre requêtes
+import asyncio
+await asyncio.sleep(5)  # 5s entre chaque crawl
+
+# 4. Vérifier stealth mode activé (déjà dans projet)
+browser_config = get_base_browser_config()
+assert browser_config.enable_stealth is True
+```
+
+**Note** : Captcha detection = **fail fast** (2s) → évite consommer bandwidth inutilement
+
 # Performance Benchmarks (Local Tests)
 
 Résultats de performance mesurés en local sur la stack actuelle (Python 3.13, Windows 10, 16GB RAM, Fiber 1Gbps).
