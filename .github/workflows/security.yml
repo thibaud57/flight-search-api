@@ -62,30 +62,15 @@ jobs:
           path: ~/.cache/uv
           key: ${{ runner.os }}-uv-3.13-${{ hashFiles('**/pyproject.toml') }}
 
-      - name: Install uv and pip-audit
-        run: |
-          pip install uv
-          pip install pip-audit
+      - name: Install uv
+        run: pip install uv
 
-      - name: Generate requirements from pyproject.toml
-        run: uv pip compile pyproject.toml -o requirements.txt
+      - name: Sync dependencies from uv.lock
+        run: uv sync --frozen
 
-      - name: Scan Python dependencies for CVEs
-        run: |
-          pip-audit -r requirements.txt --desc --format json --output pip-audit.json
+      - name: Scan uv.lock for CVEs with uv-secure
+        run: uvx uv-secure
         continue-on-error: true
-
-      - name: Display audit results
-        if: always()
-        run: pip-audit -r requirements.txt --desc || true
-
-      - name: Upload pip-audit results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: pip-audit-results
-          path: pip-audit.json
-          retention-days: 30
 
       # ========================================
       # 3. Docker Image Security
