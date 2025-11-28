@@ -5,7 +5,6 @@ from pydantic import ValidationError
 
 from app.models import KayakFlightDTO, LayoverInfo
 
-
 # === LayoverInfo Tests ===
 
 

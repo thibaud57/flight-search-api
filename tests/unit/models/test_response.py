@@ -5,7 +5,6 @@ from pydantic import ValidationError
 
 from app.models import FlightCombinationResult, SearchResponse, SearchStats
 
-
 # === FlightCombinationResult Tests ===
 
 
@@ -213,8 +212,7 @@ def test_search_response_max_10_results(
 ):
     """Test SearchResponse valide max 10 résultats."""
     results = [
-        flight_combination_result_factory(base_price=100.0 * (i + 1))
-        for i in range(10)
+        flight_combination_result_factory(base_price=100.0 * (i + 1)) for i in range(10)
     ]
     stats = search_stats_factory(total_results=10)
 
@@ -228,8 +226,7 @@ def test_search_response_more_than_10_results_fails(
 ):
     """Test SearchResponse échoue si >10 résultats."""
     results = [
-        flight_combination_result_factory(base_price=100.0 * (i + 1))
-        for i in range(11)
+        flight_combination_result_factory(base_price=100.0 * (i + 1)) for i in range(11)
     ]
     stats = search_stats_factory(total_results=11)
 

@@ -14,10 +14,8 @@ from app.models import (
 from tests.fixtures.helpers import (
     GOOGLE_FLIGHT_TEMPLATE_URL,
     KAYAK_TEMPLATE_URL,
-    get_date_range,
     get_future_date,
 )
-
 
 # === DateRange Tests ===
 
@@ -37,9 +35,7 @@ def test_date_range_start_after_end(date_range_factory):
     with pytest.raises(ValidationError) as exc_info:
         DateRange(start=date_dict["end"], end=date_dict["start"])
 
-    assert "End date must be greater than or equal to start date" in str(
-        exc_info.value
-    )
+    assert "End date must be greater than or equal to start date" in str(exc_info.value)
 
 
 def test_date_range_same_day(date_range_factory):
