@@ -45,6 +45,7 @@
 
 - ✅ **CRITICAL** : Utiliser PEP 695 partout (`class Response[T]:`, `def process[T](items: list[T]) -> T:`)
 - ✅ **CRITICAL** : Annoter TOUTES les signatures (args + return)
+- ✅ **CRITICAL** : Utiliser `HTTPStatus` enum pour status codes HTTP (jamais magic numbers)
 - ✅ Utiliser `list[T]`, `dict[K, V]` (pas `List[T]`, `Dict[K, V]`)
 - ✅ Préférer `X | None` à `Optional[X]`
 - ✅ Ajouter `model_config = ConfigDict(extra="forbid")` sur tous les models Pydantic
@@ -72,9 +73,22 @@ from pydantic import BaseModel, ConfigDict
 class SearchRequest(BaseModel):
     destinations: list[str]
     model_config = ConfigDict(extra="forbid")  # Rejette champs inconnus
+
+# HTTPStatus enum (CRITICAL)
+from http import HTTPStatus
+from fastapi.responses import JSONResponse
+
+# ✅ Correct
+return JSONResponse(
+    status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+    content={"detail": "Service temporarily unavailable"}
+)
+
+# ❌ INCORRECT - Magic number
+return JSONResponse(status_code=503, content={...})
 ```
 
-**❌ Ne pas utiliser** : `Generic[T]`, `TypeVar`, `Optional`, `Union` (ancienne syntaxe pré-Python 3.10)
+**❌ Ne pas utiliser** : `Generic[T]`, `TypeVar`, `Optional`, `Union` (ancienne syntaxe pré-Python 3.10), magic numbers HTTP (`200`, `503`, etc.)
 
 **Références** : `docs/references/fastapi.md`, `pydantic-v2.md`
 

@@ -12,6 +12,7 @@ API FastAPI scraping Google Flights multi-destinations. Python 3.13+, Crawl4AI +
 - **ALWAYS** use `async with AsyncWebCrawler(timeout=10)` → Default 30s trop long
 - **CRITICAL** : Type hints ALL functions (PEP 695 style : `list[T]`, `X | None`)
 - **CRITICAL** : Coverage ≥ 80% → CI bloque si inférieur
+- **CRITICAL** : Use `HTTPStatus` enum (never magic numbers) → `HTTPStatus.SERVICE_UNAVAILABLE` pas `503`
 - **NEVER** import from modules internes → Toujours via `__init__.py`
 - **ALWAYS** TDD cycle → Red (test fails) → Green (minimal code) → Refactor
 

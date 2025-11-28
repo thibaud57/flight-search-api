@@ -1,6 +1,7 @@
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from http import HTTPStatus
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -35,7 +36,7 @@ async def captcha_exception_handler(
         },
     )
     return JSONResponse(
-        status_code=503,
+        status_code=HTTPStatus.SERVICE_UNAVAILABLE,
         content={
             "detail": "Service temporarily unavailable due to captcha",
             "captcha_type": exc.captcha_type,
@@ -58,7 +59,7 @@ async def network_exception_handler(
         },
     )
     return JSONResponse(
-        status_code=502,
+        status_code=HTTPStatus.BAD_GATEWAY,
         content={
             "detail": "Failed to fetch flight data from provider",
             "attempts": exc.attempts,
@@ -80,7 +81,7 @@ async def session_exception_handler(
         },
     )
     return JSONResponse(
-        status_code=503,
+        status_code=HTTPStatus.SERVICE_UNAVAILABLE,
         content={
             "detail": f"Failed to establish session with {exc.provider}",
             "reason": exc.reason,
