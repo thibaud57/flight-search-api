@@ -27,6 +27,7 @@ def mock_async_web_crawler():
             mock_crawler.arun.return_value = mock_result
         mock_crawler.__aenter__ = AsyncMock(return_value=mock_crawler)
         mock_crawler.__aexit__ = AsyncMock(return_value=None)
+        mock_crawler.crawler_strategy = MagicMock()
         return mock_crawler
 
     return _create
@@ -102,6 +103,7 @@ def mock_search_service(google_flight_dto_factory):
                         arrival_airport="Aéroport international de Tokyo-Haneda",
                     )
                 ],
+                total_price=800.0 + i * 100,
             )
             for i in range(10)
         ]
@@ -163,3 +165,32 @@ def create_mock_settings_context(module_path: str, test_settings):
 def crawler_service():
     """Instance CrawlerService standard (mutualisé pour éviter duplication)."""
     return CrawlerService()
+
+
+@pytest.fixture
+def mock_page():
+    """Mock Playwright Page pour tests Kayak (version unifiée)."""
+    page = AsyncMock()
+    page.on = MagicMock()
+    page.wait_for_selector = AsyncMock(return_value=None)
+    page.wait_for_function = AsyncMock(return_value=None)
+    return page
+
+
+@pytest.fixture
+def mock_poll_response():
+    """Mock Response réseau /poll Kayak."""
+    response = AsyncMock()
+    response.url = "https://www.kayak.fr/s/horizon/api/search/poll?searchId=abc123"
+    response.status = 200
+    response.text = AsyncMock(return_value='{"results": [{"price": 500}]}')
+    return response
+
+
+@pytest.fixture
+def mock_priceprediction_response():
+    """Mock Response réseau priceprediction Kayak."""
+    response = AsyncMock()
+    response.url = "https://www.kayak.fr/s/horizon/api/priceprediction?id=xyz"
+    response.status = 200
+    return response

@@ -6,6 +6,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
+from http import HTTPStatus
 from typing import TYPE_CHECKING
 
 from crawl4ai import AsyncWebCrawler, CacheMode, CrawlerRunConfig
@@ -13,7 +14,7 @@ from playwright.async_api import BrowserContext, Cookie, Page, Response
 from tenacity import retry
 
 from app.core import get_settings
-from app.exceptions import CaptchaDetectedError, NetworkError
+from app.exceptions import CaptchaDetectedError, NetworkError, SessionCaptureError
 from app.models import Provider, ProxyConfig
 from app.services.retry_strategy import RetryStrategy
 from app.utils import (
@@ -26,6 +27,18 @@ if TYPE_CHECKING:
     from app.services.proxy_service import ProxyService
 
 logger = logging.getLogger(__name__)
+
+MIN_VALID_HTML_SIZE = 1000
+KAYAK_POLL_TIMEOUT_S = 60.0
+CONSENT_BUTTON_WAIT_TIMEOUT_MS = 10000
+RETRYABLE_HTTP_STATUS_CODES = (
+    HTTPStatus.INTERNAL_SERVER_ERROR,
+    HTTPStatus.BAD_GATEWAY,
+    HTTPStatus.SERVICE_UNAVAILABLE,
+    HTTPStatus.GATEWAY_TIMEOUT,
+    HTTPStatus.TOO_MANY_REQUESTS,
+    HTTPStatus.FORBIDDEN,
+)
 
 SESSION_URLS = {
     Provider.GOOGLE: "https://www.google.com/travel/flights",
@@ -68,6 +81,7 @@ class CrawlerService:
         self.provider: Provider = Provider.GOOGLE
         self._kayak_poll_data: dict[str, object] | None = None
 
+    @retry(**RetryStrategy.get_session_retry())  # type: ignore[misc]  # tenacity missing typed stubs
     async def get_session(
         self,
         provider: Provider,
@@ -142,7 +156,10 @@ class CrawlerService:
 
         response_time_ms = int((time.time() - start_time) * 1000)
 
-        if not result.success or result.status_code in (403, 429):
+        if not result.success or result.status_code in (
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.TOO_MANY_REQUESTS,
+        ):
             logger.error(
                 "Session capture failed",
                 extra={
@@ -153,6 +170,20 @@ class CrawlerService:
                 },
             )
             raise NetworkError(url=url, status_code=result.status_code)
+
+        if not self._captured_cookies:
+            logger.warning(
+                "Session captured but no cookies found",
+                extra={
+                    "provider": provider.value,
+                    "status_code": result.status_code,
+                    "proxy_host": proxy.host if proxy else "no_proxy",
+                },
+            )
+            raise SessionCaptureError(
+                provider=provider.value,
+                reason="No cookies captured (consent may have failed)",
+            )
 
         logger.info(
             "Session captured",
@@ -178,7 +209,7 @@ class CrawlerService:
         if provider == Provider.KAYAK:
             self._kayak_poll_data = None
 
-        @retry(**RetryStrategy.get_crawler_retry())  # type: ignore[misc]
+        @retry(**RetryStrategy.get_crawler_retry())  # type: ignore[misc]  # tenacity missing typed stubs
         async def _crawl_with_retry() -> CrawlResult:
             nonlocal attempt_count
             attempt_count += 1
@@ -252,20 +283,16 @@ class CrawlerService:
 
             response_time_ms = int((time.time() - start_time) * 1000)
 
-            if not result.success and result.status_code == 404:
-                return CrawlResult(success=False, html="", status_code=404)
+            if not result.success and result.status_code == HTTPStatus.NOT_FOUND:
+                return CrawlResult(
+                    success=False, html="", status_code=HTTPStatus.NOT_FOUND
+                )
 
-            if not result.success or result.status_code in (
-                500,
-                502,
-                503,
-                504,
-                429,
-                403,
-            ):
+            if not result.success or result.status_code in RETRYABLE_HTTP_STATUS_CODES:
                 error_msg = "Crawl failed"
                 if (
-                    result.status_code in (429, 403)
+                    result.status_code
+                    in (HTTPStatus.TOO_MANY_REQUESTS, HTTPStatus.FORBIDDEN)
                     and use_proxy
                     and self._proxy_service
                 ):
@@ -290,6 +317,34 @@ class CrawlerService:
             poll_data = None
             if provider == Provider.KAYAK:
                 poll_data = self._kayak_poll_data
+
+            is_result_valid = (
+                provider == Provider.KAYAK and poll_data is not None
+            ) or (
+                provider == Provider.GOOGLE
+                and html
+                and len(html.strip()) >= MIN_VALID_HTML_SIZE
+            )
+
+            if not is_result_valid:
+                error_reason = (
+                    "poll_data is None"
+                    if provider == Provider.KAYAK
+                    else f"HTML too small ({len(html)} chars)"
+                )
+                logger.warning(
+                    "Crawl result validation failed - retrying",
+                    extra={
+                        "provider": provider.value,
+                        "url": url,
+                        "reason": error_reason,
+                        "html_size": len(html),
+                        "poll_data_available": poll_data is not None,
+                    },
+                )
+                raise NetworkError(
+                    url=url, status_code=result.status_code, attempts=attempt_count
+                )
 
             logger.info(
                 "Crawl successful",
@@ -328,6 +383,10 @@ class CrawlerService:
         }
         return proxy_config, proxy
 
+    def has_valid_cookies(self) -> bool:
+        """Vérifie si des cookies valides ont été capturés."""
+        return len(self._captured_cookies) > 0
+
     def _build_crawler_run_config(
         self,
         wait_for_selector: str | None,
@@ -359,7 +418,7 @@ class CrawlerService:
         try:
             self._kayak_poll_data = await capture_kayak_poll_data(
                 page,
-                timeout=60.0,
+                timeout=KAYAK_POLL_TIMEOUT_S,
             )
         except Exception as e:
             logger.warning(
@@ -376,7 +435,9 @@ class CrawlerService:
 
         for selector in selectors:
             try:
-                accept_button = await page.wait_for_selector(selector, timeout=10000)
+                accept_button = await page.wait_for_selector(
+                    selector, timeout=CONSENT_BUTTON_WAIT_TIMEOUT_MS
+                )
                 if accept_button:
                     await accept_button.click()
                     await asyncio.sleep(1)
