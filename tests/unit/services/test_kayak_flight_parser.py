@@ -8,33 +8,6 @@ from app.models import KayakFlightDTO
 from app.services.kayak_flight_parser import KayakFlightParser
 
 
-def test_format_duration_hours_and_minutes():
-    """Test conversion 765 minutes → '12h 45min'."""
-    from app.services.kayak_flight_parser import format_duration
-
-    result = format_duration(765)
-
-    assert result == "12h 45min"
-
-
-def test_format_duration_hours_only():
-    """Test conversion 120 minutes → '2h 0min'."""
-    from app.services.kayak_flight_parser import format_duration
-
-    result = format_duration(120)
-
-    assert result == "2h 0min"
-
-
-def test_format_duration_minutes_only():
-    """Test conversion 45 minutes → '0h 45min'."""
-    from app.services.kayak_flight_parser import format_duration
-
-    result = format_duration(45)
-
-    assert result == "0h 45min"
-
-
 def test_parse_valid_json_complete(kayak_poll_data_factory):
     """Test parsing JSON avec 2 results complets."""
     parser = KayakFlightParser()
@@ -43,9 +16,12 @@ def test_parse_valid_json_complete(kayak_poll_data_factory):
     results = parser.parse(json_data)
 
     assert len(results) == 2
-    assert all(isinstance(r, KayakFlightDTO) for r in results)
-    assert results[0].price == 1000.0
-    assert results[1].price == 1100.0
+    assert all(isinstance(group, list) for group in results)
+    assert all(
+        isinstance(flight, KayakFlightDTO) for group in results for flight in group
+    )
+    assert results[0][0].price == 1000.0
+    assert results[1][0].price == 1100.0
 
 
 def test_parse_empty_results():
@@ -107,7 +83,8 @@ def test_parse_leg_id_not_found(mock_logger):
 
     results = parser.parse(json_data)
 
-    assert results == []
+    assert len(results) == 1
+    assert results[0] == []
     mock_logger.warning.assert_called_once()
     assert "Leg ID 'unknown_leg_id' not found" in mock_logger.warning.call_args[0][0]
 
@@ -141,7 +118,8 @@ def test_parse_segment_id_not_found(mock_logger):
 
     results = parser.parse(json_data)
 
-    assert results == []
+    assert len(results) == 1
+    assert results[0] == []
     mock_logger.warning.assert_called_once()
     assert (
         "Segment ID 'unknown_segment_id' not found"
@@ -185,10 +163,12 @@ def test_parse_optional_fields_absent():
     results = parser.parse(json_data)
 
     assert len(results) == 1
-    assert results[0].price == 1500.0
-    assert results[0].airline == "BA"
-    assert results[0].departure_airport is None
-    assert results[0].arrival_airport is None
+    assert len(results[0]) == 1
+    flight = results[0][0]
+    assert flight.price == 1500.0
+    assert flight.airline == "BA"
+    assert flight.departure_airport is None
+    assert flight.arrival_airport is None
 
 
 def test_parse_layovers_extraction():
@@ -242,7 +222,8 @@ def test_parse_layovers_extraction():
     results = parser.parse(json_data)
 
     assert len(results) == 1
-    flight = results[0]
+    assert len(results[0]) == 1
+    flight = results[0][0]
     assert len(flight.layovers) == 1
     assert flight.layovers[0].airport == "JFK"
     assert flight.layovers[0].duration == "2h 0min"
@@ -299,7 +280,8 @@ def test_parse_multiple_segments_per_leg():
     results = parser.parse(json_data)
 
     assert len(results) == 1
-    flight = results[0]
+    assert len(results[0]) == 1
+    flight = results[0][0]
     assert flight.departure_airport == "CDG"
     assert flight.arrival_airport == "LAX"
     assert flight.departure_time == "2026-01-14T10:30:00"
@@ -316,11 +298,15 @@ def test_parse_real_kayak_response_fixture(kayak_poll_data_factory):
     results = parser.parse(json_data)
 
     assert len(results) == 10
-    assert all(isinstance(r, KayakFlightDTO) for r in results)
-    assert all(r.price > 0 for r in results)
-    assert all(len(r.airline) >= 2 for r in results)
-    assert all(r.duration for r in results)
-    first_flight = results[0]
+    assert all(isinstance(group, list) for group in results)
+    assert all(
+        isinstance(flight, KayakFlightDTO) for group in results for flight in group
+    )
+    all_flights = [flight for group in results for flight in group]
+    assert all(f.price > 0 for f in all_flights)
+    assert all(len(f.airline) >= 2 for f in all_flights)
+    assert all(f.duration for f in all_flights)
+    first_flight = results[0][0]
     assert len(first_flight.layovers) >= 0
 
 
