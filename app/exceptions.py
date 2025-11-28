@@ -34,3 +34,12 @@ class NetworkError(Exception):
         if status_code:
             msg += f" (status: {status_code})"
         super().__init__(msg)
+
+
+class SessionCaptureError(Exception):
+    """Levée quand la capture de session échoue (cookies vides ou erreur)."""
+
+    def __init__(self, provider: str, reason: str) -> None:
+        self.provider = provider
+        self.reason = reason
+        super().__init__(f"Session capture failed for {provider}: {reason}")

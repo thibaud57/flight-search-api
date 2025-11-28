@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from app.core import get_settings
@@ -14,7 +13,6 @@ from app.models import (
     CombinationResult,
     DateCombination,
     FlightCombinationResult,
-    FlightDTO,
     Provider,
     SearchRequest,
     SearchResponse,
@@ -25,7 +23,7 @@ from app.utils import generate_google_flights_url, generate_kayak_url
 
 if TYPE_CHECKING:
     from app.services.combination_generator import CombinationGenerator
-    from app.services.crawler_service import CrawlerService
+    from app.services.crawler_service import CrawlerService, CrawlResult
     from app.services.google_flight_parser import GoogleFlightParser
     from app.services.kayak_flight_parser import KayakFlightParser
 
@@ -111,6 +109,15 @@ class SearchService:
         provider: Provider,
     ) -> list[CrawlResultTuple]:
         """Crawle toutes les combinaisons en parallele avec TaskGroup."""
+        if not self._crawler_service.has_valid_cookies():
+            logger.error(
+                "Cannot start crawling without valid session cookies",
+                extra={"provider": provider.value},
+            )
+            raise RuntimeError(
+                f"No valid session cookies for {provider.value}. Call get_session() first."
+            )
+
         semaphore = asyncio.Semaphore(self._settings.MAX_CONCURRENCY)
         results: list[CrawlResultTuple] = []
 
@@ -164,34 +171,14 @@ class SearchService:
                 continue
 
             try:
-                flights: Sequence[FlightDTO]
-                if provider == Provider.GOOGLE:
-                    flights = self._google_flight_parser.parse(result.html)
-                elif provider == Provider.KAYAK:
-                    if not result.poll_data:
-                        crawls_failed += 1
-                        continue
-                    all_kayak_results = self._kayak_flight_parser.parse(
-                        result.poll_data
-                    )
-                    if not all_kayak_results:
-                        crawls_failed += 1
-                        continue
-                    flights = all_kayak_results[0]
-                else:
-                    raise ValueError(f"Unknown provider: {provider}")
-
-                if not flights:
-                    crawls_failed += 1
-                    continue
-
-                combination_results.append(
-                    CombinationResult(
-                        date_combination=combo,
-                        flights=flights,
-                    )
+                parsed_results, success = self._parse_single_result(
+                    combo, result, provider=provider
                 )
-                crawls_success += 1
+                combination_results.extend(parsed_results)
+                if success:
+                    crawls_success += 1
+                else:
+                    crawls_failed += 1
             except ParsingError as e:
                 logger.warning("Parsing failed", extra={"error": str(e)})
                 crawls_failed += 1
@@ -206,6 +193,54 @@ class SearchService:
 
         return combination_results
 
+    def _parse_single_result(
+        self,
+        combo: DateCombination,
+        result: CrawlResult,
+        *,
+        provider: Provider,
+    ) -> tuple[list[CombinationResult], bool]:
+        """Parse un resultat crawl et retourne (results, success)."""
+        if provider == Provider.GOOGLE:
+            return self._parse_google_result(combo, result)
+        if provider == Provider.KAYAK:
+            return self._parse_kayak_result(combo, result)
+        raise ValueError(f"Unknown provider: {provider}")
+
+    def _parse_google_result(
+        self, combo: DateCombination, result: CrawlResult
+    ) -> tuple[list[CombinationResult], bool]:
+        """Parse resultat Google Flights."""
+        flights = self._google_flight_parser.parse(result.html)
+        if not flights:
+            return [], False
+
+        return [CombinationResult(date_combination=combo, flights=flights)], True
+
+    def _parse_kayak_result(
+        self, combo: DateCombination, result: CrawlResult
+    ) -> tuple[list[CombinationResult], bool]:
+        """Parse resultat Kayak."""
+        if not result.poll_data:
+            return [], False
+
+        all_kayak_results = self._kayak_flight_parser.parse(result.poll_data)
+        if not all_kayak_results:
+            return [], False
+
+        if self._settings.RANKING_KEEP_ONLY_FIRST_RESULT:
+            flights = all_kayak_results[0]
+            if not flights:
+                return [], False
+            return [CombinationResult(date_combination=combo, flights=flights)], True
+
+        results = [
+            CombinationResult(date_combination=combo, flights=result_flights)
+            for result_flights in all_kayak_results
+            if result_flights
+        ]
+        return results, bool(results)
+
     def _rank_and_select_top_10(
         self, results: list[CombinationResult]
     ) -> list[CombinationResult]:
@@ -217,19 +252,19 @@ class SearchService:
             results, key=lambda r: r.flights[0].price if r.flights[0].price else 0
         )
 
-        top_10 = sorted_results[:10]
+        top_results = sorted_results[: self._settings.MAX_RESULTS]
 
-        if top_10:
-            best_price = top_10[0].flights[0].price or 0
+        if top_results:
+            best_price = top_results[0].flights[0].price or 0
             logger.info(
                 "Ranking completed",
                 extra={
                     "best_price": best_price,
-                    "total_results": len(top_10),
+                    "total_results": len(top_results),
                 },
             )
 
-        return top_10
+        return top_results
 
     def _convert_to_flight_results(
         self, combination_results: list[CombinationResult]

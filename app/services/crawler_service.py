@@ -28,7 +28,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-MIN_VALID_HTML_SIZE = 1000
 KAYAK_POLL_TIMEOUT_S = 60.0
 CONSENT_BUTTON_WAIT_TIMEOUT_MS = 10000
 RETRYABLE_HTTP_STATUS_CODES = (
@@ -320,17 +319,13 @@ class CrawlerService:
 
             is_result_valid = (
                 provider == Provider.KAYAK and poll_data is not None
-            ) or (
-                provider == Provider.GOOGLE
-                and html
-                and len(html.strip()) >= MIN_VALID_HTML_SIZE
-            )
+            ) or (provider == Provider.GOOGLE and html)
 
             if not is_result_valid:
                 error_reason = (
                     "poll_data is None"
                     if provider == Provider.KAYAK
-                    else f"HTML too small ({len(html)} chars)"
+                    else "HTML is empty or None"
                 )
                 logger.warning(
                     "Crawl result validation failed - retrying",

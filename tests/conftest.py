@@ -60,3 +60,66 @@ def client_with_mock_search(test_settings: Settings, mock_search_service):
     app.dependency_overrides.clear()
     get_settings.cache_clear()
     get_logger.cache_clear()
+
+
+@pytest.fixture
+def client_with_network_error(test_settings: Settings, mock_search_service_network_error):
+    """TestClient avec SearchService qui lève NetworkError."""
+    get_settings.cache_clear()
+    get_logger.cache_clear()
+
+    test_logger = setup_logger(test_settings.LOG_LEVEL)
+
+    app.dependency_overrides[get_settings] = lambda: test_settings
+    app.dependency_overrides[get_logger] = lambda: test_logger
+    app.dependency_overrides[get_search_service] = (
+        lambda: mock_search_service_network_error
+    )
+
+    yield TestClient(app)
+
+    app.dependency_overrides.clear()
+    get_settings.cache_clear()
+    get_logger.cache_clear()
+
+
+@pytest.fixture
+def client_with_session_error(test_settings: Settings, mock_search_service_session_error):
+    """TestClient avec SearchService qui lève SessionCaptureError."""
+    get_settings.cache_clear()
+    get_logger.cache_clear()
+
+    test_logger = setup_logger(test_settings.LOG_LEVEL)
+
+    app.dependency_overrides[get_settings] = lambda: test_settings
+    app.dependency_overrides[get_logger] = lambda: test_logger
+    app.dependency_overrides[get_search_service] = (
+        lambda: mock_search_service_session_error
+    )
+
+    yield TestClient(app)
+
+    app.dependency_overrides.clear()
+    get_settings.cache_clear()
+    get_logger.cache_clear()
+
+
+@pytest.fixture
+def client_with_captcha_error(test_settings: Settings, mock_search_service_captcha_error):
+    """TestClient avec SearchService qui lève CaptchaDetectedError."""
+    get_settings.cache_clear()
+    get_logger.cache_clear()
+
+    test_logger = setup_logger(test_settings.LOG_LEVEL)
+
+    app.dependency_overrides[get_settings] = lambda: test_settings
+    app.dependency_overrides[get_logger] = lambda: test_logger
+    app.dependency_overrides[get_search_service] = (
+        lambda: mock_search_service_captcha_error
+    )
+
+    yield TestClient(app)
+
+    app.dependency_overrides.clear()
+    get_settings.cache_clear()
+    get_logger.cache_clear()

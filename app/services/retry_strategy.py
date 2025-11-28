@@ -11,7 +11,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from app.exceptions import CaptchaDetectedError, NetworkError
+from app.exceptions import CaptchaDetectedError, NetworkError, SessionCaptureError
 from app.types import TenacityRetryConfig
 
 logger = logging.getLogger(__name__)
@@ -51,6 +51,27 @@ def log_retry_attempt(retry_state: RetryCallState) -> None:
 
 class RetryStrategy:
     """Configuration Tenacity centralisee pour retry logic production."""
+
+    @staticmethod
+    def get_session_retry() -> TenacityRetryConfig:
+        """Retourne configuration retry pour get_session (capture cookies)."""
+        logger.debug(
+            "Creating session retry configuration",
+            extra={
+                "max_attempts": 3,
+                "wait_strategy": "random_exponential",
+                "min_wait": 4,
+                "max_wait": 30,
+            },
+        )
+
+        return {
+            "stop": stop_after_attempt(3),
+            "wait": wait_random_exponential(multiplier=2, min=4, max=30),
+            "retry": retry_if_exception_type((SessionCaptureError, NetworkError)),
+            "before_sleep": log_retry_attempt,
+            "reraise": True,
+        }
 
     @staticmethod
     def get_crawler_retry() -> TenacityRetryConfig:

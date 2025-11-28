@@ -285,3 +285,99 @@ def test_openapi_schema_includes_search_endpoints(
     assert "post" in google_endpoint
     assert "requestBody" in google_endpoint["post"]
     assert "responses" in google_endpoint["post"]
+
+
+def test_search_google_flights_network_error_returns_502(
+    client_with_network_error: TestClient, google_search_request_factory
+) -> None:
+    """NetworkError retourne 502 Bad Gateway avec message structuré."""
+    request_data = google_search_request_factory(as_dict=True)
+
+    response = client_with_network_error.post(
+        SEARCH_GOOGLE_FLIGHTS_ENDPOINT, json=request_data
+    )
+
+    assert response.status_code == 502
+    data = response.json()
+    assert "detail" in data
+    assert "attempts" in data
+    assert "failed to fetch" in data["detail"].lower()
+
+
+def test_search_google_flights_session_error_returns_503(
+    client_with_session_error: TestClient, google_search_request_factory
+) -> None:
+    """SessionCaptureError retourne 503 Service Unavailable avec raison."""
+    request_data = google_search_request_factory(as_dict=True)
+
+    response = client_with_session_error.post(
+        SEARCH_GOOGLE_FLIGHTS_ENDPOINT, json=request_data
+    )
+
+    assert response.status_code == 503
+    data = response.json()
+    assert "detail" in data
+    assert "reason" in data
+    assert "failed to establish session" in data["detail"].lower()
+    assert "google" in data["detail"].lower()
+
+
+def test_search_google_flights_captcha_error_returns_503(
+    client_with_captcha_error: TestClient, google_search_request_factory
+) -> None:
+    """CaptchaDetectedError retourne 503 Service Unavailable avec type captcha."""
+    request_data = google_search_request_factory(as_dict=True)
+
+    response = client_with_captcha_error.post(
+        SEARCH_GOOGLE_FLIGHTS_ENDPOINT, json=request_data
+    )
+
+    assert response.status_code == 503
+    data = response.json()
+    assert "detail" in data
+    assert "captcha_type" in data
+    assert "captcha" in data["detail"].lower()
+    assert data["captcha_type"] == "recaptcha"
+
+
+def test_search_kayak_network_error_returns_502(
+    client_with_network_error: TestClient, kayak_search_request_factory
+) -> None:
+    """NetworkError retourne 502 Bad Gateway pour Kayak."""
+    request_data = kayak_search_request_factory(as_dict=True)
+
+    response = client_with_network_error.post(SEARCH_KAYAK_ENDPOINT, json=request_data)
+
+    assert response.status_code == 502
+    data = response.json()
+    assert "detail" in data
+    assert "attempts" in data
+
+
+def test_search_kayak_session_error_returns_503(
+    client_with_session_error: TestClient, kayak_search_request_factory
+) -> None:
+    """SessionCaptureError retourne 503 Service Unavailable pour Kayak."""
+    request_data = kayak_search_request_factory(as_dict=True)
+
+    response = client_with_session_error.post(SEARCH_KAYAK_ENDPOINT, json=request_data)
+
+    assert response.status_code == 503
+    data = response.json()
+    assert "detail" in data
+    assert "reason" in data
+
+
+def test_search_kayak_captcha_error_returns_503(
+    client_with_captcha_error: TestClient, kayak_search_request_factory
+) -> None:
+    """CaptchaDetectedError retourne 503 Service Unavailable pour Kayak."""
+    request_data = kayak_search_request_factory(as_dict=True)
+
+    response = client_with_captcha_error.post(SEARCH_KAYAK_ENDPOINT, json=request_data)
+
+    assert response.status_code == 503
+    data = response.json()
+    assert "detail" in data
+    assert "captcha_type" in data
+    assert data["captcha_type"] == "recaptcha"

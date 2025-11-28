@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from http import HTTPStatus
 
 from playwright.async_api import Page, Response
 
@@ -29,14 +30,14 @@ async def capture_kayak_poll_data(
         nonlocal priceprediction_received
         url = response.url
 
-        if "/poll" in url and response.status == 200:
+        if "/poll" in url and response.status == HTTPStatus.OK:
             try:
                 body = await response.text()
                 poll_responses.append({"url": url, "body": body})
             except Exception:
                 pass
 
-        elif "priceprediction" in url and response.status == 200:
+        elif "priceprediction" in url and response.status == HTTPStatus.OK:
             priceprediction_received = True
 
     try:

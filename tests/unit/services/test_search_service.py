@@ -221,7 +221,7 @@ async def test_search_flights_ranking_price_primary(
 
     response = await service.search_flights(valid_search_request)
 
-    assert response.results[0].flights[0].price == 900.0
+    assert response.results[0].total_price == 900.0
 
 
 @pytest.mark.asyncio
@@ -255,8 +255,8 @@ async def test_search_flights_ranking_same_price_stable(
     response = await service.search_flights(valid_search_request)
 
     assert len(response.results) == 2
-    assert response.results[0].flights[0].price == 1000.0
-    assert response.results[1].flights[0].price == 1000.0
+    assert response.results[0].total_price == 1000.0
+    assert response.results[1].total_price == 1000.0
     assert response.results[0].flights[0].airline == "Airline 0"
     assert response.results[1].flights[0].airline == "Airline 1"
 
@@ -403,13 +403,11 @@ async def test_search_flights_logging_structured(
             all_extra_fields.add("crawls_success")
         if hasattr(record, "crawls_failed"):
             all_extra_fields.add("crawls_failed")
-        if hasattr(record, "top_price_min"):
-            all_extra_fields.add("top_price_min")
-        if hasattr(record, "top_price_max"):
-            all_extra_fields.add("top_price_max")
+        if hasattr(record, "best_price"):
+            all_extra_fields.add("best_price")
 
     assert "crawls_success" in all_extra_fields
-    assert "top_price_min" in all_extra_fields or "top_price_max" in all_extra_fields
+    assert "best_price" in all_extra_fields
 
 
 @pytest.mark.asyncio
