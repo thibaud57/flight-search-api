@@ -84,31 +84,13 @@ flight-search-api/
 
 ## 2.2 Principes Organisation
 
-### Séparation des responsabilités
+**Séparation** : `api/` (HTTP), `core/` (config), `models/` (Pydantic), `services/` (métier), `utils/` (helpers)
 
-- `app/api/` : Couche HTTP (routes, validation)
-- `app/core/` : Configuration et logging
-- `app/models/` : Schémas Pydantic (request/response)
-- `app/services/` : Logique métier (scraping, parsing, orchestration)
-- `app/utils/` : Helpers réutilisables
+**Documentation** : `docs/references/` modulaire (10 fichiers) → Économie tokens ~44%
 
-### Documentation modulaire
+**Tests miroir** : `tests/` reflète `app/` (`unit/` mocks, `integration/` TestClient)
 
-- `docs/references/` : Docs techniques par technologie (10 fichiers)
-- `docs/REFERENCES.md` : Index léger avec liens
-- Avantage : Chargement ciblé (~44% économie tokens)
-
-### Tests miroir
-
-- Structure `tests/` reflète `app/`
-- `unit/` : Tests isolés avec mocks
-- `integration/` : Tests end-to-end avec TestClient
-
-### Configuration centralisée
-
-- `pyproject.toml` : Dependencies + ruff + mypy + pytest
-- `.env.example` : Template variables (jamais committer `.env`)
-- `.github/workflows/` : CI/CD automation
+**Config centralisée** : `pyproject.toml` (deps + tools), `.env.example` (template), `.github/workflows/` (CI/CD)
 
 ---
 
@@ -132,122 +114,40 @@ Exemples détaillés → `docs/references/fastapi.md`, `pydantic-v2.md`
 
 ## 3.2 Standards Imports
 
-Cette section définit **OÙ** et **COMMENT** organiser les imports.
-
 ### Règle 1 : Imports au niveau module (WHERE)
 
-**Principe** : Déclarer TOUS les imports en haut du fichier, jamais dans les fonctions/méthodes.
+**Principe** : Déclarer TOUS les imports en haut du fichier, jamais dans les fonctions.
 
-**✅ Correct** :
-```python
-# En haut du fichier
-from datetime import datetime
-from typing import TYPE_CHECKING
-
-from app.models import SearchRequest, DateRange
-from app.services import CrawlerService
-
-if TYPE_CHECKING:
-    from app.services import ProxyService
-
-
-def process_search(request: SearchRequest) -> None:
-    crawler = CrawlerService()
-    timestamp = datetime.now()
-```
-
-**❌ Incorrect** :
-```python
-def process_search(request):
-    from datetime import datetime  # Import dans fonction
-    from app.services import CrawlerService  # Import dans fonction
-
-    crawler = CrawlerService()
-    timestamp = datetime.now()
-```
-
-### Exceptions autorisées
-
-1. **Circular imports** (résolution de dépendances circulaires) :
-```python
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from app.services import ProxyService  # Évite circular import
-
-
-def configure_proxy(proxy: "ProxyService") -> None:
-    pass
-```
-
-2. **Imports conditionnels runtime** (dépendances optionnelles) :
-```python
-def export_data(format: str) -> None:
-    if format == "excel":
-        import openpyxl  # Import seulement si format Excel demandé
-        # ... logique export Excel
-```
-
-3. **Imports coûteux** (optimisation chargement initial) :
-```python
-def train_model() -> None:
-    import tensorflow as tf  # Import lourd seulement si fonction appelée
-    # ... logique ML
-```
-
-**Justification requise** : Toute exception doit avoir un commentaire expliquant POURQUOI.
+**Exceptions** (avec commentaire POURQUOI obligatoire) :
+- Circular imports → `TYPE_CHECKING`
+- Dépendances optionnelles (ex: `import openpyxl` si format Excel)
+- Imports coûteux (ex: `import tensorflow` uniquement dans fonction ML)
 
 ---
 
 ### Règle 2 : Imports via `__init__.py` (HOW)
 
-**Principe** : Toujours importer via les fichiers `__init__.py` des packages, jamais directement depuis les modules internes.
+**Principe** : Toujours importer via `__init__.py` des packages, jamais modules internes.
 
-**✅ Correct** :
 ```python
-# Imports via __init__.py (API publique)
+# ✅ Correct
 from app.models import DateRange, SearchRequest, Flight
 from app.services import CrawlerService, SearchService
-from app.utils import build_google_flights_url
-```
 
-**❌ Incorrect** :
-```python
-# Imports directs (contourne l'API publique)
-from app.models.request import DateRange, SearchRequest
-from app.models.flight import Flight
+# ❌ Incorrect
+from app.models.request import DateRange
 from app.services.crawler_service import CrawlerService
-from app.services.search_service import SearchService
-from app.utils.url_builder import build_google_flights_url
 ```
 
-### Avantages
+**Avantages** : Cohérence, refactoring facile, encapsulation
 
-- ✅ **Cohérence** : Un seul endroit définit l'API publique
-- ✅ **Refactoring facile** : Renommer/déplacer fichiers sans casser imports
-- ✅ **Lisibilité** : Imports concis et clairs
-- ✅ **Encapsulation** : Cache détails implémentation interne
-
-### Structure recommandée
-
+**Structure `__init__.py`** :
 ```python
-# app/models/__init__.py
-"""Models package - Pydantic schemas."""
-
-from app.models.request import DateRange, SearchRequest, Flight
-from app.models.response import SearchResponse, FlightResult, SearchStats
-
-__all__ = [
-    "DateRange",
-    "SearchRequest",
-    "Flight",
-    "SearchResponse",
-    "FlightResult",
-    "SearchStats",
-]
+from app.models.request import DateRange, SearchRequest
+__all__ = ["DateRange", "SearchRequest"]
 ```
 
-**Note** : Fichiers `__init__.py` dans `tests/` restent vides (convention pytest).
+**Note** : `__init__.py` dans `tests/` restent vides (convention pytest).
 
 ---
 
@@ -389,31 +289,11 @@ Configuration complète → `app/core/logger.py`
 
 ## 5.1 Commentaires Inline Interdits
 
-**Règle stricte** : ❌ **AUCUN commentaire inline** sauf demande explicite user
+**Règle** : ❌ AUCUN commentaire inline (code self-explanatory : noms explicites, types, docstrings)
 
-**Pourquoi** :
-- Code doit être self-explanatory (noms explicites, types, docstrings)
-- Commentaires deviennent obsolètes rapidement
-- Augmente bruit visuel
+**Exceptions** : User demande, TODO/FIXME temporaires, type hints complexes, justification imports
 
-**Alternatives** :
-```python
-# ❌ Commentaire inline
-price = float(html.select_one(".price").text.strip())  # Extract price from HTML
-
-# ✅ Nom de fonction explicite
-def extract_price(html: str) -> float:
-    """Extrait le prix depuis le HTML."""
-    return float(html.select_one(".price").text.strip())
-```
-
-**Exceptions autorisées** :
-- ✅ User demande explicitement commentaires
-- ✅ TODO/FIXME temporaires (à résoudre avant merge)
-- ✅ Type hints complexes nécessitant clarification
-- ✅ Justification imports exceptionnels (circular, conditional)
-
-**Conséquence** : PR rejetée si commentaires inline non justifiés
+**Conséquence** : PR rejetée si commentaires non justifiés
 
 ---
 
@@ -421,257 +301,68 @@ def extract_price(html: str) -> float:
 
 ## 6.1 Stratégie Tests & TDD
 
-### Approche TDD (Test-Driven Development)
+### Cycle TDD (Test-Driven Development)
 
-**Cycle Red-Green-Refactor** :
 1. **Red** : Écrire test qui échoue
-2. **Green** : Implémenter code minimal pour faire passer le test
-3. **Refactor** : Améliorer code sans casser les tests
+2. **Green** : Implémenter code minimal pour faire passer
+3. **Refactor** : Améliorer sans casser tests
 
-**Pyramide Tests** :
-```
-        /\
-       /  \      10% - E2E (integration)
-      /    \
-     /------\    30% - Integration (API routes)
-    /        \
-   /----------\  60% - Unit (services, models, utils)
-  /____________\
-```
-
-**Règles TDD strictes** :
-- ✅ Tests unitaires AVANT implémentation (red → green → refactor)
-- ✅ Tests intégration APRÈS tous tests unitaires de la story
-- ✅ Commit seulement si TOUS les tests passent (unitaires + intégration)
-- ❌ Ne JAMAIS commencer intégration si tests unitaires échouent
-- ❌ Ne JAMAIS skipper tests (coverage minimum 80%)
+**Règles strictes** :
+- ✅ Tests unitaires AVANT implémentation
+- ✅ Tests intégration APRÈS tous tests unitaires story
+- ✅ Commit si TOUS tests passent (coverage ≥ 80%)
+- ❌ JAMAIS skipper tests ou commencer intégration si unitaires échouent
 
 ---
 
-### Workflow TDD par Story
+### Workflow Story (3 Phases)
 
-Pour chaque story (Phase 5) :
+**Phase 1 - TDD Composants** : Pour chaque composant → Tests (red) → Code (green) → Refactor → Répéter
 
-```
-┌─────────────────────────────────────────┐
-│ PHASE 1: TDD Tests Unitaires            │
-├─────────────────────────────────────────┤
-│ Pour chaque composant:                  │
-│ 1. Écrire tests composant (red)        │
-│ 2. Implémenter composant (green)       │
-│ 3. Tests passent ✅                     │
-│ 4. Refactor (si nécessaire)            │
-│                                         │
-│ Répéter pour tous composants story      │
-└─────────────────────────────────────────┘
-                  ↓
-┌─────────────────────────────────────────┐
-│ PHASE 2: Tests Intégration              │
-├─────────────────────────────────────────┤
-│ 5. Écrire tests end-to-end              │
-│    (TestClient si API route)            │
-│ 6. Tests intégration passent ✅         │
-└─────────────────────────────────────────┘
-                  ↓
-┌─────────────────────────────────────────┐
-│ PHASE 3: Validation Manuelle            │
-├─────────────────────────────────────────┤
-│ 7. Test manuel (curl/Postman)          │
-│ 8. Valider UX réelle                    │
-│ 9. Commit si OK                         │
-└─────────────────────────────────────────┘
-```
+**Phase 2 - Intégration** : Tests end-to-end (TestClient si API route)
 
-**Quand faire tests intégration** :
-- Après tous les tests unitaires de la story
-- Avant le commit final
-- Si story inclut API route → TestClient FastAPI obligatoire
+**Phase 3 - Validation** : Test manuel curl/Postman → Commit
+
+**Pyramide** : 60% Unit / 30% Integration / 10% E2E
 
 ---
 
-### Formats Recommandés
+### Formats Tests
 
-**AAA (Arrange/Act/Assert)** - Tests unitaires :
-```python
-def test_exemple():
-    # Arrange: Setup initial
-    input_data = {"key": "value"}
-
-    # Act: Exécuter fonction
-    result = fonction(input_data)
-
-    # Assert: Vérifier résultat
-    assert result == expected
-```
-
-**Given/When/Then** - Tests intégration (BDD) :
-```python
-def test_integration_exemple():
-    # Given: État initial
-    client = TestClient(app)
-    request_data = {"key": "value"}
-
-    # When: Action
-    response = client.post("/endpoint", json=request_data)
-
-    # Then: Résultat attendu
-    assert response.status_code == 200
-    assert response.json() == expected
-```
-
----
-
-### Exemple Story Complète
-
-**Story 3 (Search endpoint mock)** :
-
-**Phase 1 - TDD Composants** :
-1. Models (21 tests) → Implémentation → Tests passent ✅
-2. SearchService mock (5 tests) → Implémentation → Tests passent ✅
-3. Route POST /search (8 tests) → Implémentation → Tests passent ✅
-
-**Phase 2 - Tests Intégration** :
-1. End-to-end API (4 tests) → Tests passent ✅
-
-**Phase 3 - Validation** :
-1. Test manuel `curl -X POST http://localhost:8000/api/v1/search-flights`
-2. Vérifier response JSON valide
-3. Commit : `feat(api): add search endpoint with mock data`
-
-**Total Story 3** : 38 tests (34 unitaires + 4 intégration), coverage ≥ 80%
+**AAA (Arrange/Act/Assert)** - Unitaires
+**Given/When/Then (BDD)** - Intégration
 
 ---
 
 ## 6.2 Types de Tests
 
 ### 1. Tests Unitaires (`tests/unit/`)
-
-**Caractéristiques** :
-- Testent 1 fonction/classe isolée
-- Utilisent mocks pour dépendances externes
-- Rapides (<1s pour 100 tests)
-- Coverage minimum 80%
-
-**Exemple Mocking** :
-```python
-from unittest.mock import AsyncMock, MagicMock
-
-@pytest.fixture
-def mock_crawler():
-    crawler = AsyncMock()
-    crawler.arun.return_value = MagicMock(html="<html>Mock</html>", success=True)
-    return crawler
-```
-
-**Exemple Test** :
-```python
-def test_search_request_validation():
-    request = SearchRequest(destinations=["Paris", "Tokyo"], date_range=DateRange(...))
-    assert len(request.destinations) == 2
-
-@pytest.mark.asyncio
-async def test_crawl_with_captcha(mock_crawler):
-    service = CrawlerService(crawler=mock_crawler)
-    with pytest.raises(CaptchaDetectedError):
-        await service.crawl_google_flights("https://example.com")
-```
-
----
+- Testent 1 fonction/classe isolée, mocks dépendances externes
+- Rapides (<1s pour 100 tests), coverage ≥ 80%
+- Patterns : `AsyncMock`, `pytest.raises(Error)`, `@pytest.mark.asyncio`
 
 ### 2. Tests Intégration (`tests/integration/`)
+- Testent interactions composants, TestClient FastAPI
+- Mocks uniquement Crawl4AI/Decodo (externes), pas services internes
 
-**Caractéristiques** :
-- Testent interactions entre composants
-- Utilisent TestClient FastAPI
-- Pas de mocks pour services internes
-- Mocks uniquement pour Crawl4AI/Decodo (dépendances externes)
-
-**Exemple Test** :
-```python
-def test_search_flights_endpoint(client: TestClient, mock_crawler):
-    response = client.post("/api/v1/search-flights", json={...})
-    assert response.status_code == 200
-    assert len(response.json()["results"]) <= 10
-```
-
----
-
-### 3. Tests End-to-End (manuels, pas de CI)
-
-**Caractéristiques** :
-- Testent flow complet avec vraies dépendances
-- Utilisent vraie clé proxy provider (bandwidth coûteux)
-- Exécutés manuellement avant release
-- Pas dans CI (coût + lenteur)
-
-**Exemple** : Lancer l'app avec vraies clés proxy dans `.env`, puis tester manuellement via `curl` et vérifier logs (captcha detection, proxy rotation, parsing success).
+### 3. Tests E2E (manuels, hors CI)
+- Flow complet avec vraies dépendances (proxy provider)
+- Manuels avant release (coût bandwidth)
 
 ---
 
 ## 6.3 Fixtures & Factories
 
-### Organisation (`tests/fixtures/`)
+**Organisation** : `tests/fixtures/` → `factories.py` (Pydantic objects), `mocks.py` (services), `helpers.py` (constantes)
 
-```
-tests/fixtures/
-├── __init__.py     # Vide (marker package)
-├── factories.py    # Factories objets Pydantic
-├── mocks.py        # Mocks services/composants
-└── helpers.py      # Constantes + helpers dates
-```
+**Règles DRY** :
+- ✅ 1 constante/factory par concept (ex: `TEMPLATE_URL`)
+- ✅ Factory pattern flexible (`as_dict`, `num_flights`, `past`)
+- ❌ Jamais valeurs hardcodées répétées
 
-**Règles strictes** :
-- ✅ **DRY** : 0 duplication (1 constante/factory pour 1 concept)
-- ✅ **Factory pattern** : Paramètres flexibles (`as_dict`, `num_flights`, `past`)
-- ✅ **Constantes** : `TEMPLATE_URL` dans `helpers.py` (single source of truth)
-- ✅ **Délégation** : Fixtures wrapper délèguent aux factories
-- ❌ **Pas de hardcoded** : Jamais de valeurs en dur répétées
+**Nommage** : `*_factory` (callable), `mock_*` (objet), `get_*`/`assert_*` (helpers), `UPPER_CASE` (constantes)
 
----
-
-**Exemple Factory** :
-```python
-@pytest.fixture
-def date_range_factory():
-    def _create(start_offset=1, duration=6, as_dict=False):
-        start, end = get_date_range(start_offset, duration)
-        return {"start": start.isoformat(), "end": end.isoformat()} if as_dict else DateRange(...)
-    return _create
-```
-
----
-
-### Chargement
-
-**`tests/conftest.py`** :
-```python
-pytest_plugins = [
-    "tests.fixtures.factories",
-    "tests.fixtures.mocks",
-    "tests.fixtures.helpers",
-]
-```
-
-**Nommage** :
-- Factories → `*_factory` (retourne callable)
-- Mocks → `mock_*` (retourne objet mocké)
-- Helpers → `get_*`, `assert_*` (fonctions utilitaires)
-- Constantes → `UPPER_CASE`
-
----
-
-**Exemple Fixtures** (`tests/conftest.py`) :
-```python
-@pytest.fixture
-def client():
-    return TestClient(app)
-
-@pytest.fixture
-def mock_crawler():
-    crawler = AsyncMock()
-    crawler.arun.return_value = MagicMock(html="<html>Mock</html>", success=True)
-    return crawler
-```
+**Chargement** : `tests/conftest.py` → `pytest_plugins = ["tests.fixtures.factories", ...]`
 
 ---
 
@@ -703,58 +394,19 @@ pytest -k "pattern"                    # Filtre par nom
 
 ## 7.1 Installation & Setup
 
-### Prérequis
+**Prérequis** : Python 3.13.1+, [uv](https://github.com/astral-sh/uv), Docker (optionnel)
 
-- Python 3.13.1+
-- [uv](https://github.com/astral-sh/uv) (package manager moderne)
-- Docker (optionnel, pour build image)
-
----
-
-### Installation Dépendances
-
+**Installation** :
 ```bash
-# Installation projet + deps dev
-uv sync --all-extras
-
-# Post-install : Setup Playwright (automatique via crawl4ai-setup)
-uv run crawl4ai-setup
+uv sync --all-extras          # Deps + dev
+uv run crawl4ai-setup         # Playwright auto
 ```
 
-**Note** : `crawl4ai-setup` installe automatiquement Playwright et ses dépendances système. Pas besoin d'installation manuelle de Playwright.
+**Exécution commandes** :
+- **Venv activé** : `ruff check .`, `mypy app/`, `pytest tests/`
+- **Sans venv** : `uv run ruff check .`, `uv run mypy app/`
 
----
-
-### Alternative Exécution Commandes
-
-Deux méthodes équivalentes pour exécuter les outils (`ruff`, `mypy`, `pytest`, etc.) :
-
-**Méthode 1 : Environnement virtuel activé** (workflow local standard)
-```bash
-# Activer venv une fois
-.venv\Scripts\activate      # Windows
-source .venv/bin/activate   # Linux/macOS
-
-# Puis utiliser commandes directement
-ruff check .
-mypy app/
-pytest tests/
-```
-
-**Méthode 2 : uv run** (CI/CD + local sans activation venv)
-```bash
-# Pas besoin d'activer venv manuellement
-uv run ruff check .
-uv run mypy app/
-uv run pytest tests/
-```
-
-**Quand utiliser `uv run`** :
-- ✅ **Obligatoire en CI/CD** (GitHub Actions) : venv non activé automatiquement
-- ✅ **Optionnel en local** : si venv non activé ou scripts automation
-- ❌ **Pas nécessaire** : si venv déjà activé dans terminal/IDE
-
-**Note** : Dans la suite de ce document, les commandes sont écrites sans `uv run` pour concision. Si votre venv n'est pas activé, préfixez toutes les commandes avec `uv run`.
+**Note** : Commandes ci-après sans `uv run` (préfixer si venv non activé)
 
 ---
 
@@ -783,127 +435,32 @@ docker build -t flight-search-api . && docker run -p 8001:8000 --env-file .env f
 
 ## 7.3 Feature Development avec TDD
 
-Ce workflow combine développement feature + approche TDD (voir section [Tests > Stratégie TDD](#61-stratégie-tests--tdd)).
+**Workflow** (voir détails [6.1 TDD](#61-stratégie-tests--tdd)) :
 
-### Étape 1 : Créer Branche Feature
-
-```bash
-git checkout develop
-git pull origin develop
-git checkout -b feature/nom-descriptif
-```
-
----
-
-### Étape 2 : Développer avec TDD
-
-**Cycle Red-Green-Refactor** (détails [6.1 Stratégie TDD](#61-stratégie-tests--tdd)) :
-```bash
-pytest tests/unit/test_nouveau_service.py -v    # RED → GREEN → REFACTOR
-```
-
-Répéter pour tous composants story.
-
----
-
-### Étape 3 : Tests Intégration
-
-```bash
-pytest tests/integration/test_nouvelle_route.py -v
-```
-
----
-
-### Étape 4 : Vérifications Complètes
-
-```bash
-# Quality checks (voir 4.1, 4.2, 6.4)
-ruff check . --fix && ruff format . && mypy app/ && pytest -v
-
-# Commit
-git add . && git commit -m "feat(services): add nouveau service"
-```
-
----
-
-### Étape 5 : Push + Pull Request
-
-```bash
-# Push branche
-git push -u origin feature/nom-descriptif
-
-# Créer PR sur GitHub : feature/nom-descriptif → develop
-# CI s'exécute automatiquement (lint, format, typecheck, tests)
-# Merger après validation CI
-```
-
----
-
-### Étape 6 : Cleanup Après Merge
-
-```bash
-git checkout develop
-git pull origin develop
-git branch -d feature/nom-descriptif
-```
+1. **Branche** : `git checkout develop && git pull && git checkout -b feature/nom`
+2. **TDD** : `pytest tests/unit/test_service.py -v` → RED → GREEN → REFACTOR (répéter)
+3. **Intégration** : `pytest tests/integration/test_route.py -v`
+4. **Quality** : `ruff check . --fix && ruff format . && mypy app/ && pytest -v`
+5. **Commit** : `git add . && git commit -m "feat(scope): description"`
+6. **PR** : `git push -u origin feature/nom` → Créer PR → CI passe → Merge
+7. **Cleanup** : `git checkout develop && git pull && git branch -d feature/nom`
 
 ---
 
 ## 7.4 Debugging & Troubleshooting
 
-### Variables Environnement
+**Variables `.env`** : `cp .env.example .env` → Configurer `LOG_LEVEL`, `PROXY_*`, `CAPTCHA_*`
 
-**Fichier `.env` local** (créer depuis `.env.example`) :
-```bash
-cp .env.example .env
-vim .env  # Remplir avec vraies valeurs
-```
+**⚠️ Sécurité** : JAMAIS committer `.env` (secrets → Dokploy UI prod)
 
-**Variables requises** :
-```bash
-# Logging
-LOG_LEVEL=INFO  # DEBUG en dev, INFO en prod
+**Debugging** :
+- Logs : `logger.info("msg", extra={...})` + `LOG_LEVEL=DEBUG`
+- Breakpoints : `import debugpy; debugpy.listen(5678)`
 
-# Proxy Provider
-PROXY_USERNAME=customer-{api_key}-country-FR
-PROXY_PASSWORD=your_password
-PROXY_HOST=pr.decodo.com:8080
-
-# Features
-PROXY_ROTATION_ENABLED=true
-CAPTCHA_DETECTION_ENABLED=true
-
-# Optionnel (Phase 7)
-# CAPTCHA_SOLVING_ENABLED=false
-# TWOCAPTCHA_API_KEY=your_2captcha_key
-```
-
-**⚠️ Sécurité** :
-- ❌ **JAMAIS** committer `.env` (déjà dans `.gitignore`)
-- ✅ Utiliser `.env.example` comme template
-- ✅ Secrets stockés dans Dokploy UI pour production
-
----
-
-### Debugging
-
-**Logs structurés** : Utiliser `logger.info("msg", extra={...})` pour contexte JSON. Activer DEBUG : `LOG_LEVEL=DEBUG fastapi dev app/main.py`
-
-**Breakpoints** : `import debugpy; debugpy.listen(5678); debugpy.wait_for_client()`
-
----
-
-### Troubleshooting Commun
-
-**Erreur `crawl4ai-setup` échoue** :
-- Vérifier connexion internet (télécharge Playwright browsers)
-- Espace disque suffisant (~500MB)
-- Permissions écriture dans cache directory
-
-**Solutions rapides** :
+**Troubleshooting** :
 - `ModuleNotFoundError` → `uv sync --all-extras`
-- Mypy erreurs lib externe → Ajouter `ignore_missing_imports = true` dans `pyproject.toml`
-- Docker build lent → Utiliser `--cache-from`
+- `crawl4ai-setup` échoue → Connexion internet + espace disque ~500MB
+- Mypy lib externe → `ignore_missing_imports = true` dans `pyproject.toml`
 
 ---
 
@@ -911,91 +468,29 @@ CAPTCHA_DETECTION_ENABLED=true
 
 ## 8.1 Stratégie de Branches
 
-**Modèle GitFlow simplifié** :
+**GitFlow simplifié** : `master` (prod) ← `develop` (intégration) ← `feature/*` (dev)
 
-```
-master (production)
-  ↑
-develop (intégration)
-  ↑
-feature/* (développement)
-```
+### Branches
 
-### Branches Principales
+**`master`** : Production stable, merges de `develop`, versions taggées (v1.0.0)
+**`develop`** : Intégration, PRs depuis `feature/*`, CI obligatoire
+**`feature/*`** : Fonctionnalités (kebab-case), depuis `develop`, supprimées après merge
 
-**`master`** : Code en production, stable, uniquement via merge de `develop`
-- Protégée : pas de push direct
-- Chaque merge = nouvelle version taggée (v1.0.0, v1.1.0, etc.)
+### Workflow
 
-**`develop`** : Branche d'intégration, prête pour release
-- Merge depuis branches `feature/*` via Pull Requests
-- Tests CI doivent passer avant merge
-- Base pour créer nouvelles features
+**Story (sous-phase X.Y)** :
+1. `/execute-plan-phase X.Y` → Commit + Push + PR auto → develop
+2. Merge PR GitHub
+3. Répéter story X.Y+1
 
----
+**Epic (phase complète)** :
+1. Stories mergées develop ✅
+2. `git checkout master && git merge develop --ff-only`
+3. `git tag {version} && git push origin master --tags`
+4. Release auto `.github/workflows/release.yml`
+5. **⚠️ SYNC** : `git checkout develop && git pull origin master && git push`
 
-### Branches de Travail
-
-**`feature/*`** : Développement de fonctionnalités
-- Nomenclature : `feature/nom-descriptif` (kebab-case)
-- Créées depuis `develop`
-- Mergées dans `develop` via PR
-- Supprimées après merge
-
-**Exemples** :
-```bash
-# Créer feature depuis develop
-git checkout develop
-git pull origin develop
-git checkout -b feature/initial-setup
-
-# Après développement : Push + PR vers develop
-git push -u origin feature/initial-setup
-# Créer PR sur GitHub/GitLab : feature/initial-setup → develop
-
-# Après merge : Nettoyer
-git checkout develop
-git pull origin develop
-git branch -d feature/initial-setup
-```
-
----
-
-### Workflow Release
-
-**Workflow Story (sous-phase)** :
-1. Lancer story : `/execute-plan-phase X.Y`
-   - Commit automatique selon PLAN.md
-   - Push automatique branche feature
-   - Création automatique PR → develop
-   - Retourne URL de la PR
-2. Merger PR sur GitHub (interface web)
-3. Répéter pour stories suivantes (X.Y+1)
-
-**Workflow Epic (phase complète)** :
-1. Toutes stories mergées sur develop ✅
-2. Aligner master avec develop :
-   ```bash
-   git checkout develop && git pull
-   git checkout master && git merge develop --ff-only
-   ```
-3. Tag version sur `master` : `git tag {version} && git push origin master --tags`
-4. Release automatique via `.github/workflows/release.yml`
-5. **⚠️ SYNC develop avec master** (éviter décalages futurs) :
-   ```bash
-   git checkout develop && git pull origin master && git push origin develop
-   ```
-
-**Distinction versions** :
-- **Dev releases** : `v0.x.x-xxx` (ex: `v0.3.0-build`) → Marquées "Pre-release" sur GitHub
-- **Prod releases** : `v1.x.x` (ex: `v1.0.0`) → Marquées "Latest release" sur GitHub
-- Détection automatique : `contains(github.ref, '-')` dans workflow release.yml
-
-**Notes** :
-- Story = sous-phase (ex: 3.1, 3.2) → 1 PR automatique → develop
-- Epic = phase complète (ex: Phase 3) → merge develop→master → tag
-- `/execute-plan-phase` gère automatiquement : commit, push, PR
-- User gère : merge PR, tag final Epic
+**Versions** : `v0.x.x-xxx` (pre-release) / `v1.x.x` (prod)
 
 ---
 
