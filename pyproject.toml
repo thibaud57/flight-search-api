@@ -98,3 +98,7 @@ markers = [
     "integration: marks tests as integration tests",
 ]
 asyncio_mode = "auto"
+
+[tool.ruff.format]
+exclude = ["tests/fixtures/helpers.py"]
+
