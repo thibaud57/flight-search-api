@@ -10,6 +10,7 @@ on:
     - cron: '0 2 * * 1'
   workflow_call:
     # Permet d'être appelé depuis release.yml ou manuellement
+    # Job unifié : CodeQL + Dependencies + Docker pour UI épurée
 
 permissions:
   contents: read
