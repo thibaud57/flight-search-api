@@ -734,7 +734,7 @@ logger.info(f"Proxy: {username}:{password}@pr.decodo.com")
 logger.debug(f"Using API key: {api_key}")
 ```
 
-**Référence** : §2.3 Structured Logging (L334-355) pour format complet `extra={}`
+**Référence** : §2.3 Structured Logging (L338-359) pour format complet `extra={}`
 
 ---
 
