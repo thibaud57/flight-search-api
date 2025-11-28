@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from app.core import get_settings
@@ -13,6 +14,7 @@ from app.models import (
     CombinationResult,
     DateCombination,
     FlightCombinationResult,
+    FlightDTO,
     Provider,
     SearchRequest,
     SearchResponse,
@@ -25,6 +27,7 @@ if TYPE_CHECKING:
     from app.services.combination_generator import CombinationGenerator
     from app.services.crawler_service import CrawlerService
     from app.services.google_flight_parser import GoogleFlightParser
+    from app.services.kayak_flight_parser import KayakFlightParser
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +40,13 @@ class SearchService:
         combination_generator: CombinationGenerator,
         crawler_service: CrawlerService,
         google_flight_parser: GoogleFlightParser,
-        # TODO: kayak_flight_parser: KayakFlightParser,
+        kayak_flight_parser: KayakFlightParser,
     ) -> None:
         """Initialise service avec dependances injectees."""
         self._combination_generator = combination_generator
         self._crawler_service = crawler_service
         self._google_flight_parser = google_flight_parser
-        # TODO: self._kayak_flight_parser = kayak_flight_parser
+        self._kayak_flight_parser = kayak_flight_parser
         self._settings = get_settings()
 
     def _detect_provider(self, url: str) -> Provider:
@@ -161,11 +164,20 @@ class SearchService:
                 continue
 
             try:
+                flights: Sequence[FlightDTO]
                 if provider == Provider.GOOGLE:
                     flights = self._google_flight_parser.parse(result.html)
+                elif provider == Provider.KAYAK:
+                    if not result.poll_data:
+                        crawls_failed += 1
+                        continue
+                    all_kayak_flights = self._kayak_flight_parser.parse(
+                        result.poll_data
+                    )
+                    segments_count = len(combo.segment_dates)
+                    flights = all_kayak_flights[:segments_count]
                 else:
-                    # TODO: flights = self._kayak_flight_parser.parse(result.html)
-                    flights = []
+                    raise ValueError(f"Unknown provider: {provider}")
 
                 if not flights:
                     crawls_failed += 1
@@ -174,7 +186,7 @@ class SearchService:
                 combination_results.append(
                     CombinationResult(
                         date_combination=combo,
-                        best_flight=flights[0],
+                        flights=flights,
                     )
                 )
                 crawls_success += 1
@@ -199,18 +211,19 @@ class SearchService:
         if not results:
             return []
 
-        sorted_results = sorted(results, key=lambda r: r.best_flight.price)
+        sorted_results = sorted(
+            results, key=lambda r: r.flights[0].price if r.flights[0].price else 0
+        )
 
         top_10 = sorted_results[:10]
 
         if top_10:
+            best_price = top_10[0].flights[0].price or 0
             logger.info(
                 "Ranking completed",
                 extra={
-                    "top_price_min": top_10[0].best_flight.price,
-                    "top_price_max": top_10[-1].best_flight.price
-                    if len(top_10) > 1
-                    else top_10[0].best_flight.price,
+                    "best_price": best_price,
+                    "total_results": len(top_10),
                 },
             )
 
@@ -220,10 +233,18 @@ class SearchService:
         self, combination_results: list[CombinationResult]
     ) -> list[FlightCombinationResult]:
         """Convertit CombinationResult en FlightCombinationResult pour response."""
-        return [
-            FlightCombinationResult(
-                segment_dates=combo_result.date_combination.segment_dates,
-                flights=[combo_result.best_flight],
+        flight_results = []
+        for combo_result in combination_results:
+            total_price = combo_result.flights[0].price or 0.0
+            flights_without_price = [
+                flight.model_copy(update={"price": None})
+                for flight in combo_result.flights
+            ]
+            flight_results.append(
+                FlightCombinationResult(
+                    segment_dates=combo_result.date_combination.segment_dates,
+                    total_price=total_price,
+                    flights=flights_without_price,
+                )
             )
-            for combo_result in combination_results
-        ]
+        return flight_results

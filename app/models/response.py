@@ -1,6 +1,6 @@
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models import FlightDTO
 
@@ -19,6 +19,7 @@ class FlightCombinationResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     segment_dates: Annotated[list[str], "Dates par segment (ISO 8601)"]
+    total_price: Annotated[float, Field(gt=0), "Prix total du résultat"]
     flights: Annotated[
         list[FlightDTO],
         "Meilleurs vols pour cette combinaison (Google ou Kayak selon provider)",
@@ -73,9 +74,9 @@ class SearchResponse(BaseModel):
 
     @model_validator(mode="after")
     def validate_results_sorted(self) -> Self:
-        """Valide results triés par prix croissant (basé sur premier vol de chaque combinaison)."""
+        """Valide results triés par prix croissant (basé sur total_price)."""
         if not all(
-            a.flights[0].price <= b.flights[0].price
+            a.total_price <= b.total_price
             for a, b in zip(self.results, self.results[1:], strict=False)
         ):
             raise ValueError("Results must be sorted by price (ascending order)")

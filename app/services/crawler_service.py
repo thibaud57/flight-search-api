@@ -6,7 +6,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING
 
 from crawl4ai import AsyncWebCrawler, CacheMode, CrawlerRunConfig
 from playwright.async_api import BrowserContext, Cookie, Page, Response
@@ -14,8 +14,7 @@ from tenacity import retry
 
 from app.core import get_settings
 from app.exceptions import CaptchaDetectedError, NetworkError
-from app.models import KayakFlightDTO, Provider, ProxyConfig
-from app.services.kayak_flight_parser import KayakFlightParser
+from app.models import Provider, ProxyConfig
 from app.services.retry_strategy import RetryStrategy
 from app.utils import (
     build_browser_config_from_fingerprint,
@@ -56,7 +55,6 @@ class CrawlResult:
     html: str
     status_code: int | None = None
     poll_data: dict[str, object] | None = None
-    kayak_flights: list[KayakFlightDTO] | None = None
 
 
 class CrawlerService:
@@ -180,7 +178,7 @@ class CrawlerService:
         if provider == Provider.KAYAK:
             self._kayak_poll_data = None
 
-        @retry(**RetryStrategy.get_crawler_retry())
+        @retry(**RetryStrategy.get_crawler_retry())  # type: ignore[misc]
         async def _crawl_with_retry() -> CrawlResult:
             nonlocal attempt_count
             attempt_count += 1
@@ -290,29 +288,8 @@ class CrawlerService:
             self._detect_captcha(html, url)
 
             poll_data = None
-            kayak_flights = None
             if provider == Provider.KAYAK:
                 poll_data = self._kayak_poll_data
-                if poll_data:
-                    try:
-                        parser = KayakFlightParser()
-                        kayak_flights = parser.parse(cast(dict[str, Any], poll_data))
-                        logger.info(
-                            "Kayak flights parsed successfully",
-                            extra={
-                                "flights_count": len(kayak_flights),
-                                "provider": provider.value,
-                            },
-                        )
-                    except (ValueError, KeyError) as e:
-                        logger.warning(
-                            "Kayak parser failed",
-                            extra={
-                                "provider": provider.value,
-                                "error": str(e),
-                            },
-                        )
-                        kayak_flights = None
 
             logger.info(
                 "Crawl successful",
@@ -323,7 +300,6 @@ class CrawlerService:
                     "response_time_ms": response_time_ms,
                     "proxy_host": proxy.host if proxy else "no_proxy",
                     "poll_data_available": poll_data is not None,
-                    "kayak_flights_count": len(kayak_flights) if kayak_flights else 0,
                 },
             )
 
@@ -332,7 +308,6 @@ class CrawlerService:
                 html=html,
                 status_code=result.status_code,
                 poll_data=poll_data,
-                kayak_flights=kayak_flights,
             )
 
         result: CrawlResult = await _crawl_with_retry()

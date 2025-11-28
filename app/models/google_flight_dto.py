@@ -1,8 +1,8 @@
 """DTO pour données extraites depuis Google Flights."""
 
-from typing import Annotated
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, model_serializer
 
 
 class GoogleFlightDTO(BaseModel):
@@ -10,11 +10,16 @@ class GoogleFlightDTO(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    price: Annotated[float, Field(gt=0)]
-    airline: Annotated[str, Field(min_length=2, max_length=100)]
+    @model_serializer(mode="wrap")
+    def _serialize(self, serializer: Any, info: Any) -> dict[str, Any]:
+        data = serializer(self)
+        return {k: v for k, v in data.items() if v is not None}
+
+    price: float | None = None
+    airline: str
     departure_time: str
     arrival_time: str
     duration: str
-    stops: Annotated[int | None, Field(ge=0)] = None
-    departure_airport: Annotated[str | None, Field(max_length=200)] = None
-    arrival_airport: Annotated[str | None, Field(max_length=200)] = None
+    stops: int | None = None
+    departure_airport: str | None = None
+    arrival_airport: str | None = None

@@ -1,22 +1,21 @@
 """Parser pour extraire vols depuis JSON API interne Kayak."""
 
+import logging
 from typing import Any
 
-from app.core.logger import get_logger
 from app.models import KayakFlightDTO, LayoverInfo
 
-logger = get_logger()
-
-
-def format_duration(minutes: int) -> str:
-    """Convertit durée en minutes vers format 'Xh Ymin'."""
-    hours = minutes // 60
-    remaining_minutes = minutes % 60
-    return f"{hours}h {remaining_minutes}min"
+logger = logging.getLogger(__name__)
 
 
 class KayakFlightParser:
     """Parser pour extraire vols depuis JSON API interne Kayak."""
+
+    def _format_duration(self, minutes: int) -> str:
+        """Convertit durée en minutes vers format 'Xh Ymin'."""
+        hours = minutes // 60
+        remaining_minutes = minutes % 60
+        return f"{hours}h {remaining_minutes}min"
 
     def parse(self, json_data: dict[str, Any]) -> list[KayakFlightDTO]:
         """Parse JSON Kayak et retourne liste vols au format KayakFlightDTO."""
@@ -36,9 +35,8 @@ class KayakFlightParser:
 
         flights = []
         for result in results_data:
-            flight = self._parse_result(result, legs_data, segments_data)
-            if flight:
-                flights.append(flight)
+            parsed_flights = self._parse_result(result, legs_data, segments_data)
+            flights.extend(parsed_flights)
 
         return flights
 
@@ -47,8 +45,8 @@ class KayakFlightParser:
         result: dict[str, Any],
         legs_data: dict[str, Any],
         segments_data: dict[str, Any],
-    ) -> KayakFlightDTO | None:
-        """Parse un result vers KayakFlightDTO."""
+    ) -> list[KayakFlightDTO]:
+        """Parse un result vers liste de KayakFlightDTO (un par segment)."""
         result_id = result.get("resultId", "unknown")
         booking_options = result.get("bookingOptions", [])
         if not booking_options:
@@ -56,7 +54,7 @@ class KayakFlightParser:
                 f"Result {result_id} has no booking options",
                 extra={"result_id": result_id},
             )
-            return None
+            return []
 
         first_option = booking_options[0]
         price = first_option.get("displayPrice", {}).get("price")
@@ -64,25 +62,39 @@ class KayakFlightParser:
             logger.warning(
                 f"Result {result_id} has no price", extra={"result_id": result_id}
             )
-            return None
+            return []
 
         leg_farings = first_option.get("legFarings", [])
         if not leg_farings:
             logger.warning(
                 f"Result {result_id} has no leg farings", extra={"result_id": result_id}
             )
-            return None
+            return []
 
-        leg_id = leg_farings[0].get("legId")
-        if not leg_id or leg_id not in legs_data:
-            logger.warning(
-                f"Leg ID '{leg_id}' not found in legs dict",
-                extra={"result_id": result_id, "leg_id": leg_id},
-            )
-            return None
+        parsed_legs: list[KayakFlightDTO] = []
+        for leg_faring in leg_farings:
+            leg_id = leg_faring.get("legId")
+            if not leg_id or leg_id not in legs_data:
+                logger.warning(
+                    f"Leg ID '{leg_id}' not found in legs dict",
+                    extra={"result_id": result_id, "leg_id": leg_id},
+                )
+                continue
 
-        leg = legs_data[leg_id]
-        return self._parse_leg(leg, segments_data, float(price))
+            leg = legs_data[leg_id]
+            parsed_leg = self._parse_leg(leg, segments_data, float(price))
+            if parsed_leg:
+                parsed_legs.append(parsed_leg)
+
+        logger.info(
+            f"Parsed {len(parsed_legs)} legs from result",
+            extra={
+                "result_id": result_id,
+                "total_leg_farings": len(leg_farings),
+                "parsed_legs_count": len(parsed_legs),
+            },
+        )
+        return parsed_legs
 
     def _parse_leg(
         self, leg: dict[str, Any], segments_data: dict[str, Any], price: float
@@ -116,7 +128,7 @@ class KayakFlightParser:
         layovers = self._extract_layovers(leg_segments, segments_data)
 
         duration_minutes = leg.get("duration", 0)
-        duration_str = format_duration(duration_minutes)
+        duration_str = self._format_duration(duration_minutes)
 
         airline = first_segment.get("airline", "Unknown")
         departure_time = first_segment.get("departure", "")
@@ -144,7 +156,7 @@ class KayakFlightParser:
             layover_data = seg_info.get("layover")
             if layover_data and "duration" in layover_data:
                 layover_duration_minutes = layover_data["duration"]
-                layover_duration_str = format_duration(layover_duration_minutes)
+                layover_duration_str = self._format_duration(layover_duration_minutes)
 
                 next_segment_id = leg_segments[i + 1]["id"]
                 if next_segment_id in segments_data:

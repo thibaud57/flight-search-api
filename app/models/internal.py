@@ -1,5 +1,7 @@
 """Models internes du service (non exposés via API)."""
 
+from collections.abc import Sequence
+
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.models.google_flight_dto import GoogleFlightDTO
@@ -32,4 +34,4 @@ class CombinationResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     date_combination: DateCombination
-    best_flight: FlightDTO
+    flights: Sequence[FlightDTO]
