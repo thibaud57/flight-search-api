@@ -63,60 +63,23 @@
 
 ```
 flight-search-api/
-├── .claude/
-│   ├── commands/
-│   │   └── execute-plan-phase.md
-│   ├── CLAUDE.md           # Standards, conventions (ce fichier)
-│   └── PLAN.md             # Plan d'action détaillé
-├── .github/
-│   └── workflows/
-│       ├── ci.yml          # Quality checks (Phase 3.6)
-│       └── release.yml     # Release automation (Phase 0.2)
-├── docs/
-│   ├── references/         # Documentation technique modulaire
-│   ├── specs/              # Documentation specs modulaire
-│   ├── ARCHITECTURE.md     # Architecture + ADR
-│   ├── CHANGELOG.md        # Historique versions
-│   ├── SPECS.md            # Spécifications techniques détaillées (Phase 4)
-│   ├── REFERENCES.md       # Index références
-│   └── VERSIONS.md         # Matrice compatibilité
-├── app/
-│   ├── api/
-│   │   └── routes.py       # Endpoints FastAPI
-│   ├── core/
-│   │   ├── config.py       # Pydantic Settings
-│   │   └── logger.py       # Structured logging
-│   ├── models/
-│   │   ├── request.py      # SearchRequest, Flight, DateRange
-│   │   └── response.py     # SearchResponse, FlightResult, SearchStats
-│   ├── services/
-│   │   ├── combination_generator.py    # Génère permutations multi-city
-│   │   ├── crawler_service.py          # Crawl4AI + retry logic
-│   │   ├── google_flight_parser.py     # JsonCssExtractionStrategy Google Flights
-│   │   ├── proxy_service.py            # Decodo config + rotation
-│   │   ├── search_service.py           # Orchestration + Top 10 ranking
-│   │   └── (captcha_solver.py)         # Phase 7 optionnelle
-│   ├── utils/              # Helpers génériques
-│   └── main.py             # FastAPI app entry point
-├── tests/
-│   ├── integration/
-│   │   ├── test_api_routes.py
-│   │   └── test_health.py
-│   └── unit/
-│       ├── test_combination_generator.py
-│       ├── test_config.py
-│       ├── test_crawler_service.py
-│       ├── test_google_flight_parser.py
-│       ├── test_models.py
-│       ├── test_proxy_service.py
-│       ├── test_search_service.py
-│       └── (test_captcha_solver.py)    # Phase 7
-├── .dockerignore
-├── .env.example            # Template variables env
-├── .gitignore
-├── Dockerfile              # Multi-stage optimisé Dokploy
-├── pyproject.toml          # Dependencies + tools config
-└── README.md
+├── .claude/           # Standards (CLAUDE.md) + Plan (PLAN.md) + Commandes
+├── .github/           # CI/CD workflows
+├── docs/              # Documentation modulaire (references/, specs/, *.md)
+├── app/               # Code applicatif
+│   ├── api/           # Routes FastAPI
+│   ├── core/          # Config + Logger
+│   ├── models/        # Schémas Pydantic (request, response)
+│   ├── services/      # Logique métier (crawler, parser, search, proxy)
+│   ├── utils/         # Helpers réutilisables
+│   └── main.py        # Entry point
+├── tests/             # Structure miroir app/
+│   ├── integration/   # Tests end-to-end (TestClient FastAPI)
+│   ├── unit/          # Tests isolés avec mocks
+│   └── fixtures/      # Factories + Mocks + Helpers
+├── pyproject.toml     # Dependencies + tooling config
+├── Dockerfile         # Multi-stage optimisé
+└── .env.example       # Template variables environnement
 ```
 
 ## 2.2 Principes Organisation
@@ -358,105 +321,53 @@ __all__ = ["app"]
 
 ## 4.1 Ruff - Linter & Formatter
 
-### Configuration (pyproject.toml)
+### Configuration
 
-```toml
-[tool.ruff]
-line-length = 88
-indent-width = 4
-target-version = "py313"
+**Source** : `pyproject.toml` → sections `[tool.ruff]`, `[tool.ruff.lint]`, `[tool.ruff.format]`
 
-[tool.ruff.lint]
-select = [
-    "E",      # pycodestyle errors
-    "F",      # pyflakes
-    "I",      # isort
-    "N",      # pep8-naming
-    "UP",     # pyupgrade
-    "B",      # flake8-bugbear
-    "C4",     # flake8-comprehensions
-    "SIM",    # flake8-simplify
-    "RUF",    # Ruff-specific rules
-]
-ignore = [
-    "E501",   # line-too-long (géré par formatter)
-]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101"]  # assert allowed in tests
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-```
+**Règles clés** :
+- Line length 88 (cohérence Black), Python 3.13 target
+- Linters : pycodestyle (E), pyflakes (F), isort (I), pep8-naming (N), bugbear (B), simplify (SIM)
+- Tests : assertions autorisées (`S101` ignored in `tests/**`)
+- Format : double quotes, spaces (pas tabs)
 
 ### Commandes
 
 ```bash
-ruff check .              # Lint
-ruff check . --fix        # Auto-fix
-ruff format .             # Format
-ruff format . --check     # Check sans modifier
+ruff check . --fix && ruff format .    # Pre-commit standard
+ruff check .                           # Lint uniquement
+ruff format . --check                  # Check format sans modifier
 ```
 
-### Règles projet
+### Workflow
 
-- ✅ Exécuter `ruff check . && ruff format .` avant chaque commit
-- ✅ CI/CD doit bloquer si ruff échoue
-- ✅ Line length 88 (cohérence Black)
+- ✅ **Pre-commit** : `ruff check . --fix && ruff format .` (obligatoire)
+- ✅ **CI bloque** si ruff échoue
 - ✅ Imports triés automatiquement (isort intégré)
 
 ---
 
 ## 4.2 Mypy - Type Checking Strict
 
-### Configuration (pyproject.toml)
+### Configuration
 
-```toml
-[tool.mypy]
-python_version = "3.13"
-strict = true
-warn_return_any = true
-warn_unused_configs = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-no_implicit_reexport = true
-strict_equality = true
+**Source** : `pyproject.toml` → section `[tool.mypy]` + overrides
 
-# Relax strict pour tests
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_defs = false
-
-# Ignorer libs sans stubs
-[[tool.mypy.overrides]]
-module = ["crawl4ai.*"]
-ignore_missing_imports = true
-```
-
-**Flags activés par `strict = true`** :
-- `--disallow-any-generics`
-- `--disallow-untyped-defs`
-- `--disallow-incomplete-defs`
-- `--check-untyped-defs`
-- `--disallow-untyped-decorators`
-- `--warn-redundant-casts`
-- `--warn-unused-ignores`
-- `--warn-return-any`
-- `--no-implicit-reexport`
-- `--strict-equality`
+**Règles clés** :
+- `strict = true` sur `app/` (tous flags strictness activés)
+- Relax sur `tests/` (`disallow_untyped_defs = false`)
+- Ignore libs sans stubs : `crawl4ai.*`
 
 **Commande** :
 ```bash
-mypy app/
+mypy app/    # Type check strict
 ```
 
-### Règles projet
+### Workflow
 
-- ✅ Strict mode OBLIGATOIRE sur `app/`
-- ✅ Relax sur `tests/` (moins contraignant)
-- ✅ CI/CD doit bloquer si mypy échoue
-- ✅ Aucun `# type: ignore` sans justification commentée
+- ✅ **Strict mode OBLIGATOIRE** sur `app/` (10 flags activés automatiquement)
+- ✅ **CI bloque** si mypy échoue
+- ✅ **Aucun `# type: ignore`** sans justification commentée
 
 ---
 
@@ -766,112 +677,25 @@ def mock_crawler():
 
 ## 6.4 Configuration & Commandes
 
-### Configuration Pytest
+### Configuration & Commandes
 
-**`pyproject.toml`** :
-```toml
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "-v",
-    "--strict-markers",
-    "--tb=short",
-    "--cov=app",
-    "--cov-report=term-missing:skip-covered",
-]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-]
-asyncio_mode = "auto"
-```
+**Config** : `pyproject.toml` → section `[tool.pytest.ini_options]`
+- Testpaths : `tests/`, pattern `test_*.py`
+- Markers : `slow`, `integration`
+- Async mode : auto (`@pytest.mark.asyncio`)
+- Options : `-v`, `--strict-markers`, `--cov=app`
 
----
-
-### Commandes Pytest
-
-**Exécution Tests** :
+**Commandes Essentielles** :
 ```bash
-# Tests unitaires (rapides, CI)
-pytest tests/unit/ -v
-
-# Tests intégration (moyens, CI)
-pytest tests/integration/ -v
-
-# Tous les tests
-pytest -v
-
-# Tests parallèles (speedup 4x)
-pytest -n auto -v
-
-# Test spécifique
-pytest tests/unit/test_models.py::test_search_request_validation -v
-
-# Tests avec pattern
-pytest -k "captcha" -v
+pytest tests/unit/ -v                  # Tests unitaires
+pytest --cov=app --cov-report=html     # Coverage interactif
+pytest -x                              # Stop au 1er échec
+pytest -k "pattern"                    # Filtre par nom
 ```
 
-**Coverage** :
-```bash
-# Coverage HTML (interactif)
-pytest --cov=app --cov-report=html
-open htmlcov/index.html
+**Patterns** : AAA (Arrange/Act/Assert), `@pytest.mark.asyncio`, `pytest.raises(Error)`
 
-# Coverage terminal
-pytest --cov=app --cov-report=term-missing
-
-# Coverage avec seuil minimum
-pytest --cov=app --cov-fail-under=80
-
-# Coverage XML (pour CI/Codecov)
-pytest --cov=app --cov-report=xml
-```
-
-**Options Utiles** :
-```bash
-# Stop au premier échec
-pytest -x
-
-# Verbose avec output complet
-pytest -vv
-
-# Afficher print() statements
-pytest -s
-
-# Reruns pour tests flaky
-pytest --reruns 3
-
-# Markers (catégories tests)
-pytest -m "slow"  # Tests marqués @pytest.mark.slow
-pytest -m "not slow"  # Exclure tests lents
-```
-
----
-
-### Bonnes Pratiques
-
-**Naming** : Fichiers `test_*.py`, Classes `TestClassName`, Fonctions `test_descriptive_name`
-
-**Patterns** :
-- Structure AAA : Arrange → Act → Assert
-- Async tests : `@pytest.mark.asyncio`
-- Parametrized : `@pytest.mark.parametrize("input,expected", [...])`
-- Exceptions : `with pytest.raises(ValidationError):`
-
----
-
-### CI Integration
-
-**CI** : Tests unitaires + coverage 80% minimum obligatoires. Workflow complet dans `.github/workflows/ci.yml`.
-
-**Règles** :
-- ✅ Tests unitaires obligatoires (CI bloque si échec)
-- ✅ Coverage minimum 80% (Phase 3+)
-- ❌ Tests intégration en local uniquement (coût Decodo)
-- ❌ Tests E2E manuels (pré-release)
+**CI** : Tests unitaires + coverage 80% minimum (bloque merge si échec)
 
 ---
 
