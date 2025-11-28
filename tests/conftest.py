@@ -63,7 +63,9 @@ def client_with_mock_search(test_settings: Settings, mock_search_service):
 
 
 @pytest.fixture
-def client_with_network_error(test_settings: Settings, mock_search_service_network_error):
+def client_with_network_error(
+    test_settings: Settings, mock_search_service_network_error
+):
     """TestClient avec SearchService qui lève NetworkError."""
     get_settings.cache_clear()
     get_logger.cache_clear()
@@ -84,7 +86,9 @@ def client_with_network_error(test_settings: Settings, mock_search_service_netwo
 
 
 @pytest.fixture
-def client_with_session_error(test_settings: Settings, mock_search_service_session_error):
+def client_with_session_error(
+    test_settings: Settings, mock_search_service_session_error
+):
     """TestClient avec SearchService qui lève SessionCaptureError."""
     get_settings.cache_clear()
     get_logger.cache_clear()
@@ -105,7 +109,9 @@ def client_with_session_error(test_settings: Settings, mock_search_service_sessi
 
 
 @pytest.fixture
-def client_with_captcha_error(test_settings: Settings, mock_search_service_captcha_error):
+def client_with_captcha_error(
+    test_settings: Settings, mock_search_service_captcha_error
+):
     """TestClient avec SearchService qui lève CaptchaDetectedError."""
     get_settings.cache_clear()
     get_logger.cache_clear()

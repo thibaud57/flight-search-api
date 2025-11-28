@@ -703,7 +703,10 @@ async def test_get_session_kayak_no_popup(
 
 @pytest.mark.asyncio
 async def test_crawl_flights_kayak_with_network_capture(
-    crawler_service, mock_async_web_crawler, mock_crawl_result_factory, kayak_poll_data_factory
+    crawler_service,
+    mock_async_web_crawler,
+    mock_crawl_result_factory,
+    kayak_poll_data_factory,
 ):
     """Crawl Kayak avec network capture active."""
     mock_result = mock_crawl_result_factory(html="<html>Kayak results</html>")
@@ -724,7 +727,10 @@ async def test_crawl_flights_kayak_with_network_capture(
 
 @pytest.mark.asyncio
 async def test_crawl_flights_kayak_returns_html(
-    crawler_service, mock_async_web_crawler, mock_crawl_result_factory, kayak_poll_data_factory
+    crawler_service,
+    mock_async_web_crawler,
+    mock_crawl_result_factory,
+    kayak_poll_data_factory,
 ):
     """HTML retourne avec contenu DOM."""
     expected_html = "<html><div data-resultid='1'>Flight 1</div></html>"
@@ -814,7 +820,10 @@ async def test_kayak_session_with_consent_flow(
 
 @pytest.mark.asyncio
 async def test_crawl_flights_kayak_with_use_proxy_false(
-    crawler_service, mock_async_web_crawler, mock_crawl_result_factory, kayak_poll_data_factory
+    crawler_service,
+    mock_async_web_crawler,
+    mock_crawl_result_factory,
+    kayak_poll_data_factory,
 ):
     """Crawl Kayak sans proxy."""
     mock_result = mock_crawl_result_factory(html="<html>Kayak results</html>")

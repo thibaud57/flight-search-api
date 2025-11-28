@@ -219,7 +219,9 @@ def mock_search_service_session_error():
     service = MagicMock()
 
     async def raise_session_error(request):
-        raise SessionCaptureError(provider=Provider.GOOGLE.value, reason="No cookies captured")
+        raise SessionCaptureError(
+            provider=Provider.GOOGLE.value, reason="No cookies captured"
+        )
 
     service.search_flights = raise_session_error
     return service
