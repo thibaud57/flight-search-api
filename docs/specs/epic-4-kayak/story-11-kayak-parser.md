@@ -4,7 +4,7 @@ epic: "Epic 4: Kayak Integration"
 story_points: 5
 dependencies: ["epic-4/story-10"]
 date: "2025-11-26"
-keywords: ["kayak", "parser", "json", "segments", "legs", "results", "denormalization", "GoogleFlightDTO"]
+keywords: ["kayak", "parser", "json", "segments", "legs", "results", "denormalization", "KayakFlightDTO"]
 scope: ["specs"]
 technologies: ["Python", "Pydantic v2", "JSON"]
 ---
@@ -13,8 +13,8 @@ technologies: ["Python", "Pydantic v2", "JSON"]
 
 ## Besoin utilisateur
 - Parser les données JSON capturées depuis l'API interne Kayak (via network capture)
-- Extraire les informations des vols depuis une structure dénormalisée complexe (results → legs → segments)
-- Convertir les données Kayak vers le format unifié GoogleFlightDTO pour compatibilité avec le reste de l'API
+- Extraire les informations des vols depuis une structure dénormalisée complexe (results → bookingOptions → legFarings → legs → segments)
+- Convertir les données Kayak vers le modèle KayakFlightDTO dédié (responsabilité séparée de GoogleFlightDTO)
 
 ## Contraintes métier
 - **Structure JSON non documentée** : API interne Kayak peut évoluer sans préavis
@@ -24,7 +24,7 @@ technologies: ["Python", "Pydantic v2", "JSON"]
 
 ## Valeur business
 - ✅ Extraction fiable des données Kayak pour recherches multi-city complexes
-- ✅ Unification format Google Flights + Kayak = API unique pour client
+- ✅ Modèle KayakFlightDTO dédié = séparation responsabilités Google vs Kayak
 - ✅ Résilience face aux évolutions structure JSON Kayak (defaults intelligents)
 - ✅ Foundation pour intégration future d'autres sources (Skyscanner, Kiwi)
 
@@ -40,17 +40,17 @@ technologies: ["Python", "Pydantic v2", "JSON"]
 
 ## 1. KayakFlightParser
 
-**Rôle** : Parser le JSON brut depuis l'API interne Kayak et convertir vers GoogleFlightDTO
+**Rôle** : Parser le JSON brut depuis l'API interne Kayak et convertir vers KayakFlightDTO
 
-**Fichier** : `app/services/kayak/flight_parser.py`
+**Fichier** : `app/services/kayak_flight_parser.py`
 
 **Interface** :
 ```python
 class KayakFlightParser:
     """Parser pour extraire vols depuis JSON API interne Kayak."""
 
-    def parse(self, json_data: dict) -> list[GoogleFlightDTO]:
-        """Parse JSON Kayak et retourne liste vols au format GoogleFlightDTO."""
+    def parse(self, json_data: dict) -> list[KayakFlightDTO]:
+        """Parse JSON Kayak et retourne liste vols au format KayakFlightDTO."""
 ```
 
 **Champs/Paramètres** :
@@ -58,16 +58,16 @@ class KayakFlightParser:
 | Paramètre | Type | Description | Contraintes |
 |-----------|------|-------------|-------------|
 | `json_data` | `dict` | JSON brut depuis API Kayak | Contient keys `results`, `legs`, `segments` |
-| **Return** | `list[GoogleFlightDTO]` | Liste vols parsés triés par prix | Trié ascendant, 0-N résultats |
+| **Return** | `list[KayakFlightDTO]` | Liste vols parsés (pas de tri, URL template gère tri) | 0-N résultats |
 
 **Comportement** :
 - Valide présence des keys obligatoires (`results`, `legs`, `segments`)
-- Dénormalise chaque result : resolve legs par ID, puis segments par ID
-- Convertit chaque segment dénormalisé vers GoogleFlightDTO
-- Gère champs optionnels avec defaults (ex: `stops`, `layover`, aéroports)
-- Trie résultats finaux par prix ascendant
+- Dénormalise chaque result : `results[].bookingOptions[0].legFarings[].legId` → `legs{}` → `segments[]`
+- Convertit chaque segment dénormalisé vers KayakFlightDTO
+- Gère champs optionnels avec defaults (ex: `layover`, aéroports, `flightNumber`)
+- **Pas de tri** : URL template Kayak gère déjà tri + filtres user
 - Lève `ValueError` si JSON malformé (keys manquantes)
-- Retourne liste vide si `results = []` ou `status != "complete"`
+- Retourne liste vide si `results = []`
 
 **Validations** :
 - Vérifier `json_data.get("results")` est liste (pas None)
@@ -126,24 +126,51 @@ class KayakFlightParser:
 }
 ```
 
-**Mapping vers GoogleFlightDTO** :
+## 2. KayakFlightDTO Model
 
-| Champ GoogleFlightDTO | Source Kayak | Notes |
-|-----------------------|--------------|-------|
-| `price` | `results[].bookingOptions[0].displayPrice.price` | Float obligatoire |
+**Rôle** : Modèle Pydantic pour représenter un vol Kayak parsé
+
+**Fichier** : `app/models/kayak_flight_dto.py`
+
+**Interface** :
+```python
+class LayoverInfo(BaseModel):
+    """Information escale entre segments."""
+    airport: str  # Code IATA aéroport escale
+    duration: str  # Durée escale format "Xh Ymin"
+
+class KayakFlightDTO(BaseModel):
+    """DTO vol Kayak après parsing JSON."""
+    price: float
+    airline: str
+    departure_time: str
+    arrival_time: str
+    duration: str
+    departure_airport: str | None = None
+    arrival_airport: str | None = None
+    layovers: list[LayoverInfo] = []  # Liste escales (vide si vol direct)
+
+    model_config = ConfigDict(extra="forbid")
+```
+
+**Mapping depuis JSON Kayak** :
+
+| Champ KayakFlightDTO | Source Kayak | Notes |
+|----------------------|--------------|-------|
+| `price` | `results[].bookingOptions[0].displayPrice.price` | Float obligatoire (premier booking option = moins cher) |
 | `airline` | `segments{}.airline` | String code IATA (ex: "AF") |
 | `departure_time` | `segments{}.departure` | ISO 8601 string |
 | `arrival_time` | `segments{}.arrival` | ISO 8601 string |
 | `duration` | `legs{}.duration` minutes → format "Xh Ymin" | Conversion minutes → string |
-| `stops` | Calculé depuis `len(legs{}.segments) - 1` | Int (0 si 1 segment, 1 si 2 segments, etc.) |
 | `departure_airport` | `segments{}.origin` | String code IATA (optionnel) |
 | `arrival_airport` | `segments{}.destination` | String code IATA (optionnel) |
+| `layovers` | `legs{}.segments[].layover` | Liste `LayoverInfo` construite depuis champs layover segments |
 
 ---
 
 ## 3. Conversion Format Duration
 
-**Rôle** : Convertir durée en minutes (Kayak) vers format string lisible (GoogleFlightDTO)
+**Rôle** : Convertir durée en minutes (Kayak) vers format string lisible (KayakFlightDTO)
 
 **Fonction utilitaire** :
 ```python
@@ -176,8 +203,8 @@ def format_duration(minutes: int) -> str:
 
 **Resilience** :
 - Utiliser `.get(key, default)` pour tous les champs optionnels
-- Ne pas crasher si `layover` absent (layover optionnel)
-- Ne pas crasher si `stops` absent (défaut: 0)
+- Ne pas crasher si `layover` absent (layover optionnel dans segments)
+- Ne pas crasher si `origin`, `destination`, `flightNumber` absents (defaults)
 - Logger warnings pour IDs manquants mais continuer parsing
 
 ---
@@ -192,16 +219,16 @@ def format_duration(minutes: int) -> str:
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 1 | `test_parse_valid_json_complete` | Parse JSON valide complet | JSON avec 2 results, tous champs présents (structure réelle) | Liste de 2 GoogleFlightDTO triés par prix | Vérifie dénormalisation correcte + tri |
+| 1 | `test_parse_valid_json_complete` | Parse JSON valide complet | JSON avec 2 results, tous champs présents (structure réelle) | Liste de 2 KayakFlightDTO | Vérifie dénormalisation correcte |
 | 2 | `test_parse_empty_results` | Parse JSON avec results vide | `{"results": [], "legs": {}, "segments": {}}` | Liste vide `[]` | Vérifie gestion cas sans résultats |
 | 3 | `test_parse_missing_results_key` | JSON sans key "results" | `{"legs": {}, "segments": {}}` | Lève `ValueError("Missing 'results' key")` | Vérifie validation structure JSON |
 | 4 | `test_parse_missing_legs_key` | JSON sans key "legs" | `{"results": [...], "segments": {}}` | Lève `ValueError("Missing 'legs' key")` | Vérifie validation structure JSON |
 | 5 | `test_parse_missing_segments_key` | JSON sans key "segments" | `{"results": [...], "legs": {}}` | Lève `ValueError("Missing 'segments' key")` | Vérifie validation structure JSON |
 | 6 | `test_parse_leg_id_not_found` | Result référence leg ID inexistant | Result avec `bookingOptions[].legFarings[].legId = "unknown_id"` | Skip ce result, log warning | Vérifie resilience face IDs invalides |
 | 7 | `test_parse_segment_id_not_found` | Leg référence segment ID inexistant | Leg avec `segments: [{"id": "unknown_id"}]` | Skip ce result, log warning | Vérifie resilience face IDs invalides |
-| 8 | `test_parse_optional_fields_absent` | Segments sans champs optionnels | Segment sans `origin`, `destination`, `flightNumber` | GoogleFlightDTO avec defaults, pas de crash | Vérifie defaults intelligents |
-| 9 | `test_parse_sorting_by_price` | Résultats avec prix désordonnés | 3 results avec prix [1500, 1000, 1200] | Liste triée [1000, 1200, 1500] | Vérifie tri ascendant par prix |
-| 10 | `test_parse_multiple_segments_per_leg` | Leg avec 2+ segments (escales) | Leg avec `segments: [{"id": "seg1"}, {"id": "seg2"}]` | 1 GoogleFlightDTO par segment | Vérifie gestion vols multi-segments |
+| 8 | `test_parse_optional_fields_absent` | Segments sans champs optionnels | Segment sans `origin`, `destination`, `flightNumber` | KayakFlightDTO avec defaults, pas de crash | Vérifie defaults intelligents |
+| 9 | `test_parse_layovers_extraction` | Leg avec 2 segments + layover | Leg avec `segments: [{"id": "seg1", "layover": {"duration": 120}}, {"id": "seg2"}]` | KayakFlightDTO avec `layovers = [LayoverInfo(airport="JFK", duration="2h 0min")]` | Vérifie extraction escales dans `layovers` field |
+| 10 | `test_parse_multiple_segments_per_leg` | Leg avec 2+ segments (escales) | Leg avec `segments: [{"id": "seg1"}, {"id": "seg2"}]` | KayakFlightDTO avec tous segments mappés | Vérifie gestion vols multi-segments |
 
 ### Conversion format_duration (~3 tests)
 
@@ -221,7 +248,7 @@ def format_duration(minutes: int) -> str:
 
 | # | Nom test | Scénario | Input | Output attendu | Vérification |
 |---|----------|----------|-------|----------------|--------------|
-| 14 | `test_parse_real_kayak_response_fixture` | Parse JSON généré via factory avec structure réelle | Fixture `kayak_poll_data_factory(num_results=10, with_multi_segment=True)` | Liste GoogleFlightDTO valide, tous champs mappés correctement | Vérifie parsing end-to-end avec données réalistes |
+| 14 | `test_parse_real_kayak_response_fixture` | Parse JSON généré via factory avec structure réelle | Fixture `kayak_poll_data_factory(num_results=10, with_multi_segment=True)` | Liste KayakFlightDTO valide, tous champs mappés correctement | Vérifie parsing end-to-end avec données réalistes |
 | 15 | `test_parse_malformed_json_gracefully` | JSON malformé (keys manquantes) | JSON avec keys obligatoires absentes | Lève `ValueError` avec message explicite, pas de crash | Vérifie gestion erreurs robuste |
 
 **Total tests unitaires avec fixtures** : 2 tests
@@ -305,7 +332,7 @@ def format_duration(minutes: int) -> str:
 }
 ```
 
-**Exemple 2 : GoogleFlightDTO parsé depuis result_2**
+**Exemple 2 : KayakFlightDTO parsé depuis result_2**
 ```json
 {
   "price": 980.00,
@@ -313,9 +340,9 @@ def format_duration(minutes: int) -> str:
   "departure_time": "2026-01-15T08:00:00",
   "arrival_time": "2026-01-15T12:00:00",
   "duration": "10h 0min",
-  "stops": 0,
   "departure_airport": "ORD",
-  "arrival_airport": "SFO"
+  "arrival_airport": "SFO",
+  "layovers": []
 }
 ```
 
@@ -378,10 +405,10 @@ def format_duration(minutes: int) -> str:
 # ✅ Critères d'acceptation
 
 ## Critères fonctionnels
-1. **Parse JSON valide complet** : Parser extrait correctement tous les champs depuis structure dénormalisée (results → legs → segments)
-2. **Conversion GoogleFlightDTO** : Mapping correct de tous les champs Kayak vers GoogleFlightDTO (price, airline, times, duration, stops, airports)
-3. **Tri par prix** : Résultats finaux triés par prix ascendant (moins cher en premier)
-4. **Gestion champs optionnels** : Champs absents (`stops`, `layover`, airports) gérés avec defaults intelligents sans crash
+1. **Parse JSON valide complet** : Parser extrait correctement tous les champs depuis structure dénormalisée (results → bookingOptions → legFarings → legs → segments)
+2. **Conversion KayakFlightDTO** : Mapping correct de tous les champs Kayak vers KayakFlightDTO (price, airline, times, duration, layovers, airports)
+3. **Pas de tri** : Résultats retournés dans l'ordre du JSON (URL template Kayak gère tri)
+4. **Gestion champs optionnels** : Champs absents (`layover`, airports, `flightNumber`) gérés avec defaults intelligents sans crash
 5. **Gestion liste vide** : JSON avec `results: []` retourne liste vide `[]` sans erreur
 6. **Gestion IDs invalides** : Leg/Segment IDs non trouvés → skip result + log warning, pas de crash
 
@@ -394,7 +421,7 @@ def format_duration(minutes: int) -> str:
 12. **Pas de dépendances externes** : Parser utilise uniquement stdlib Python + Pydantic (pas de libs JSON spécifiques)
 
 ## Critères qualité
-13. **Coverage ≥ 90%** : Module `flight_parser.py` couvert à 90%+ par tests unitaires
+13. **Coverage ≥ 90%** : Module `kayak_flight_parser.py` couvert à 90%+ par tests unitaires
 14. **15 tests unitaires passent** : 13 tests basiques + 2 tests avec fixtures JSON réalistes
 15. **Ruff + Mypy + Type hints** : Code conforme standards projet (0 erreurs lint/typecheck)
 16. **Docstrings 1 ligne** : Toutes fonctions documentées (format PEP 257)

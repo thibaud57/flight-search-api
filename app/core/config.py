@@ -41,6 +41,7 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     MAX_CONCURRENCY: int = 10
+    MAX_RESULTS: int = 10
 
     PROXY_USERNAME: str = Field(..., min_length=5)
     PROXY_PASSWORD: SecretStr
@@ -48,6 +49,7 @@ class Settings(BaseSettings):
 
     PROXY_ROTATION_ENABLED: bool = True
     CAPTCHA_DETECTION_ENABLED: bool = True
+    RANKING_KEEP_ONLY_FIRST_RESULT: bool = True
 
     crawler: CrawlerTimeouts = CrawlerTimeouts()
 
@@ -86,4 +88,4 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """Retourne instance Settings cached (singleton via lru_cache)."""
-    return Settings()  # type: ignore[call-arg]  # Pydantic BaseSettings auto-load .env
+    return Settings()  # type: ignore[call-arg]  # Pydantic v2 loads .env vars automatically, no args needed

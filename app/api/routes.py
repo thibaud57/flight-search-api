@@ -16,6 +16,7 @@ from app.services import (
     CombinationGenerator,
     CrawlerService,
     GoogleFlightParser,
+    KayakFlightParser,
     ProxyService,
     SearchService,
 )
@@ -33,6 +34,7 @@ def get_search_service() -> SearchService:
         combination_generator=CombinationGenerator(),
         crawler_service=CrawlerService(proxy_service=proxy_service),
         google_flight_parser=GoogleFlightParser(),
+        kayak_flight_parser=KayakFlightParser(),
     )
 
 

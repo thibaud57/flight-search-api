@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from tenacity.stop import StopBaseT
     from tenacity.wait import WaitBaseT
 
-    from app.models.request import DateCombination
+    from app.models.internal import DateCombination
     from app.services.crawler_service import CrawlResult
 
 

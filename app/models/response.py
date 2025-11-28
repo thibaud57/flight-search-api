@@ -1,8 +1,8 @@
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models.google_flight_dto import GoogleFlightDTO
+from app.models import FlightDTO
 
 
 class HealthResponse(BaseModel):
@@ -19,9 +19,10 @@ class FlightCombinationResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     segment_dates: Annotated[list[str], "Dates par segment (ISO 8601)"]
+    total_price: Annotated[float, Field(gt=0), "Prix total du résultat"]
     flights: Annotated[
-        list[GoogleFlightDTO],
-        "Meilleurs vols pour cette combinaison (pour l'instant juste le segment 1)",
+        list[FlightDTO],
+        "Meilleurs vols pour cette combinaison (Google ou Kayak selon provider)",
     ]
 
     @field_validator("segment_dates", mode="after")
@@ -34,9 +35,7 @@ class FlightCombinationResult(BaseModel):
 
     @field_validator("flights", mode="after")
     @classmethod
-    def validate_flights_not_empty(
-        cls, v: list[GoogleFlightDTO]
-    ) -> list[GoogleFlightDTO]:
+    def validate_flights_not_empty(cls, v: list[FlightDTO]) -> list[FlightDTO]:
         """Valide au moins 1 vol."""
         if len(v) == 0:
             raise ValueError("At least 1 flight required")
@@ -75,9 +74,9 @@ class SearchResponse(BaseModel):
 
     @model_validator(mode="after")
     def validate_results_sorted(self) -> Self:
-        """Valide results triés par prix croissant (basé sur premier vol de chaque combinaison)."""
+        """Valide results triés par prix croissant (basé sur total_price)."""
         if not all(
-            a.flights[0].price <= b.flights[0].price
+            a.total_price <= b.total_price
             for a, b in zip(self.results, self.results[1:], strict=False)
         ):
             raise ValueError("Results must be sorted by price (ascending order)")

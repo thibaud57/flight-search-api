@@ -8,10 +8,14 @@ import pytest
 from app.core import Settings
 from app.models import (
     DateRange,
+    FlightCombinationResult,
     GoogleFlightDTO,
     GoogleSearchRequest,
+    KayakFlightDTO,
     KayakSearchRequest,
+    LayoverInfo,
     ProxyConfig,
+    SearchStats,
 )
 from app.services import GoogleFlightParser
 from tests.fixtures.helpers import (
@@ -116,7 +120,7 @@ def date_range_factory():
 
 
 @pytest.fixture
-def flight_dto_factory():
+def google_flight_dto_factory():
     """Factory pour créer GoogleFlightDTO avec defaults."""
 
     def _create(
@@ -138,6 +142,57 @@ def flight_dto_factory():
             stops=stops,
             departure_airport=departure_airport,
             arrival_airport=arrival_airport,
+        )
+
+    return _create
+
+
+@pytest.fixture
+def kayak_flight_dto_factory():
+    """Factory pour créer KayakFlightDTO avec defaults."""
+
+    def _create(
+        price=1000.0,
+        airline="Test Airline",
+        departure_time="2026-01-14T10:00:00",
+        arrival_time="2026-01-14T20:00:00",
+        duration="10h 0min",
+        departure_airport="CDG",
+        arrival_airport="NRT",
+        num_layovers=0,
+        as_dict=False,
+    ):
+        layovers = []
+        if num_layovers > 0:
+            layovers = [
+                LayoverInfo(airport=f"JF{i}", duration=f"{i + 1}h 0min")
+                for i in range(num_layovers)
+            ]
+
+        if as_dict:
+            return {
+                "price": price,
+                "airline": airline,
+                "departure_time": departure_time,
+                "arrival_time": arrival_time,
+                "duration": duration,
+                "departure_airport": departure_airport,
+                "arrival_airport": arrival_airport,
+                "layovers": [
+                    {"airport": lay.airport, "duration": lay.duration}
+                    for lay in layovers
+                ],
+            }
+
+        return KayakFlightDTO(
+            price=price,
+            airline=airline,
+            departure_time=departure_time,
+            arrival_time=arrival_time,
+            duration=duration,
+            departure_airport=departure_airport,
+            arrival_airport=arrival_airport,
+            layovers=layovers,
         )
 
     return _create
@@ -391,5 +446,51 @@ def kayak_poll_data_factory():
             "legs": legs,
             "segments": segments,
         }
+
+    return _create
+
+
+@pytest.fixture
+def search_stats_factory():
+    """Factory pour créer SearchStats avec paramètres configurables."""
+
+    def _create(total_results=10, search_time_ms=100, segments_count=2):
+        return SearchStats(
+            total_results=total_results,
+            search_time_ms=search_time_ms,
+            segments_count=segments_count,
+        )
+
+    return _create
+
+
+@pytest.fixture
+def flight_combination_result_factory(google_flight_dto_factory):
+    """Factory pour créer FlightCombinationResult avec paramètres configurables."""
+
+    def _create(
+        num_flights=1,
+        base_price=800.0,
+        price_increment=100.0,
+        segment_dates=None,
+    ):
+        if segment_dates is None:
+            segment_dates = [
+                get_future_date(1).isoformat(),
+                get_future_date(15).isoformat(),
+            ]
+
+        flights = [
+            google_flight_dto_factory(price=base_price + i * price_increment)
+            for i in range(num_flights)
+        ]
+
+        total_price = sum(f.price or 0.0 for f in flights)
+
+        return FlightCombinationResult(
+            segment_dates=segment_dates,
+            flights=flights,
+            total_price=total_price if total_price > 0 else base_price,
+        )
 
     return _create

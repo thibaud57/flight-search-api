@@ -21,6 +21,14 @@ KAYAK_BASE_URL = "https://www.kayak.fr/flights"
 SEARCH_GOOGLE_FLIGHTS_ENDPOINT = "/api/v1/search-google-flights"
 SEARCH_KAYAK_ENDPOINT = "/api/v1/search-kayak"
 
+# Mock cookies pour tests
+MOCK_COOKIES = [{"name": "test_cookie", "value": "test_value"}]
+MOCK_GOOGLE_COOKIES = [
+    {"name": "NID", "value": "abc123"},
+    {"name": "CONSENT", "value": "YES+"},
+]
+MOCK_KAYAK_COOKIES = [{"name": "kayak_cookie", "value": "test"}]
+
 
 def get_future_date(days_offset: int = 1) -> date:
     """Retourne date future avec offset depuis aujourd'hui."""
@@ -44,8 +52,8 @@ def get_date_range(
 def assert_results_sorted_by_price(results: list[FlightCombinationResult]) -> None:
     """Vérifie que results sont triés par prix croissant."""
     for i in range(len(results) - 1):
-        current_price = results[i].flights[0].price
-        next_price = results[i + 1].flights[0].price
+        current_price = results[i].total_price
+        next_price = results[i + 1].total_price
         assert current_price <= next_price, (
             f"Results not sorted: {current_price} > {next_price} at index {i}"
         )

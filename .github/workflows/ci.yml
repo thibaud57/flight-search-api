@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [develop]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -16,20 +23,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.9.13"
+          enable-cache: true
+
       - name: Setup Python 3.13
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
-
       - name: Install dependencies
         run: |
-          pip install uv
           uv sync --all-extras
           uv run crawl4ai-setup
 
@@ -43,4 +49,12 @@ jobs:
         run: uv run mypy app/
 
       - name: Tests with coverage
-        run: uv run pytest tests/unit/ --cov=app --cov-report=xml
+        run: uv run pytest tests/unit/ --cov=app --cov-report=xml --cov-fail-under=80
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          fail_ci_if_error: false

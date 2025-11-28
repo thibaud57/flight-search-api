@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+from http import HTTPStatus
 
 from playwright.async_api import Page, Response
 
@@ -18,8 +20,8 @@ async def capture_kayak_poll_data(
     page: Page,
     *,
     timeout: float = 60.0,
-) -> str | None:
-    """Capture poll_data Kayak via interception réseau (stateless)."""
+) -> dict[str, object] | None:
+    """Capture poll_data Kayak via interception réseau et retourne JSON parsé."""
     poll_responses: list[dict[str, str]] = []
     priceprediction_received = False
 
@@ -28,14 +30,14 @@ async def capture_kayak_poll_data(
         nonlocal priceprediction_received
         url = response.url
 
-        if "/poll" in url and response.status == 200:
+        if "/poll" in url and response.status == HTTPStatus.OK:
             try:
                 body = await response.text()
                 poll_responses.append({"url": url, "body": body})
             except Exception:
                 pass
 
-        elif "priceprediction" in url and response.status == 200:
+        elif "priceprediction" in url and response.status == HTTPStatus.OK:
             priceprediction_received = True
 
     try:
@@ -51,7 +53,17 @@ async def capture_kayak_poll_data(
         except TimeoutError:
             logger.warning("PricePrediction timeout after %.0fs", timeout)
 
-        poll_data = poll_responses[-1]["body"] if poll_responses else None
+        poll_data_raw = poll_responses[-1]["body"] if poll_responses else None
+        poll_data = None
+        if poll_data_raw:
+            try:
+                poll_data = json.loads(poll_data_raw)
+            except json.JSONDecodeError as e:
+                logger.warning(
+                    "Failed to parse poll_data JSON",
+                    extra={"error": str(e)},
+                )
+                poll_data = None
 
         logger.info(
             "Poll capture completed",

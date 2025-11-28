@@ -6,16 +6,18 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
+from http import HTTPStatus
 from typing import TYPE_CHECKING
 
 from crawl4ai import AsyncWebCrawler, CacheMode, CrawlerRunConfig
+from crawl4ai import CrawlResult as Crawl4AICrawlResult
 from playwright.async_api import BrowserContext, Cookie, Page, Response
 from tenacity import retry
 
 from app.core import get_settings
-from app.exceptions import CaptchaDetectedError, NetworkError
+from app.exceptions import CaptchaDetectedError, NetworkError, SessionCaptureError
 from app.models import Provider, ProxyConfig
-from app.services.retry_strategy import RetryStrategy
+from app.services import RetryStrategy
 from app.utils import (
     build_browser_config_from_fingerprint,
     capture_kayak_poll_data,
@@ -26,6 +28,17 @@ if TYPE_CHECKING:
     from app.services.proxy_service import ProxyService
 
 logger = logging.getLogger(__name__)
+
+KAYAK_POLL_TIMEOUT_S = 60.0
+CONSENT_BUTTON_WAIT_TIMEOUT_MS = 10000
+RETRYABLE_HTTP_STATUS_CODES = (
+    HTTPStatus.INTERNAL_SERVER_ERROR,
+    HTTPStatus.BAD_GATEWAY,
+    HTTPStatus.SERVICE_UNAVAILABLE,
+    HTTPStatus.GATEWAY_TIMEOUT,
+    HTTPStatus.TOO_MANY_REQUESTS,
+    HTTPStatus.FORBIDDEN,
+)
 
 SESSION_URLS = {
     Provider.GOOGLE: "https://www.google.com/travel/flights",
@@ -54,7 +67,7 @@ class CrawlResult:
     success: bool
     html: str
     status_code: int | None = None
-    poll_data: str | None = None
+    poll_data: dict[str, object] | None = None
 
 
 class CrawlerService:
@@ -66,8 +79,9 @@ class CrawlerService:
         self._settings = get_settings()
         self._captured_cookies: list[Cookie] = []
         self.provider: Provider = Provider.GOOGLE
-        self._kayak_poll_data: str | None = None
+        self._kayak_poll_data: dict[str, object] | None = None
 
+    @retry(**RetryStrategy.get_session_retry())
     async def get_session(
         self,
         provider: Provider,
@@ -93,46 +107,39 @@ class CrawlerService:
 
         browser_config = get_base_browser_config(proxy_config=proxy_config)
 
-        try:
-            async with AsyncWebCrawler(config=browser_config) as crawler:
-                crawler.crawler_strategy.set_hook(
-                    "after_goto", self._session_after_goto_hook
-                )
-                crawler.crawler_strategy.set_hook(
-                    "before_return_html", self._extract_cookies_hook
-                )
-                run_config = self._build_crawler_run_config(
-                    "css:body", provider=provider
-                )
-                result = await asyncio.wait_for(
-                    crawler.arun(url=url, config=run_config),
-                    timeout=self._settings.crawler.crawl_global_timeout_s,
-                )
-        except TimeoutError as err:
-            logger.error(
-                "Session capture timeout",
-                extra={
-                    "provider": provider.value,
-                    "url": url,
-                    "proxy_host": proxy.host if proxy else "no_proxy",
-                },
+        async with AsyncWebCrawler(config=browser_config) as crawler:
+
+            async def _after_goto_hook(
+                page: Page,
+                context: BrowserContext,
+                url: str,
+                response: Response,
+                **kwargs: object,
+            ) -> Page:
+                """Hook get_session : gère consent directement."""
+                await self._handle_consent(page)
+                return page
+
+            crawler.crawler_strategy.set_hook("after_goto", _after_goto_hook)
+            crawler.crawler_strategy.set_hook(
+                "before_return_html", self._extract_cookies_hook
             )
-            raise NetworkError(url=url, status_code=None) from err
-        except RuntimeError as err:
-            logger.error(
-                "Session capture failed - Runtime error",
-                extra={
-                    "provider": provider.value,
-                    "url": url,
-                    "proxy_host": proxy.host if proxy else "no_proxy",
-                    "error": str(err),
-                },
+            run_config = self._build_crawler_run_config("css:body", provider=provider)
+            result = await self._execute_crawl(
+                crawler,
+                url,
+                run_config,
+                operation="session capture",
+                provider=provider,
+                proxy_host=proxy.host if proxy else "no_proxy",
             )
-            raise NetworkError(url=url, status_code=None) from err
 
         response_time_ms = int((time.time() - start_time) * 1000)
 
-        if not result.success or result.status_code in (403, 429):
+        if not result.success or result.status_code in (
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.TOO_MANY_REQUESTS,
+        ):
             logger.error(
                 "Session capture failed",
                 extra={
@@ -143,6 +150,20 @@ class CrawlerService:
                 },
             )
             raise NetworkError(url=url, status_code=result.status_code)
+
+        if not self._captured_cookies:
+            logger.warning(
+                "Session captured but no cookies found",
+                extra={
+                    "provider": provider.value,
+                    "status_code": result.status_code,
+                    "proxy_host": proxy.host if proxy else "no_proxy",
+                },
+            )
+            raise SessionCaptureError(
+                provider=provider.value,
+                reason="No cookies captured (consent may have failed)",
+            )
 
         logger.info(
             "Session captured",
@@ -205,35 +226,15 @@ class CrawlerService:
                             "after_goto", self._crawl_after_goto_hook
                         )
 
-                    result = await asyncio.wait_for(
-                        crawler.arun(url=url, config=run_config),
-                        timeout=self._settings.crawler.crawl_global_timeout_s,
+                    result = await self._execute_crawl(
+                        crawler,
+                        url,
+                        run_config,
+                        operation="crawl",
+                        provider=provider,
+                        proxy_host=proxy.host if proxy else "no_proxy",
+                        attempts=attempt_count,
                     )
-            except TimeoutError as err:
-                logger.error(
-                    "Crawl timeout",
-                    extra={
-                        "provider": provider.value,
-                        "url": url,
-                        "proxy_host": proxy.host if proxy else "no_proxy",
-                    },
-                )
-                raise NetworkError(
-                    url=url, status_code=None, attempts=attempt_count
-                ) from err
-            except RuntimeError as err:
-                logger.error(
-                    "Crawl failed - Runtime error",
-                    extra={
-                        "provider": provider.value,
-                        "url": url,
-                        "proxy_host": proxy.host if proxy else "no_proxy",
-                        "error": str(err),
-                    },
-                )
-                raise NetworkError(
-                    url=url, status_code=None, attempts=attempt_count
-                ) from err
             except CaptchaDetectedError:
                 if use_proxy and self._proxy_service:
                     self._proxy_service.get_next_proxy()
@@ -242,20 +243,16 @@ class CrawlerService:
 
             response_time_ms = int((time.time() - start_time) * 1000)
 
-            if not result.success and result.status_code == 404:
-                return CrawlResult(success=False, html="", status_code=404)
+            if not result.success and result.status_code == HTTPStatus.NOT_FOUND:
+                return CrawlResult(
+                    success=False, html="", status_code=HTTPStatus.NOT_FOUND
+                )
 
-            if not result.success or result.status_code in (
-                500,
-                502,
-                503,
-                504,
-                429,
-                403,
-            ):
+            if not result.success or result.status_code in RETRYABLE_HTTP_STATUS_CODES:
                 error_msg = "Crawl failed"
                 if (
-                    result.status_code in (429, 403)
+                    result.status_code
+                    in (HTTPStatus.TOO_MANY_REQUESTS, HTTPStatus.FORBIDDEN)
                     and use_proxy
                     and self._proxy_service
                 ):
@@ -280,8 +277,31 @@ class CrawlerService:
             poll_data = None
             if provider == Provider.KAYAK:
                 poll_data = self._kayak_poll_data
-                # TODO Story 11: Implémenter stockage structuré poll_data pour debugging/analysis
-                # Actuellement poll_data est capturé mais pas persisté
+
+            is_result_valid = (
+                provider == Provider.KAYAK and poll_data is not None
+            ) or (provider == Provider.GOOGLE and html)
+
+            if not is_result_valid:
+                error_reason = (
+                    "poll_data is None"
+                    if provider == Provider.KAYAK
+                    else "HTML is empty or None"
+                )
+                logger.warning(
+                    "Crawl result validation failed - retrying",
+                    extra={
+                        "provider": provider.value,
+                        "url": url,
+                        "reason": error_reason,
+                        "html_size": len(html),
+                        "poll_data_available": poll_data is not None,
+                    },
+                )
+                raise NetworkError(
+                    url=url, status_code=result.status_code, attempts=attempt_count
+                )
+
             logger.info(
                 "Crawl successful",
                 extra={
@@ -319,6 +339,10 @@ class CrawlerService:
         }
         return proxy_config, proxy
 
+    def has_valid_cookies(self) -> bool:
+        """Vérifie si des cookies valides ont été capturés."""
+        return len(self._captured_cookies) > 0
+
     def _build_crawler_run_config(
         self,
         wait_for_selector: str | None,
@@ -338,18 +362,6 @@ class CrawlerService:
             else self._settings.crawler.crawl_delay_s,
         )
 
-    async def _session_after_goto_hook(
-        self,
-        page: Page,
-        context: BrowserContext,
-        url: str,
-        response: Response,
-        **kwargs: object,
-    ) -> Page:
-        """Hook get_session : gère uniquement le consent."""
-        await self._handle_consent(page)
-        return page
-
     async def _crawl_after_goto_hook(
         self,
         page: Page,
@@ -362,7 +374,7 @@ class CrawlerService:
         try:
             self._kayak_poll_data = await capture_kayak_poll_data(
                 page,
-                timeout=60.0,
+                timeout=KAYAK_POLL_TIMEOUT_S,
             )
         except Exception as e:
             logger.warning(
@@ -379,7 +391,9 @@ class CrawlerService:
 
         for selector in selectors:
             try:
-                accept_button = await page.wait_for_selector(selector, timeout=10000)
+                accept_button = await page.wait_for_selector(
+                    selector, timeout=CONSENT_BUTTON_WAIT_TIMEOUT_MS
+                )
                 if accept_button:
                     await accept_button.click()
                     await asyncio.sleep(1)
@@ -411,6 +425,64 @@ class CrawlerService:
             "Cookies extracted via hook",
             extra={"cookies_count": len(cookies)},
         )
+
+    async def _execute_crawl(
+        self,
+        crawler: AsyncWebCrawler,
+        url: str,
+        run_config: CrawlerRunConfig,
+        *,
+        operation: str,
+        provider: Provider,
+        proxy_host: str,
+        attempts: int = 0,
+    ) -> Crawl4AICrawlResult:
+        """Execute crawl avec gestion centralisée des erreurs TimeoutError et RuntimeError.
+
+        Args:
+            crawler: Instance AsyncWebCrawler à utiliser
+            url: URL à crawler
+            run_config: Configuration du crawl
+            operation: Nom de l'opération ("session" ou "crawl")
+            provider: Provider utilisé
+            proxy_host: Host du proxy ou "no_proxy"
+            attempts: Nombre de tentatives (pour crawl), 0 pour session
+
+        Returns:
+            Résultat du crawl (Crawl4AICrawlResult)
+
+        Raises:
+            NetworkError: En cas de timeout ou erreur runtime
+        """
+        try:
+            result = await asyncio.wait_for(
+                crawler.arun(url=url, config=run_config),
+                timeout=self._settings.crawler.crawl_global_timeout_s,
+            )
+            return result
+        except TimeoutError as err:
+            error_context = {
+                "provider": provider.value,
+                "url": url,
+                "proxy_host": proxy_host,
+            }
+            logger.error(
+                f"{operation.capitalize()} timeout",
+                extra=error_context,
+            )
+            raise NetworkError(url=url, status_code=None, attempts=attempts) from err
+        except RuntimeError as err:
+            error_context = {
+                "provider": provider.value,
+                "url": url,
+                "proxy_host": proxy_host,
+                "error": str(err),
+            }
+            logger.error(
+                f"{operation.capitalize()} failed - Runtime error",
+                extra=error_context,
+            )
+            raise NetworkError(url=url, status_code=None, attempts=attempts) from err
 
     def _detect_captcha(self, html: str, url: str) -> None:
         """Detecte la presence de captcha dans le HTML."""

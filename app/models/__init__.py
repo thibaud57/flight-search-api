@@ -1,12 +1,12 @@
 from app.models.google_flight_dto import GoogleFlightDTO
-from app.models.kayak_segment import KayakSegment
+from app.models.internal import CombinationResult, DateCombination, FlightDTO
+from app.models.kayak_flight_dto import KayakFlightDTO, LayoverInfo
 from app.models.proxy import ProxyConfig
 from app.models.request import (
-    CombinationResult,
-    DateCombination,
     DateRange,
     GoogleSearchRequest,
     KayakSearchRequest,
+    MultiCitySearchRequestBase,
     Provider,
     SearchRequest,
 )
@@ -22,11 +22,14 @@ __all__ = [
     "DateCombination",
     "DateRange",
     "FlightCombinationResult",
+    "FlightDTO",
     "GoogleFlightDTO",
     "GoogleSearchRequest",
     "HealthResponse",
+    "KayakFlightDTO",
     "KayakSearchRequest",
-    "KayakSegment",
+    "LayoverInfo",
+    "MultiCitySearchRequestBase",
     "Provider",
     "ProxyConfig",
     "SearchRequest",

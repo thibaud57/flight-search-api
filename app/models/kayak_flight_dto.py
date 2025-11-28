@@ -1,12 +1,21 @@
-"""DTO pour données extraites depuis Google Flights."""
+"""DTO pour données extraites depuis Kayak."""
 
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_serializer
 
 
-class GoogleFlightDTO(BaseModel):
-    """Modèle Pydantic d'un vol extrait depuis Google Flights."""
+class LayoverInfo(BaseModel):
+    """Information escale entre segments."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    airport: str
+    duration: str
+
+
+class KayakFlightDTO(BaseModel):
+    """Modèle Pydantic d'un vol extrait depuis Kayak."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -20,6 +29,6 @@ class GoogleFlightDTO(BaseModel):
     departure_time: str
     arrival_time: str
     duration: str
-    stops: int | None = None
     departure_airport: str | None = None
     arrival_airport: str | None = None
+    layovers: list[LayoverInfo] = []

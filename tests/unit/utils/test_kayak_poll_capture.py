@@ -7,33 +7,6 @@ import pytest
 from app.utils import capture_kayak_poll_data
 
 
-@pytest.fixture
-def mock_page():
-    """Mock Playwright Page."""
-    page = AsyncMock()
-    page.on = MagicMock()
-    return page
-
-
-@pytest.fixture
-def mock_poll_response():
-    """Mock Response réseau /poll."""
-    response = AsyncMock()
-    response.url = "https://www.kayak.fr/s/horizon/api/search/poll?searchId=abc123"
-    response.status = 200
-    response.text = AsyncMock(return_value='{"results": [{"price": 500}]}')
-    return response
-
-
-@pytest.fixture
-def mock_priceprediction_response():
-    """Mock Response réseau priceprediction."""
-    response = AsyncMock()
-    response.url = "https://www.kayak.fr/s/horizon/api/priceprediction?id=xyz"
-    response.status = 200
-    return response
-
-
 @pytest.mark.asyncio
 async def test_capture_kayak_poll_data_success(
     mock_page, mock_poll_response, mock_priceprediction_response
@@ -104,4 +77,5 @@ async def test_capture_kayak_poll_data_returns_last_poll(
     poll_data = await capture_kayak_poll_data(mock_page, timeout=2.0)
 
     assert poll_data is not None
-    assert '"price": 450' in poll_data
+    poll_data_dict = poll_data  # type: dict[str, Any]
+    assert poll_data_dict["results"][0]["price"] == 450

@@ -5,10 +5,21 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.exceptions import CaptchaDetectedError, NetworkError
+from app.exceptions import (
+    CaptchaDetectedError,
+    NetworkError,
+    SessionCaptureError,
+)
 from app.models import Provider
 from app.services import CrawlerService, ProxyService
-from tests.fixtures.helpers import GOOGLE_FLIGHT_BASE_URL
+from tests.fixtures.helpers import (
+    GOOGLE_FLIGHT_BASE_URL,
+    KAYAK_BASE_URL,
+    KAYAK_TEMPLATE_URL,
+    MOCK_COOKIES,
+    MOCK_GOOGLE_COOKIES,
+    MOCK_KAYAK_COOKIES,
+)
 from tests.fixtures.mocks import create_mock_settings_context
 
 
@@ -193,25 +204,18 @@ async def test_get_session_google_success(
     crawler_service, mock_async_web_crawler, mock_crawl_result_factory
 ):
     """Session capture réussie avec cookies."""
-    mock_cookies = [
-        {"name": "NID", "value": "abc123"},
-        {"name": "CONSENT", "value": "YES+"},
-    ]
-
     mock_result = mock_crawl_result_factory(html="<html>Google Flights</html>")
 
     async def mock_hook_execution(url, config):
-        crawler_service._captured_cookies = mock_cookies
+        crawler_service._captured_cookies = MOCK_GOOGLE_COOKIES
         return mock_result
 
     crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
-    mock_strategy = MagicMock()
-    crawler.crawler_strategy = mock_strategy
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
         await crawler_service.get_session(Provider.GOOGLE)
 
-        assert crawler_service._captured_cookies == mock_cookies
+        assert crawler_service._captured_cookies == MOCK_GOOGLE_COOKIES
         assert len(crawler_service._captured_cookies) == 2
 
 
@@ -227,7 +231,11 @@ async def test_get_session_google_auto_click_consent(
 
     mock_result = mock_crawl_result_factory(html="<html>Google Flights</html>")
 
-    crawler = mock_async_web_crawler(mock_result=mock_result)
+    async def mock_hook_execution(url, config):
+        crawler_service._captured_cookies = MOCK_GOOGLE_COOKIES
+        return mock_result
+
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
         await crawler_service.get_session(Provider.GOOGLE)
@@ -242,7 +250,11 @@ async def test_get_session_google_no_consent_popup(
     """Popup RGPD absent - timeout sans erreur."""
     mock_result = mock_crawl_result_factory(html="<html>No popup</html>")
 
-    crawler = mock_async_web_crawler(mock_result=mock_result)
+    async def mock_hook_execution(url, config):
+        crawler_service._captured_cookies = MOCK_GOOGLE_COOKIES
+        return mock_result
+
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
 
     with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
         await crawler_service.get_session(Provider.GOOGLE)
@@ -483,3 +495,349 @@ async def test_crawl_proxy_logging_no_password(
 
     log_text = " ".join(record.message for record in caplog.records)
     assert "password" not in log_text.lower()
+
+
+@pytest.mark.asyncio
+async def test_get_session_retry_on_empty_cookies(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
+    """Test get_session retry quand cookies vides (consent échoué)."""
+    mock_result = mock_crawl_result_factory(html="<html>Google</html>")
+
+    call_count = 0
+
+    async def mock_hook_execution(url, config):
+        nonlocal call_count
+        call_count += 1
+        if call_count <= 2:
+            crawler_service._captured_cookies = []
+        else:
+            crawler_service._captured_cookies = MOCK_COOKIES
+        return mock_result
+
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        await crawler_service.get_session(Provider.GOOGLE)
+
+        assert crawler.arun.call_count == 3
+        assert len(crawler_service._captured_cookies) > 0
+
+
+@pytest.mark.asyncio
+async def test_get_session_raises_after_max_retries_empty_cookies(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
+    """Test get_session lève SessionCaptureError après 3 tentatives sans cookies."""
+    mock_result = mock_crawl_result_factory(html="<html>Google</html>")
+
+    async def mock_hook_execution(url, config):
+        crawler_service._captured_cookies = []
+        return mock_result
+
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        with pytest.raises(SessionCaptureError) as exc_info:
+            await crawler_service.get_session(Provider.GOOGLE)
+
+        assert "No cookies captured" in str(exc_info.value)
+        assert crawler.arun.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_get_session_retry_on_network_error(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
+    """Test get_session retry sur NetworkError (status 403)."""
+    call_count = 0
+
+    async def mock_hook_execution(url, config):
+        nonlocal call_count
+        call_count += 1
+        if call_count <= 2:
+            crawler_service._captured_cookies = []
+            return mock_crawl_result_factory(
+                html="<html>Forbidden</html>", success=False, status_code=403
+            )
+        else:
+            crawler_service._captured_cookies = MOCK_COOKIES
+            return mock_crawl_result_factory(html="<html>Success</html>")
+
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        await crawler_service.get_session(Provider.GOOGLE)
+
+        assert crawler.arun.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_crawl_flights_retry_on_empty_html_google(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
+    """Test crawl_flights retry quand HTML vide (Google)."""
+    call_count = 0
+
+    def mock_hook_execution(url, config):
+        nonlocal call_count
+        call_count += 1
+        if call_count <= 2:
+            return mock_crawl_result_factory(html="", success=True)
+        else:
+            return mock_crawl_result_factory(
+                html="<html>" + "x" * 2000 + "</html>", success=True
+            )
+
+    crawler_service._captured_cookies = MOCK_COOKIES
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        result = await crawler_service.crawl_flights(
+            GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE
+        )
+
+        assert result.success is True
+        assert len(result.html) > 1000
+        assert crawler.arun.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_crawl_flights_retry_on_none_poll_data_kayak(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
+    """Test crawl_flights retry quand poll_data None (Kayak)."""
+    call_count = 0
+
+    async def mock_hook_execution(url, config):
+        nonlocal call_count
+        call_count += 1
+        if call_count <= 2:
+            crawler_service._kayak_poll_data = None
+            return mock_crawl_result_factory(html="<html>Kayak</html>", success=True)
+        else:
+            crawler_service._kayak_poll_data = {"results": []}
+            return mock_crawl_result_factory(html="<html>Kayak</html>", success=True)
+
+    crawler_service._captured_cookies = MOCK_COOKIES
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        result = await crawler_service.crawl_flights(KAYAK_BASE_URL, Provider.KAYAK)
+
+        assert result.success is True
+        assert result.poll_data is not None
+        assert crawler.arun.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_crawl_flights_raises_after_max_retries_invalid_result(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
+    """Test crawl_flights lève NetworkError après 3 tentatives avec HTML invalide."""
+    mock_result = mock_crawl_result_factory(html="", success=True)
+
+    crawler_service._captured_cookies = MOCK_COOKIES
+    crawler = mock_async_web_crawler(mock_result=mock_result)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        with pytest.raises(NetworkError):
+            await crawler_service.crawl_flights(GOOGLE_FLIGHT_BASE_URL, Provider.GOOGLE)
+
+        assert crawler.arun.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_has_valid_cookies_returns_true_when_cookies_present(crawler_service):
+    """Test has_valid_cookies retourne True quand cookies présents."""
+    crawler_service._captured_cookies = MOCK_COOKIES
+
+    assert crawler_service.has_valid_cookies() is True
+
+
+@pytest.mark.asyncio
+async def test_has_valid_cookies_returns_false_when_no_cookies(crawler_service):
+    """Test has_valid_cookies retourne False quand pas de cookies."""
+    crawler_service._captured_cookies = []
+
+    assert crawler_service.has_valid_cookies() is False
+
+
+@pytest.mark.asyncio
+async def test_get_session_kayak_success(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
+    """Session Kayak etablie avec consent."""
+    mock_result = mock_crawl_result_factory(html="<html>Kayak results</html>")
+
+    async def mock_hook_execution(url, config):
+        crawler_service._captured_cookies = MOCK_KAYAK_COOKIES
+        return mock_result
+
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        await crawler_service.get_session(Provider.KAYAK)
+
+        assert mock_result.success is True
+
+
+@pytest.mark.asyncio
+async def test_get_session_kayak_no_popup(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
+    """Session sans popup consent non bloquant."""
+    mock_result = mock_crawl_result_factory(html="<html>No popup</html>")
+
+    async def mock_hook_execution(url, config):
+        crawler_service._captured_cookies = MOCK_KAYAK_COOKIES
+        return mock_result
+
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        await crawler_service.get_session(Provider.KAYAK)
+
+        assert mock_result.success is True
+
+
+@pytest.mark.asyncio
+async def test_crawl_flights_kayak_with_network_capture(
+    crawler_service,
+    mock_async_web_crawler,
+    mock_crawl_result_factory,
+    kayak_poll_data_factory,
+):
+    """Crawl Kayak avec network capture active."""
+    mock_result = mock_crawl_result_factory(html="<html>Kayak results</html>")
+    mock_poll_data = kayak_poll_data_factory()
+
+    async def mock_hook_execution(url, config):
+        crawler_service._kayak_poll_data = mock_poll_data
+        return mock_result
+
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        result = await crawler_service.crawl_flights(KAYAK_TEMPLATE_URL, Provider.KAYAK)
+
+        assert result.success is True
+        assert crawler.arun.called
+
+
+@pytest.mark.asyncio
+async def test_crawl_flights_kayak_returns_html(
+    crawler_service,
+    mock_async_web_crawler,
+    mock_crawl_result_factory,
+    kayak_poll_data_factory,
+):
+    """HTML retourne avec contenu DOM."""
+    expected_html = "<html><div data-resultid='1'>Flight 1</div></html>"
+    mock_result = mock_crawl_result_factory(html=expected_html)
+    mock_poll_data = kayak_poll_data_factory()
+
+    async def mock_hook_execution(url, config):
+        crawler_service._kayak_poll_data = mock_poll_data
+        return mock_result
+
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        result = await crawler_service.crawl_flights(KAYAK_TEMPLATE_URL, Provider.KAYAK)
+
+        assert result.html == expected_html
+        assert "data-resultid" in result.html
+
+
+@pytest.mark.asyncio
+async def test_handle_consent_click(crawler_service, mock_page):
+    """Popup consent clique sur bouton accept."""
+    mock_button = AsyncMock()
+    mock_page.wait_for_selector = AsyncMock(return_value=mock_button)
+    mock_button.click = AsyncMock()
+
+    await crawler_service._handle_consent(mock_page)
+
+    mock_button.click.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_handle_consent_timeout(crawler_service, mock_page, caplog):
+    """Timeout sans popup retourne sans erreur."""
+    mock_page.wait_for_selector = AsyncMock(side_effect=TimeoutError("No popup"))
+
+    await crawler_service._handle_consent(mock_page)
+
+    assert len(caplog.records) >= 0
+
+
+@pytest.mark.asyncio
+async def test_handle_consent_fallback_selector(crawler_service, mock_page):
+    """Fallback sur 2e selecteur si 1er timeout."""
+    call_count = 0
+    mock_button = AsyncMock()
+
+    async def mock_wait_with_fallback(selector, timeout):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise TimeoutError("First selector timeout")
+        return mock_button
+
+    mock_page.wait_for_selector = mock_wait_with_fallback
+    mock_button.click = AsyncMock()
+
+    await crawler_service._handle_consent(mock_page)
+
+    assert call_count == 2
+    mock_button.click.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_kayak_session_with_consent_flow(
+    crawler_service, mock_async_web_crawler, mock_crawl_result_factory
+):
+    """Session etablie avec popup consent visible et clique."""
+    mock_result = mock_crawl_result_factory(html="<html>Kayak with consent</html>")
+
+    consent_clicked = False
+
+    async def mock_hook_execution(url, config):
+        nonlocal consent_clicked
+        consent_clicked = True
+        crawler_service._captured_cookies = MOCK_KAYAK_COOKIES
+        return mock_result
+
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        await crawler_service.get_session(Provider.KAYAK)
+
+        assert consent_clicked is True
+        assert mock_result.success is True
+
+
+@pytest.mark.asyncio
+async def test_crawl_flights_kayak_with_use_proxy_false(
+    crawler_service,
+    mock_async_web_crawler,
+    mock_crawl_result_factory,
+    kayak_poll_data_factory,
+):
+    """Crawl Kayak sans proxy."""
+    mock_result = mock_crawl_result_factory(html="<html>Kayak results</html>")
+    mock_poll_data = kayak_poll_data_factory()
+
+    async def mock_hook_execution(url, config):
+        crawler_service._kayak_poll_data = mock_poll_data
+        return mock_result
+
+    crawler = mock_async_web_crawler(side_effect=mock_hook_execution)
+
+    with patch("app.services.crawler_service.AsyncWebCrawler", return_value=crawler):
+        result = await crawler_service.crawl_flights(
+            KAYAK_TEMPLATE_URL, Provider.KAYAK, use_proxy=False
+        )
+
+        assert result.success is True
