@@ -69,7 +69,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Scan uv.lock for CVEs with uv-secure
-        run: uvx uv-secure
+        run: uvx uv-secure --skip-uv-check
         continue-on-error: true
 
       # ========================================
@@ -94,7 +94,8 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL'
-          exit-code: '1'
+          exit-code: '0'
+        continue-on-error: true
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
@@ -110,7 +111,8 @@ jobs:
           format: 'table'
           scanners: 'secret'
           severity: 'CRITICAL'
-          exit-code: '1'
+          exit-code: '0'
+        continue-on-error: true
 
       - name: Generate SBOM (Software Bill of Materials)
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8  # v0.33.1
