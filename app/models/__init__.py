@@ -7,6 +7,7 @@ from app.models.request import (
     DateRange,
     GoogleSearchRequest,
     KayakSearchRequest,
+    MultiCitySearchRequestBase,
     Provider,
     SearchRequest,
 )
@@ -30,6 +31,7 @@ __all__ = [
     "KayakSearchRequest",
     "KayakSegment",
     "LayoverInfo",
+    "MultiCitySearchRequestBase",
     "Provider",
     "ProxyConfig",
     "SearchRequest",

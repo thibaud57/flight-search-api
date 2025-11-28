@@ -51,10 +51,75 @@ class DateRange(BaseModel):
         return self
 
 
-class GoogleSearchRequest(BaseModel):
-    """Requête recherche vols multi-city Google Flights."""
+class MultiCitySearchRequestBase(BaseModel):
+    """Classe base commune pour requêtes multi-city (Google et Kayak)."""
 
     model_config = ConfigDict(extra="forbid")
+
+    template_url: Annotated[str, "URL template du provider"]
+    segments_date_ranges: Annotated[list[DateRange], "Plages dates par segment"]
+
+    @model_validator(mode="after")
+    def validate_date_ranges_max_days(self) -> Self:
+        """Valide max 15 jours par segment."""
+        for idx, date_range in enumerate(self.segments_date_ranges):
+            start_date = date.fromisoformat(date_range.start)
+            end_date = date.fromisoformat(date_range.end)
+            days_diff = (end_date - start_date).days
+
+            if days_diff > 15:
+                raise ValueError(
+                    f"Segment {idx + 1} date range too large: {days_diff} days. "
+                    f"Max 15 days per segment."
+                )
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_segments_chronological_order(self) -> Self:
+        """Valide que les segments sont chronologiques sans chevauchement."""
+        for i in range(len(self.segments_date_ranges) - 1):
+            current_end = date.fromisoformat(self.segments_date_ranges[i].end)
+            next_start = date.fromisoformat(self.segments_date_ranges[i + 1].start)
+
+            if next_start < current_end:
+                raise ValueError(
+                    f"Segment {i + 2} overlaps with segment {i + 1}: "
+                    f"segment {i + 2} starts on {self.segments_date_ranges[i + 1].start} "
+                    f"but segment {i + 1} ends on {self.segments_date_ranges[i].end}. "
+                    f"Each segment must start on or after the previous segment's end date."
+                )
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_explosion_combinatoire(self) -> Self:
+        """Valide max 1000 combinaisons totales."""
+        days_per_segment = []
+
+        for date_range in self.segments_date_ranges:
+            start_date = date.fromisoformat(date_range.start)
+            end_date = date.fromisoformat(date_range.end)
+            days_diff = (end_date - start_date).days + 1
+            days_per_segment.append(days_diff)
+
+        total_combinations = math.prod(days_per_segment)
+
+        if total_combinations > 1000:
+            max_days_index = days_per_segment.index(max(days_per_segment))
+            max_days = days_per_segment[max_days_index]
+
+            raise ValueError(
+                f"Too many combinations: {total_combinations}. Max 1000 allowed.\n"
+                f"Current ranges: {days_per_segment} days per segment.\n"
+                f"Suggestion: Reduce segment {max_days_index + 1} (currently {max_days} days)."
+            )
+
+        return self
+
+
+class GoogleSearchRequest(MultiCitySearchRequestBase):
+    """Requête recherche vols multi-city Google Flights."""
 
     template_url: Annotated[
         str, "URL Google Flights template (itinéraire et filtres fixés)"
@@ -83,69 +148,9 @@ class GoogleSearchRequest(BaseModel):
             raise ValueError("Maximum 5 segments allowed")
         return v
 
-    @model_validator(mode="after")
-    def validate_date_ranges_max_days(self) -> Self:
-        """Valide max 15 jours par segment."""
-        for idx, date_range in enumerate(self.segments_date_ranges):
-            start_date = date.fromisoformat(date_range.start)
-            end_date = date.fromisoformat(date_range.end)
-            days_diff = (end_date - start_date).days
 
-            if days_diff > 15:
-                raise ValueError(
-                    f"Segment {idx + 1} date range too large: {days_diff} days. "
-                    f"Max 15 days per segment."
-                )
-
-        return self
-
-    @model_validator(mode="after")
-    def validate_segments_chronological_order(self) -> Self:
-        """Valide que les segments sont chronologiques sans chevauchement."""
-        for i in range(len(self.segments_date_ranges) - 1):
-            current_end = date.fromisoformat(self.segments_date_ranges[i].end)
-            next_start = date.fromisoformat(self.segments_date_ranges[i + 1].start)
-
-            if next_start < current_end:
-                raise ValueError(
-                    f"Segment {i + 2} overlaps with segment {i + 1}: "
-                    f"segment {i + 2} starts on {self.segments_date_ranges[i + 1].start} "
-                    f"but segment {i + 1} ends on {self.segments_date_ranges[i].end}. "
-                    f"Each segment must start on or after the previous segment's end date."
-                )
-
-        return self
-
-    @model_validator(mode="after")
-    def validate_explosion_combinatoire(self) -> Self:
-        """Valide max 1000 combinaisons totales."""
-        days_per_segment = []
-
-        for date_range in self.segments_date_ranges:
-            start_date = date.fromisoformat(date_range.start)
-            end_date = date.fromisoformat(date_range.end)
-            days_diff = (end_date - start_date).days + 1
-            days_per_segment.append(days_diff)
-
-        total_combinations = math.prod(days_per_segment)
-
-        if total_combinations > 1000:
-            max_days_index = days_per_segment.index(max(days_per_segment))
-            max_days = days_per_segment[max_days_index]
-
-            raise ValueError(
-                f"Too many combinations: {total_combinations}. Max 1000 allowed.\n"
-                f"Current ranges: {days_per_segment} days per segment.\n"
-                f"Suggestion: Reduce segment {max_days_index + 1} (currently {max_days} days)."
-            )
-
-        return self
-
-
-class KayakSearchRequest(BaseModel):
+class KayakSearchRequest(MultiCitySearchRequestBase):
     """Requête recherche vols multi-city Kayak."""
-
-    model_config = ConfigDict(extra="forbid")
 
     template_url: Annotated[str, "URL Kayak template (itinéraire fixé avec dates)"]
     segments_date_ranges: Annotated[
@@ -171,64 +176,6 @@ class KayakSearchRequest(BaseModel):
         if len(v) > 6:
             raise ValueError("Maximum 6 segments allowed (Kayak limit)")
         return v
-
-    @model_validator(mode="after")
-    def validate_date_ranges_max_days(self) -> Self:
-        """Valide max 15 jours par segment."""
-        for idx, date_range in enumerate(self.segments_date_ranges):
-            start_date = date.fromisoformat(date_range.start)
-            end_date = date.fromisoformat(date_range.end)
-            days_diff = (end_date - start_date).days
-
-            if days_diff > 15:
-                raise ValueError(
-                    f"Segment {idx + 1} date range too large: {days_diff} days. "
-                    f"Max 15 days per segment."
-                )
-
-        return self
-
-    @model_validator(mode="after")
-    def validate_segments_chronological_order(self) -> Self:
-        """Valide que les segments sont chronologiques sans chevauchement."""
-        for i in range(len(self.segments_date_ranges) - 1):
-            current_end = date.fromisoformat(self.segments_date_ranges[i].end)
-            next_start = date.fromisoformat(self.segments_date_ranges[i + 1].start)
-
-            if next_start < current_end:
-                raise ValueError(
-                    f"Segment {i + 2} overlaps with segment {i + 1}: "
-                    f"segment {i + 2} starts on {self.segments_date_ranges[i + 1].start} "
-                    f"but segment {i + 1} ends on {self.segments_date_ranges[i].end}. "
-                    f"Each segment must start on or after the previous segment's end date."
-                )
-
-        return self
-
-    @model_validator(mode="after")
-    def validate_explosion_combinatoire(self) -> Self:
-        """Valide max 1000 combinaisons totales."""
-        days_per_segment = []
-
-        for date_range in self.segments_date_ranges:
-            start_date = date.fromisoformat(date_range.start)
-            end_date = date.fromisoformat(date_range.end)
-            days_diff = (end_date - start_date).days + 1
-            days_per_segment.append(days_diff)
-
-        total_combinations = math.prod(days_per_segment)
-
-        if total_combinations > 1000:
-            max_days_index = days_per_segment.index(max(days_per_segment))
-            max_days = days_per_segment[max_days_index]
-
-            raise ValueError(
-                f"Too many combinations: {total_combinations}. Max 1000 allowed.\n"
-                f"Current ranges: {days_per_segment} days per segment.\n"
-                f"Suggestion: Reduce segment {max_days_index + 1} (currently {max_days} days)."
-            )
-
-        return self
 
 
 # Type alias pour le service (accepte les deux)
