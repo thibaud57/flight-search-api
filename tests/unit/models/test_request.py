@@ -1,13 +1,15 @@
+"""Tests pour app/models/request.py (Provider, DateRange, MultiCitySearchRequestBase, GoogleSearchRequest, KayakSearchRequest)."""
+
+from datetime import date
+
 import pytest
 from pydantic import ValidationError
 
 from app.models import (
     DateRange,
-    FlightCombinationResult,
     GoogleSearchRequest,
     KayakSearchRequest,
-    SearchResponse,
-    SearchStats,
+    MultiCitySearchRequestBase,
 )
 from tests.fixtures.helpers import (
     GOOGLE_FLIGHT_TEMPLATE_URL,
@@ -17,68 +19,219 @@ from tests.fixtures.helpers import (
 )
 
 
-def test_date_range_valid_dates(date_range_factory):
-    """DateRange dates valides."""
-    valid_date_range = date_range_factory(start_offset=1, duration=6, as_dict=True)
-    date_range = DateRange(**valid_date_range)
-
-    assert date_range.start == valid_date_range["start"]
-    assert date_range.end == valid_date_range["end"]
+# === DateRange Tests ===
 
 
-def test_date_range_end_before_start_fails():
-    """End avant start rejetée."""
-    start_date, end_date = get_date_range(start_offset=1, duration=6)
-    invalid_date_range = {
-        "start": end_date.isoformat(),
-        "end": start_date.isoformat(),
-    }
-    with pytest.raises(ValidationError):
-        DateRange(**invalid_date_range)
+def test_date_range_valid(date_range_factory):
+    """Test création DateRange valide."""
+    date_range = date_range_factory(start_offset=1, duration=6)
+
+    assert date_range.start
+    assert date_range.end
 
 
-def test_date_range_same_day_valid(date_range_factory):
-    """Start = end acceptée (range 1 jour = date exacte)."""
-    same_day_range = date_range_factory(start_offset=1, duration=0, as_dict=True)
-    date_range = DateRange(**same_day_range)
+def test_date_range_start_after_end(date_range_factory):
+    """Test DateRange échoue si start > end."""
+    date_dict = date_range_factory(start_offset=1, duration=6, as_dict=True)
 
-    assert date_range.start == same_day_range["start"]
-    assert date_range.end == same_day_range["end"]
+    with pytest.raises(ValidationError) as exc_info:
+        DateRange(start=date_dict["end"], end=date_dict["start"])
 
-
-def test_date_range_start_past_fails(date_range_factory):
-    """Start dans le passé rejetée."""
-    invalid_past_range = date_range_factory(
-        start_offset=10, duration=5, past=True, as_dict=True
+    assert "End date must be greater than or equal to start date" in str(
+        exc_info.value
     )
-    with pytest.raises(ValidationError):
-        DateRange(**invalid_past_range)
 
 
-@pytest.mark.parametrize(
-    "start,end,description",
-    [
-        ("2025/06/01", "2025-06-15", "format date invalide"),
-        ("2025-02-30", "2025-03-01", "date inexistante"),
-    ],
-)
-def test_date_range_validation_errors(start, end, description):
-    """Validation DateRange rejette dates invalides."""
-    with pytest.raises(ValidationError):
-        DateRange(start=start, end=end)
+def test_date_range_same_day(date_range_factory):
+    """Test DateRange accepte start == end (même jour)."""
+    date_range = date_range_factory(start_offset=1, duration=0)
+
+    assert date_range.start == date_range.end
 
 
-def test_date_range_future_dates_valid(date_range_factory):
-    """Dates très futures acceptées."""
-    date_range_data = date_range_factory(start_offset=1825, duration=9, as_dict=True)
-    date_range = DateRange(**date_range_data)
+def test_date_range_iso_format(date_range_factory):
+    """Test DateRange valide format ISO 8601."""
+    invalid_dict = date_range_factory(invalid_format=True, as_dict=True)
 
-    assert date_range.start == date_range_data["start"]
-    assert date_range.end == date_range_data["end"]
+    with pytest.raises(ValidationError) as exc_info:
+        DateRange(**invalid_dict)
+
+    assert "Invalid ISO 8601 date format" in str(exc_info.value)
 
 
-def test_search_request_valid_two_segments(google_search_request_factory):
-    """Request valide avec 2 segments (minimum)."""
+def test_date_range_extra_forbid(date_range_factory):
+    """Test DateRange rejette champs extra."""
+    date_dict = date_range_factory(as_dict=True)
+
+    with pytest.raises(ValidationError) as exc_info:
+        DateRange(**date_dict, extra_field="invalid")
+
+    assert "Extra inputs are not permitted" in str(exc_info.value)
+
+
+def test_date_range_serialization(date_range_factory):
+    """Test DateRange sérialisation JSON."""
+    date_range = date_range_factory(start_offset=1, duration=7)
+    json_data = date_range.model_dump()
+
+    assert "start" in json_data
+    assert "end" in json_data
+    assert json_data["start"] == date_range.start
+    assert json_data["end"] == date_range.end
+
+
+def test_date_range_days_diff(date_range_factory):
+    """Test calcul différence jours entre start et end."""
+    date_range = date_range_factory(start_offset=1, duration=6)
+
+    start_date = date.fromisoformat(date_range.start)
+    end_date = date.fromisoformat(date_range.end)
+    days_diff = (end_date - start_date).days
+
+    assert days_diff == 6
+
+
+def test_date_range_future_only(date_range_factory):
+    """Test DateRange rejette dates passées."""
+    with pytest.raises(ValidationError) as exc_info:
+        date_range_factory(start_offset=1, duration=6, past=True)
+
+    assert "Start date must be today or in the future" in str(exc_info.value)
+
+
+# === MultiCitySearchRequestBase Tests ===
+
+
+def test_multi_city_base_valid_two_segments(date_range_factory):
+    """Test MultiCitySearchRequestBase avec 2 segments valides."""
+    segment1 = date_range_factory(start_offset=1, duration=6)
+    segment2 = date_range_factory(start_offset=7, duration=6)
+
+    request = MultiCitySearchRequestBase(
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
+        segments_date_ranges=[segment1, segment2],
+    )
+
+    assert len(request.segments_date_ranges) == 2
+
+
+def test_multi_city_base_max_days_validation_ok(date_range_factory):
+    """Test validation 15 jours max par segment (OK)."""
+    segment1 = date_range_factory(start_offset=1, duration=15)
+    segment2 = date_range_factory(start_offset=16, duration=15)
+
+    request = MultiCitySearchRequestBase(
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
+        segments_date_ranges=[segment1, segment2],
+    )
+
+    assert len(request.segments_date_ranges) == 2
+
+
+def test_multi_city_base_max_days_validation_fails(date_range_factory):
+    """Test validation 15 jours max par segment (FAIL)."""
+    segment = date_range_factory(start_offset=1, duration=16)
+
+    with pytest.raises(ValidationError) as exc_info:
+        MultiCitySearchRequestBase(
+            template_url="https://example.com/flights",
+            segments_date_ranges=[segment],
+        )
+
+    assert "Segment 1 date range too large: 16 days" in str(exc_info.value)
+
+
+def test_multi_city_base_chronological_order_ok(date_range_factory):
+    """Test validation ordre chronologique segments (OK)."""
+    segment1 = date_range_factory(start_offset=1, duration=7)
+    segment2 = date_range_factory(start_offset=8, duration=7)
+
+    request = MultiCitySearchRequestBase(
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
+        segments_date_ranges=[segment1, segment2],
+    )
+
+    assert len(request.segments_date_ranges) == 2
+
+
+def test_multi_city_base_chronological_order_fails(date_range_factory):
+    """Test validation ordre chronologique segments (FAIL overlap)."""
+    segment1 = date_range_factory(start_offset=1, duration=7)
+    segment2 = date_range_factory(start_offset=5, duration=7)
+
+    with pytest.raises(ValidationError) as exc_info:
+        MultiCitySearchRequestBase(
+            template_url="https://example.com/flights",
+            segments_date_ranges=[segment1, segment2],
+        )
+
+    assert "Segment 2 overlaps with segment 1" in str(exc_info.value)
+
+
+def test_multi_city_base_explosion_combinatoire_ok(date_range_factory):
+    """Test validation max 1000 combinaisons (OK)."""
+    segment1 = date_range_factory(start_offset=1, duration=10)
+    segment2 = date_range_factory(start_offset=11, duration=10)
+
+    request = MultiCitySearchRequestBase(
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
+        segments_date_ranges=[segment1, segment2],
+    )
+
+    assert len(request.segments_date_ranges) == 2
+
+
+def test_multi_city_base_explosion_combinatoire_fails(date_range_factory):
+    """Test validation max 1000 combinaisons (FAIL - 16*16*16 = 4096)."""
+    segment1 = date_range_factory(start_offset=1, duration=15)
+    segment2 = date_range_factory(start_offset=16, duration=15)
+    segment3 = date_range_factory(start_offset=31, duration=15)
+
+    with pytest.raises(ValidationError) as exc_info:
+        MultiCitySearchRequestBase(
+            template_url="https://example.com/flights",
+            segments_date_ranges=[segment1, segment2, segment3],
+        )
+
+    assert "Too many combinations:" in str(exc_info.value)
+    assert "Max 1000 allowed" in str(exc_info.value)
+
+
+def test_multi_city_base_extra_forbid(date_range_factory):
+    """Test MultiCitySearchRequestBase rejette champs extra."""
+    segment = date_range_factory(start_offset=1, duration=7)
+
+    with pytest.raises(ValidationError) as exc_info:
+        MultiCitySearchRequestBase(
+            template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
+            segments_date_ranges=[segment],
+            extra_field="invalid",
+        )
+
+    assert "Extra inputs are not permitted" in str(exc_info.value)
+
+
+def test_multi_city_base_serialization(date_range_factory):
+    """Test MultiCitySearchRequestBase sérialisation JSON."""
+    segment = date_range_factory(start_offset=1, duration=7)
+
+    request = MultiCitySearchRequestBase(
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
+        segments_date_ranges=[segment],
+    )
+
+    json_data = request.model_dump()
+
+    assert json_data["template_url"] == GOOGLE_FLIGHT_TEMPLATE_URL
+    assert len(json_data["segments_date_ranges"]) == 1
+    assert json_data["segments_date_ranges"][0]["start"] == segment.start
+
+
+# === GoogleSearchRequest Tests ===
+
+
+def test_google_search_request_valid_two_segments(google_search_request_factory):
+    """Test GoogleSearchRequest valide avec 2 segments (minimum)."""
     request = google_search_request_factory(
         days_segment1=6, days_segment2=5, offset_segment2=7
     )
@@ -95,8 +248,8 @@ def test_search_request_valid_two_segments(google_search_request_factory):
         (6, True),  # too many segments
     ],
 )
-def test_search_request_segments_count_validation(num_segments, should_fail):
-    """Validation nombre segments SearchRequest (2-5)."""
+def test_google_search_request_segments_count_validation(num_segments, should_fail):
+    """Test validation nombre segments GoogleSearchRequest (2-5)."""
     segments_date_ranges = []
     for i in range(num_segments):
         start = get_future_date(1 + i * 10)
@@ -119,8 +272,8 @@ def test_search_request_segments_count_validation(num_segments, should_fail):
         assert len(request.segments_date_ranges) == num_segments
 
 
-def test_search_request_empty_segments_fails():
-    """Segments vide rejetée."""
+def test_google_search_request_empty_segments_fails():
+    """Test GoogleSearchRequest rejette segments vide."""
     with pytest.raises(ValidationError):
         GoogleSearchRequest(
             template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
@@ -128,8 +281,8 @@ def test_search_request_empty_segments_fails():
         )
 
 
-def test_search_request_explosion_combinatoire_ok():
-    """1000 combinaisons exactement accepté."""
+def test_google_search_request_explosion_combinatoire_ok():
+    """Test GoogleSearchRequest accepte 1000 combinaisons exactement."""
     request = GoogleSearchRequest(
         template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[
@@ -159,8 +312,8 @@ def test_search_request_explosion_combinatoire_ok():
     assert len(request.segments_date_ranges) == 5
 
 
-def test_search_request_explosion_combinatoire_fails():
-    """Plus de 1000 combinaisons rejeté."""
+def test_google_search_request_explosion_combinatoire_fails():
+    """Test GoogleSearchRequest rejette plus de 1000 combinaisons."""
     with pytest.raises(ValidationError) as exc_info:
         GoogleSearchRequest(
             template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
@@ -191,8 +344,8 @@ def test_search_request_explosion_combinatoire_fails():
     assert "Too many combinations" in str(exc_info.value)
 
 
-def test_search_request_explosion_message_suggests_reduction():
-    """Message erreur suggère segment à réduire."""
+def test_google_search_request_explosion_message_suggests_reduction():
+    """Test GoogleSearchRequest message erreur suggère segment à réduire."""
     with pytest.raises(ValidationError) as exc_info:
         GoogleSearchRequest(
             template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
@@ -216,8 +369,8 @@ def test_search_request_explosion_message_suggests_reduction():
     assert "date range too large" in error_msg.lower() or "15 days" in error_msg
 
 
-def test_search_request_asymmetric_ranges_valid():
-    """Ranges asymétriques optimisés acceptés."""
+def test_google_search_request_asymmetric_ranges_valid():
+    """Test GoogleSearchRequest accepte ranges asymétriques optimisés."""
     request = GoogleSearchRequest(
         template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[
@@ -247,14 +400,14 @@ def test_search_request_asymmetric_ranges_valid():
     assert len(request.segments_date_ranges) == 5
 
 
-def test_search_request_missing_fields_fails():
-    """Champs requis manquants."""
+def test_google_search_request_missing_fields_fails():
+    """Test GoogleSearchRequest rejette champs requis manquants."""
     with pytest.raises(ValidationError):
         GoogleSearchRequest()
 
 
-def test_search_request_model_dump_json_valid():
-    """Serialization JSON valide."""
+def test_google_search_request_model_dump_json_valid():
+    """Test GoogleSearchRequest sérialisation JSON valide."""
     request = GoogleSearchRequest(
         template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
         segments_date_ranges=[
@@ -275,8 +428,8 @@ def test_search_request_model_dump_json_valid():
     assert "google.com/travel/flights" in json_str
 
 
-def test_search_request_type_hints_pep695_compliant():
-    """Type hints code conforme PEP 695."""
+def test_google_search_request_type_hints_pep695_compliant():
+    """Test GoogleSearchRequest type hints conformes PEP 695."""
     segments_annotation = GoogleSearchRequest.model_fields[
         "segments_date_ranges"
     ].annotation
@@ -284,191 +437,67 @@ def test_search_request_type_hints_pep695_compliant():
     assert "list" in str(segments_annotation)
 
 
-def test_flight_combination_result_valid_fields(
-    google_flight_dto_factory, date_range_factory
-):
-    """FlightCombinationResult valide."""
-    start_date1, _ = get_date_range(start_offset=1, duration=0)
-    start_date2, _ = get_date_range(start_offset=15, duration=0)
-
-    flight = google_flight_dto_factory(
-        price=1250.50,
-        airline="Air France",
-        departure_time="10:30",
-        arrival_time="14:45",
-        duration="4h 15min",
-        stops=0,
-        departure_airport="Aéroport de Paris-Charles de Gaulle",
-        arrival_airport="Aéroport international de Tokyo-Haneda",
-    )
-
-    combination_data = {
-        "segment_dates": [start_date1.isoformat(), start_date2.isoformat()],
-        "flights": [
-            {
-                "price": flight.price,
-                "airline": flight.airline,
-                "departure_time": flight.departure_time,
-                "arrival_time": flight.arrival_time,
-                "duration": flight.duration,
-                "stops": flight.stops,
-                "departure_airport": flight.departure_airport,
-                "arrival_airport": flight.arrival_airport,
-            }
+def test_google_search_request_template_url_validation_valid():
+    """Test GoogleSearchRequest validation URL Google Flights valide."""
+    request = GoogleSearchRequest(
+        template_url=GOOGLE_FLIGHT_TEMPLATE_URL,
+        segments_date_ranges=[
+            DateRange(
+                start=get_future_date(1).isoformat(),
+                end=get_future_date(3).isoformat(),
+            ),
+            DateRange(
+                start=get_future_date(5).isoformat(),
+                end=get_future_date(7).isoformat(),
+            ),
         ],
-    }
-    combination = FlightCombinationResult(**combination_data)
-
-    assert len(combination.segment_dates) == 2
-    assert combination.segment_dates[0] == start_date1.isoformat()
-    assert combination.segment_dates[1] == start_date2.isoformat()
-    assert len(combination.flights) == 1
-    assert combination.flights[0].price == 1250.50
-    assert combination.flights[0].airline == "Air France"
-
-
-@pytest.mark.parametrize(
-    "field,value,description",
-    [
-        ("price", -100.0, "prix négatif"),
-        ("price", 0, "prix zéro"),
-        ("airline", "A", "airline trop court"),
-        ("stops", -1, "stops négatif"),
-    ],
-)
-def test_google_flight_dto_validation_errors(
-    google_flight_dto_factory, field, value, description
-):
-    """Validation GoogleFlightDTO rejette valeurs invalides."""
-    with pytest.raises(ValidationError):
-        google_flight_dto_factory(**{field: value})
-
-
-def test_search_stats_valid_fields():
-    """SearchStats valide."""
-    stats_data = {
-        "total_results": 10,
-        "search_time_ms": 50,
-        "segments_count": 2,
-    }
-    stats = SearchStats(**stats_data)
-
-    assert stats.total_results == 10
-    assert stats.search_time_ms == 50
-    assert stats.segments_count == 2
-
-
-def test_search_response_results_sorted_by_price(google_flight_dto_factory):
-    """Results triés prix croissant."""
-    start_date1, _ = get_date_range(start_offset=1, duration=0)
-    start_date2, _ = get_date_range(start_offset=2, duration=0)
-
-    flight1 = google_flight_dto_factory(price=2000.0, airline="Airline2")
-    flight2 = google_flight_dto_factory(price=1000.0, airline="Airline1")
-
-    results_unsorted = [
-        {
-            "segment_dates": [start_date2.isoformat(), start_date2.isoformat()],
-            "flights": [
-                {
-                    "price": flight1.price,
-                    "airline": flight1.airline,
-                    "departure_time": flight1.departure_time,
-                    "arrival_time": flight1.arrival_time,
-                    "duration": flight1.duration,
-                }
-            ],
-        },
-        {
-            "segment_dates": [start_date1.isoformat(), start_date1.isoformat()],
-            "flights": [
-                {
-                    "price": flight2.price,
-                    "airline": flight2.airline,
-                    "departure_time": flight2.departure_time,
-                    "arrival_time": flight2.arrival_time,
-                    "duration": flight2.duration,
-                }
-            ],
-        },
-    ]
-    stats_data = {
-        "total_results": 2,
-        "search_time_ms": 50,
-        "segments_count": 2,
-    }
-
-    with pytest.raises(ValidationError) as exc_info:
-        SearchResponse(results=results_unsorted, search_stats=stats_data)
-
-    assert "sorted" in str(exc_info.value).lower()
-
-
-def test_search_response_max_10_results(google_flight_dto_factory):
-    """Max 10 results respecté."""
-    start_date1, _ = get_date_range(start_offset=1, duration=0)
-    start_date2, _ = get_date_range(start_offset=15, duration=0)
-
-    results = []
-    for i in range(11):
-        flight = google_flight_dto_factory(
-            price=1000.0 + i * 100,
-            airline=f"Airline{i}",
-            departure_time="10:00",
-            arrival_time="14:00",
-            duration="4h",
-        )
-        results.append(
-            {
-                "segment_dates": [start_date1.isoformat(), start_date2.isoformat()],
-                "flights": [
-                    {
-                        "price": flight.price,
-                        "airline": flight.airline,
-                        "departure_time": flight.departure_time,
-                        "arrival_time": flight.arrival_time,
-                        "duration": flight.duration,
-                    }
-                ],
-            }
-        )
-
-    stats_data = {
-        "total_results": 11,
-        "search_time_ms": 50,
-        "segments_count": 2,
-    }
-
-    with pytest.raises(ValidationError):
-        SearchResponse(results=results, search_stats=stats_data)
-
-
-def test_flight_time_string_format(google_flight_dto_factory):
-    """GoogleFlightDTO accepte times en format string."""
-    flight = google_flight_dto_factory(
-        departure_time="10:30", arrival_time="14:45", duration="4h 15min"
     )
 
-    assert flight.departure_time == "10:30"
-    assert flight.arrival_time == "14:45"
+    assert "google.com/travel/flights" in request.template_url
+    assert "tfs=" in request.template_url
 
 
-def test_flight_duration_format(google_flight_dto_factory):
-    """GoogleFlightDTO duration accepte format string."""
-    flight = google_flight_dto_factory(
-        departure_time="10:00", arrival_time="20:30", duration="10h 30min"
-    )
+def test_google_search_request_template_url_validation_invalid():
+    """Test GoogleSearchRequest validation URL rejette URLs invalides."""
+    with pytest.raises(ValidationError, match="URL must be a valid Google Flights URL"):
+        GoogleSearchRequest(
+            template_url="https://www.kayak.fr/flights",
+            segments_date_ranges=[
+                DateRange(
+                    start=get_future_date(1).isoformat(),
+                    end=get_future_date(3).isoformat(),
+                ),
+                DateRange(
+                    start=get_future_date(5).isoformat(),
+                    end=get_future_date(7).isoformat(),
+                ),
+            ],
+        )
 
-    assert flight.duration == "10h 30min"
+
+def test_google_search_request_template_url_missing_tfs():
+    """Test GoogleSearchRequest validation URL rejette URL sans paramètre tfs."""
+    with pytest.raises(ValidationError, match="URL template must contain 'tfs='"):
+        GoogleSearchRequest(
+            template_url="https://www.google.com/travel/flights",
+            segments_date_ranges=[
+                DateRange(
+                    start=get_future_date(1).isoformat(),
+                    end=get_future_date(3).isoformat(),
+                ),
+                DateRange(
+                    start=get_future_date(5).isoformat(),
+                    end=get_future_date(7).isoformat(),
+                ),
+            ],
+        )
 
 
-# ============================================================================
-# Tests KayakSearchRequest
-# ============================================================================
+# === KayakSearchRequest Tests ===
 
 
 def test_kayak_search_request_valid_two_segments(kayak_search_request_factory):
-    """KayakSearchRequest valide avec 2 segments (minimum)."""
+    """Test KayakSearchRequest valide avec 2 segments (minimum)."""
     request = kayak_search_request_factory(
         days_segment1=6, days_segment2=5, offset_segment2=7
     )
@@ -486,7 +515,7 @@ def test_kayak_search_request_valid_two_segments(kayak_search_request_factory):
     ],
 )
 def test_kayak_search_request_segments_count_validation(num_segments, should_fail):
-    """Validation nombre segments KayakSearchRequest (2-6)."""
+    """Test validation nombre segments KayakSearchRequest (2-6)."""
     segments_date_ranges = []
     for i in range(num_segments):
         start = get_future_date(1 + i * 10)
@@ -510,7 +539,7 @@ def test_kayak_search_request_segments_count_validation(num_segments, should_fai
 
 
 def test_kayak_search_request_empty_segments_fails():
-    """Segments vide rejetée."""
+    """Test KayakSearchRequest rejette segments vide."""
     with pytest.raises(ValidationError):
         KayakSearchRequest(
             template_url=KAYAK_TEMPLATE_URL,
@@ -527,7 +556,7 @@ def test_kayak_search_request_empty_segments_fails():
     ],
 )
 def test_kayak_search_request_invalid_url(invalid_url, error_msg):
-    """Validation URL Kayak rejette URLs invalides."""
+    """Test KayakSearchRequest validation URL rejette URLs invalides."""
     with pytest.raises(ValidationError, match=error_msg):
         KayakSearchRequest(
             template_url=invalid_url,
@@ -545,7 +574,7 @@ def test_kayak_search_request_invalid_url(invalid_url, error_msg):
 
 
 def test_kayak_search_request_valid_url():
-    """URL Kayak valide acceptée."""
+    """Test KayakSearchRequest URL Kayak valide acceptée."""
     request = KayakSearchRequest(
         template_url=KAYAK_TEMPLATE_URL,
         segments_date_ranges=[
