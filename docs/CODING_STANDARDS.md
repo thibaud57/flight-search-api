@@ -30,6 +30,10 @@
    - [5.2 Conventional Commits](#52-conventional-commits)
    - [5.3 Pre-commit Checks](#53-pre-commit-checks)
 6. [Docker](#6-docker)
+7. [Sécurité & Secrets](#7-sécurité--secrets)
+   - [7.1 Variables Environnement](#71-variables-environnement)
+   - [7.2 Masquage Logs](#72-masquage-logs)
+   - [7.3 Secrets CI/CD](#73-secrets-cicd)
 
 ---
 
@@ -39,8 +43,8 @@
 
 #### Règles Obligatoires
 
-- ✅ Utiliser PEP 695 partout : `class Response[T]:`, `def process[T](items: list[T]) -> T:`
-- ✅ Annoter TOUTES les signatures (args + return)
+- ✅ **CRITICAL** : Utiliser PEP 695 partout (`class Response[T]:`, `def process[T](items: list[T]) -> T:`)
+- ✅ **CRITICAL** : Annoter TOUTES les signatures (args + return)
 - ✅ Utiliser `list[T]`, `dict[K, V]` (pas `List[T]`, `Dict[K, V]`)
 - ✅ Préférer `X | None` à `Optional[X]`
 - ✅ Ajouter `model_config = ConfigDict(extra="forbid")` sur tous les models Pydantic
@@ -49,9 +53,8 @@
 
 #### Exemples
 
-**Génériques PEP 695** :
 ```python
-# ✅ Correct (PEP 695)
+# Génériques PEP 695
 class Response[T]:
     data: T
     status: int
@@ -59,39 +62,19 @@ class Response[T]:
 def process[T](items: list[T]) -> T:
     return items[0]
 
-# ❌ Incorrect (ancienne syntaxe)
-from typing import Generic, TypeVar
-
-T = TypeVar('T')
-
-class Response(Generic[T]):
-    data: T
-    status: int
-```
-
-**Union types** :
-```python
-# ✅ Correct
+# Union types (X | None, pas Optional[X])
 def get_user(id: int | str) -> User | None:
     pass
 
-# ❌ Incorrect
-from typing import Optional, Union
-
-def get_user(id: Union[int, str]) -> Optional[User]:
-    pass
-```
-
-**Pydantic ConfigDict** :
-```python
+# Pydantic ConfigDict
 from pydantic import BaseModel, ConfigDict
 
 class SearchRequest(BaseModel):
     destinations: list[str]
-    date_range: DateRange
-
     model_config = ConfigDict(extra="forbid")  # Rejette champs inconnus
 ```
+
+**❌ Ne pas utiliser** : `Generic[T]`, `TypeVar`, `Optional`, `Union` (ancienne syntaxe pré-Python 3.10)
 
 **Références** : `docs/references/fastapi.md`, `pydantic-v2.md`
 
@@ -133,40 +116,28 @@ def process_search(request):
 
 #### Exceptions Autorisées
 
-**1. Circular imports** (résolution de dépendances circulaires) :
 ```python
+# 1. Circular imports → TYPE_CHECKING block
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
-    from app.services import ProxyService  # Évite circular import
+    from app.services import ProxyService
 
+# 2. Runtime conditionnels → if statement
+if format == "excel":
+    import openpyxl  # Import optionnel
 
-def configure_proxy(proxy: "ProxyService") -> None:
-    pass
+# 3. Imports coûteux → lazy loading
+def train_model():
+    import tensorflow as tf  # Import lourd différé
 ```
 
-**2. Imports conditionnels runtime** (dépendances optionnelles) :
-```python
-def export_data(format: str) -> None:
-    if format == "excel":
-        import openpyxl  # Import seulement si format Excel demandé
-        # ... logique export Excel
-```
-
-**3. Imports coûteux** (optimisation chargement initial) :
-```python
-def train_model() -> None:
-    import tensorflow as tf  # Import lourd seulement si fonction appelée
-    # ... logique ML
-```
-
-**Justification requise** : Toute exception doit avoir un commentaire expliquant POURQUOI.
+**Justification requise** : Toute exception MUST have comment explaining WHY.
 
 ---
 
 #### Règle 2 : Imports via `__init__.py` (HOW)
 
-**Principe** : Toujours importer via les fichiers `__init__.py` des packages, jamais directement depuis les modules internes.
+**RÈGLE CRITIQUE** : ❌ **NEVER import from internal modules** — Always use `__init__.py` public API.
 
 **✅ Correct** :
 ```python
@@ -231,28 +202,11 @@ def parse_price(html: str) -> float:
 - ✅ Algorithmes complexes
 - ✅ API publiques (routes FastAPI)
 
-#### Règles
+- ✅ 1 ligne par défaut (focus sur **POURQUOI**, pas **QUOI**)
+- ❌ Pas de verbosité (ne pas répéter ce que les types disent déjà)
 
-- ✅ 1 ligne suffit si signature explicite
-- ✅ Focus sur **POURQUOI**, pas **QUOI**
-- ❌ Pas de verbosité (ne pas répéter ce que le type dit)
-
-**Exemple** :
 ```python
-# ❌ Verbeux (répète le type)
-def calculate_total(prices: list[float]) -> float:
-    """
-    Calculates the total of a list of prices.
-
-    Args:
-        prices: A list of float prices
-
-    Returns:
-        The sum of all prices as a float
-    """
-    return sum(prices)
-
-# ✅ Concis (focus sur WHY)
+# ✅ Concis
 def calculate_total(prices: list[float]) -> float:
     """Calcule le total pour affichage facture client."""
     return sum(prices)
@@ -332,44 +286,10 @@ __all__ = ["app"]
 
 #### Configuration
 
-**Source** : `pyproject.toml` → sections `[tool.ruff]`, `[tool.ruff.lint]`, `[tool.ruff.format]`
+- Line length 88, Python 3.13, linters : E/F/I/N/UP/B/C4/SIM/RUF
+- Tests : `S101` (assert) autorisé, format : double quotes + spaces
 
-**Règles clés** :
-- Line length 88 (cohérence Black), Python 3.13 target
-- Linters : pycodestyle (E), pyflakes (F), isort (I), pep8-naming (N), bugbear (B), simplify (SIM)
-- Tests : assertions autorisées (`S101` ignored in `tests/**`)
-- Format : double quotes, spaces (pas tabs)
-
-**Configuration complète** :
-```toml
-[tool.ruff]
-line-length = 88
-indent-width = 4
-target-version = "py313"
-
-[tool.ruff.lint]
-select = [
-    "E",      # pycodestyle errors
-    "F",      # pyflakes
-    "I",      # isort
-    "N",      # pep8-naming
-    "UP",     # pyupgrade
-    "B",      # flake8-bugbear
-    "C4",     # flake8-comprehensions
-    "SIM",    # flake8-simplify
-    "RUF",    # Ruff-specific rules
-]
-ignore = [
-    "E501",   # line-too-long (géré par formatter)
-]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101"]  # assert allowed in tests
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-```
+**Configuration** : Voir `pyproject.toml` sections `[tool.ruff]`, `[tool.ruff.lint]`, `[tool.ruff.format]`
 
 #### Commandes
 
@@ -392,59 +312,26 @@ ruff format . --check     # Check sans modifier
 
 #### Configuration
 
-**Source** : `pyproject.toml` → section `[tool.mypy]` + overrides
+- `strict = true` sur `app/` (10 flags activés), relax sur `tests/`, ignore libs sans stubs
 
-**Règles clés** :
-- `strict = true` sur `app/` (tous flags strictness activés)
-- Relax sur `tests/` (`disallow_untyped_defs = false`)
-- Ignore libs sans stubs : `crawl4ai.*`
+**Configuration** : Voir `pyproject.toml` section `[tool.mypy]` + overrides
 
-**Configuration complète** :
-```toml
-[tool.mypy]
-python_version = "3.13"
-strict = true
-warn_return_any = true
-warn_unused_configs = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-no_implicit_reexport = true
-strict_equality = true
-
-# Relax strict pour tests
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_defs = false
-
-# Ignorer libs sans stubs
-[[tool.mypy.overrides]]
-module = ["crawl4ai.*"]
-ignore_missing_imports = true
-```
-
-**Flags activés par `strict = true`** :
-- `--disallow-any-generics`
-- `--disallow-untyped-defs`
-- `--disallow-incomplete-defs`
-- `--check-untyped-defs`
-- `--disallow-untyped-decorators`
-- `--warn-redundant-casts`
-- `--warn-unused-ignores`
-- `--warn-return-any`
-- `--no-implicit-reexport`
-- `--strict-equality`
-
-#### Commande
-
-```bash
-mypy app/    # Type check strict
-```
+**Commande** : `mypy app/`
 
 #### Workflow
 
 - ✅ **Strict mode OBLIGATOIRE** sur `app/` (10 flags activés automatiquement)
 - ✅ **CI bloque** si mypy échoue
-- ✅ **Aucun `# type: ignore`** sans justification commentée
+- ✅ **MUST** : Aucun `# type: ignore` sans justification commentée
+
+**Format requis type ignore** :
+```python
+# ✅ Correct
+result = external_lib.call()  # type: ignore[no-untyped-call]  # Lib sans stubs
+
+# ❌ INCORRECT - PR REJETÉE
+result = external_lib.call()  # type: ignore
+```
 
 ---
 
@@ -461,27 +348,14 @@ mypy app/    # Type check strict
 #### Exemple
 
 ```python
-import logging
+# ✅ Correct
+logger.info("Search completed", extra={"search_id": "abc123", "destinations": [...], "duration_ms": 1234})
 
-logger = logging.getLogger(__name__)
-
-# ✅ Correct : contexte structuré
-logger.info(
-    "Search completed successfully",
-    extra={
-        "search_id": "abc123",
-        "destinations": ["Paris", "Tokyo"],
-        "results_count": 10,
-        "proxy_used": "pr.decodo.com",
-        "duration_ms": 1234,
-    }
-)
-
-# ❌ Incorrect : pas de contexte
-logger.info("Search completed")
+# ❌ Incorrect
+logger.info("Search completed")  # Pas de contexte
 ```
 
-**Configuration complète** → `app/core/logger.py`
+**Configuration** : Voir `app/core/logger.py`
 
 ---
 
@@ -528,99 +402,22 @@ def extract_price(html: str) -> float:
 2. **Green** : Implémenter code minimal pour faire passer le test
 3. **Refactor** : Améliorer code sans casser les tests
 
-**Pyramide Tests** :
-```
-        /\
-       /  \      10% - E2E (integration)
-      /    \
-     /------\    30% - Integration (API routes)
-    /        \
-   /----------\  60% - Unit (services, models, utils)
-  /____________\
-```
+**Pyramide Tests** : 60% Unit (services, models) → 30% Integration (API routes) → 10% E2E (manuels)
 
 **Règles TDD strictes** :
-- ✅ Tests unitaires AVANT implémentation (red → green → refactor)
+- ✅ **ALWAYS** : Tests unitaires AVANT implémentation (red → green → refactor)
 - ✅ Tests intégration APRÈS tous tests unitaires de la story
-- ✅ Commit seulement si TOUS les tests passent (unitaires + intégration)
+- ✅ **NEVER** : Commit si tests échouent
 - ❌ Ne JAMAIS commencer intégration si tests unitaires échouent
-- ❌ Ne JAMAIS skipper tests (coverage minimum 80%)
+- ❌ **CRITICAL** : Coverage minimum 80% (CI bloque si inférieur)
 
 #### Workflow TDD par Story
 
-Pour chaque story (Phase 5) :
+1. **Tests Unitaires** : Chaque composant (red → green → refactor) → Tous tests passent ✅
+2. **Tests Intégration** : End-to-end TestClient (si API route) → Tests passent ✅
+3. **Validation Manuelle** : curl/Postman → Commit si OK
 
-**PHASE 1: TDD Tests Unitaires**
-Pour chaque composant:
-1. Écrire tests composant (red)
-2. Implémenter composant (green)
-3. Tests passent ✅
-4. Refactor (si nécessaire)
-
-Répéter pour tous composants story
-
-**PHASE 2: Tests Intégration**
-5. Écrire tests end-to-end (TestClient si API route)
-6. Tests intégration passent ✅
-
-**PHASE 3: Validation Manuelle**
-7. Test manuel (curl/Postman)
-8. Valider UX réelle
-9. Commit si OK
-
-**Quand faire tests intégration** :
-- Après tous les tests unitaires de la story
-- Avant le commit final
-- Si story inclut API route → TestClient FastAPI obligatoire
-
-#### Formats Recommandés
-
-**AAA (Arrange/Act/Assert)** - Tests unitaires :
-```python
-def test_exemple():
-    # Arrange: Setup initial
-    input_data = {"key": "value"}
-
-    # Act: Exécuter fonction
-    result = fonction(input_data)
-
-    # Assert: Vérifier résultat
-    assert result == expected
-```
-
-**Given/When/Then** - Tests intégration (BDD) :
-```python
-def test_integration_exemple():
-    # Given: État initial
-    client = TestClient(app)
-    request_data = {"key": "value"}
-
-    # When: Action
-    response = client.post("/endpoint", json=request_data)
-
-    # Then: Résultat attendu
-    assert response.status_code == 200
-    assert response.json() == expected
-```
-
-#### Exemple Story Complète
-
-**Story 3 (Search endpoint mock)** :
-
-**Phase 1 - TDD Composants** :
-1. Models (21 tests) → Implémentation → Tests passent ✅
-2. SearchService mock (5 tests) → Implémentation → Tests passent ✅
-3. Route POST /search (8 tests) → Implémentation → Tests passent ✅
-
-**Phase 2 - Tests Intégration** :
-1. End-to-end API (4 tests) → Tests passent ✅
-
-**Phase 3 - Validation** :
-1. Test manuel `curl -X POST http://localhost:8000/api/v1/search-flights`
-2. Vérifier response JSON valide
-3. Commit : `feat(api): add search endpoint with mock data`
-
-**Total Story 3** : 38 tests (34 unitaires + 4 intégration), coverage ≥ 80%
+**Formats** : AAA (Arrange/Act/Assert) pour unit, Given/When/Then pour integration, `@pytest.mark.asyncio` pour async
 
 ---
 
@@ -628,28 +425,15 @@ def test_integration_exemple():
 
 #### 1. Tests Unitaires (`tests/unit/`)
 
-**Caractéristiques** :
-- Testent 1 fonction/classe isolée
-- Utilisent mocks pour dépendances externes
-- Rapides (<1s pour 100 tests)
-- Coverage minimum 80%
+- Testent 1 fonction/classe isolée avec mocks (AsyncMock, MagicMock)
+- Rapides (<1s pour 100 tests), coverage minimum 80%
 
-**Exemple Mocking** :
 ```python
-from unittest.mock import AsyncMock, MagicMock
-
 @pytest.fixture
 def mock_crawler():
     crawler = AsyncMock()
-    crawler.arun.return_value = MagicMock(html="<html>Mock</html>", success=True)
+    crawler.arun.return_value = MagicMock(html="<html>", success=True)
     return crawler
-```
-
-**Exemple Test** :
-```python
-def test_search_request_validation():
-    request = SearchRequest(destinations=["Paris", "Tokyo"], date_range=DateRange(...))
-    assert len(request.destinations) == 2
 
 @pytest.mark.asyncio
 async def test_crawl_with_captcha(mock_crawler):
@@ -662,15 +446,10 @@ async def test_crawl_with_captcha(mock_crawler):
 
 #### 2. Tests Intégration (`tests/integration/`)
 
-**Caractéristiques** :
-- Testent interactions entre composants
-- Utilisent TestClient FastAPI
-- Pas de mocks pour services internes
-- Mocks uniquement pour Crawl4AI/Decodo (dépendances externes)
+- TestClient FastAPI, mocks externes uniquement (Crawl4AI/Decodo), pas services internes
 
-**Exemple Test** :
 ```python
-def test_search_flights_endpoint(client: TestClient, mock_crawler):
+def test_search_flights_endpoint(client, mock_crawler):
     response = client.post("/api/v1/search-flights", json={...})
     assert response.status_code == 200
     assert len(response.json()["results"]) <= 10
@@ -702,14 +481,9 @@ tests/fixtures/
 └── helpers.py      # Constantes + helpers dates
 ```
 
-**Règles strictes** :
-- ✅ **DRY** : 0 duplication (1 constante/factory pour 1 concept)
-- ✅ **Factory pattern** : Paramètres flexibles (`as_dict`, `num_flights`, `past`)
-- ✅ **Constantes** : `TEMPLATE_URL` dans `helpers.py` (single source of truth)
-- ✅ **Délégation** : Fixtures wrapper délèguent aux factories
-- ❌ **Pas de hardcoded** : Jamais de valeurs en dur répétées
+- ✅ **DRY** : 0 duplication, factory pattern avec params flexibles
+- ✅ Constantes centralisées (`helpers.py`), fixtures délèguent aux factories
 
-**Exemple Factory** :
 ```python
 @pytest.fixture
 def date_range_factory():
@@ -719,64 +493,20 @@ def date_range_factory():
     return _create
 ```
 
-#### Chargement
+**Chargement** : `tests/conftest.py` → `pytest_plugins = ["tests.fixtures.factories", "tests.fixtures.mocks", "tests.fixtures.helpers"]`
 
-**`tests/conftest.py`** :
-```python
-pytest_plugins = [
-    "tests.fixtures.factories",
-    "tests.fixtures.mocks",
-    "tests.fixtures.helpers",
-]
-```
-
-**Nommage** :
-- Factories → `*_factory` (retourne callable)
-- Mocks → `mock_*` (retourne objet mocké)
-- Helpers → `get_*`, `assert_*` (fonctions utilitaires)
-- Constantes → `UPPER_CASE`
-
-**Exemple Fixtures** (`tests/conftest.py`) :
-```python
-@pytest.fixture
-def client():
-    return TestClient(app)
-
-@pytest.fixture
-def mock_crawler():
-    crawler = AsyncMock()
-    crawler.arun.return_value = MagicMock(html="<html>Mock</html>", success=True)
-    return crawler
-```
+**Nommage** : `*_factory` (callable), `mock_*` (objet), `get_*`/`assert_*` (helpers), `UPPER_CASE` (constantes)
 
 ---
 
 ### 4.4 Configuration Pytest
 
-**Source** : `pyproject.toml` → section `[tool.pytest.ini_options]`
+- testpaths `tests/`, patterns `test_*.py`, coverage `--cov=app`, asyncio auto
+- Markers : `slow`, `integration`
 
-**Configuration Complète** :
-```toml
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "-v",
-    "--strict-markers",
-    "--tb=short",
-    "--cov=app",
-    "--cov-report=term-missing:skip-covered",
-]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-]
-asyncio_mode = "auto"
-```
+**Configuration** : Voir `pyproject.toml` section `[tool.pytest.ini_options]`
 
-**Commandes Essentielles** :
+**Commandes** :
 ```bash
 pytest tests/unit/ -v                  # Tests unitaires
 pytest tests/integration/ -v           # Tests intégration
@@ -844,39 +574,15 @@ git branch -d feature/initial-setup
 
 #### Workflow Release
 
-**Workflow Story (sous-phase)** :
-1. Lancer story : `/execute-plan-phase X.Y`
-   - Commit automatique selon PLAN.md
-   - Push automatique branche feature
-   - Création automatique PR → develop
-   - Retourne URL de la PR
-2. Merger PR sur GitHub (interface web)
-3. Répéter pour stories suivantes (X.Y+1)
+**Story (sous-phase)** : `/execute-plan-phase X.Y` → PR auto → Merger sur GitHub → Répéter
 
-**Workflow Epic (phase complète)** :
-1. Toutes stories mergées sur develop ✅
-2. Aligner master avec develop :
-   ```bash
-   git checkout develop && git pull
-   git checkout master && git merge develop --ff-only
-   ```
-3. Tag version sur `master` : `git tag {version} && git push origin master --tags`
-4. Release automatique via `.github/workflows/release.yml`
-5. **⚠️ SYNC develop avec master** (éviter décalages futurs) :
-   ```bash
-   git checkout develop && git pull origin master && git push origin develop
-   ```
+**Epic (phase complète)** :
+1. Stories mergées sur develop ✅
+2. `git checkout master && git merge develop --ff-only`
+3. `git tag v1.x.x && git push origin master --tags` → Release auto via `.github/workflows/release.yml`
+4. **Sync develop** : `git checkout develop && git pull origin master && git push`
 
-**Distinction versions** :
-- **Dev releases** : `v0.x.x-xxx` (ex: `v0.3.0-build`) → Marquées "Pre-release" sur GitHub
-- **Prod releases** : `v1.x.x` (ex: `v1.0.0`) → Marquées "Latest release" sur GitHub
-- Détection automatique : `contains(github.ref, '-')` dans workflow release.yml
-
-**Notes** :
-- Story = sous-phase (ex: 3.1, 3.2) → 1 PR automatique → develop
-- Epic = phase complète (ex: Phase 3) → merge develop→master → tag
-- `/execute-plan-phase` gère automatiquement : commit, push, PR
-- User gère : merge PR, tag final Epic
+**Versions** : `v0.x.x-xxx` (dev, pre-release) vs `v1.x.x` (prod, latest)
 
 ---
 
@@ -913,44 +619,13 @@ git branch -d feature/initial-setup
 
 ### 5.3 Pre-commit Checks
 
-#### Commande Obligatoire
-
 ```bash
 ruff check . --fix && ruff format . && mypy app/ && pytest tests/unit/
 ```
 
-**Si succès** → Commit autorisé
-**Si échec** → Corriger avant commit
+**Checks** : Lint → Format → Type check → Tests unitaires → Coverage ≥ 80%
 
-#### Détails Checks
-
-1. **Ruff Lint** : `ruff check .`
-   - Vérifie erreurs code (pycodestyle, pyflakes, naming, etc.)
-   - Auto-fix disponible : `ruff check . --fix`
-   - Doit passer sans erreur
-
-2. **Ruff Format** : `ruff format .`
-   - Formate code selon standards (line length 88, quotes doubles)
-   - Auto-applique formatage
-   - Doit passer sans changement après formatage
-
-3. **Mypy Type Check** : `mypy app/`
-   - Vérifie cohérence types (strict mode)
-   - Détecte erreurs potentielles à runtime
-   - Doit passer sans erreur (0 issues)
-
-4. **Tests Unitaires** : `pytest tests/unit/`
-   - Exécute tests rapides (pas d'intégration)
-   - Coverage minimum 80% (Phase 3+)
-   - Doit passer 100% des tests
-
-#### CI/CD
-
-- ✅ CI GitHub Actions exécute automatiquement sur PR
-- ✅ **Bloque merge** si checks échouent
-- ❌ Pas de pre-commit hook local (éviter friction)
-
-**Règles** : Exécuter checks avant commit, jamais commit si échec, CI bloque PR si échec
+**CI** : GitHub Actions bloque merge si échec, pas de hook local (friction dev)
 
 ---
 
@@ -994,3 +669,89 @@ docker-compose down
 - ❌ Jamais hardcoder secrets dans Dockerfile
 
 **Documentation complète** : `docs/references/dokploy.md` (Dockerfile détaillé, troubleshooting, déploiement Dokploy, optimisations avancées)
+
+---
+
+## 7. Sécurité & Secrets
+
+### 7.1 Variables Environnement
+
+**RÈGLE CRITIQUE** : ❌ **NEVER commit `.env` to version control**
+
+**Justification** :
+- `.env` contient secrets sensibles (PROXY_PASSWORD, API keys, credentials)
+- Déjà présent dans `.gitignore`
+- Production : Secrets injectés via Dokploy UI (jamais dans code)
+
+**Workflow Recommandé** :
+
+```bash
+# 1. Développement local
+cp .env.example .env
+vim .env  # Remplir avec vraies valeurs locales (JAMAIS commit)
+
+# 2. Production (Dokploy UI - Variables Environment)
+PROXY_USERNAME=customer-{api_key}-country-FR
+PROXY_PASSWORD=***********
+LOG_LEVEL=INFO
+CAPTCHA_DETECTION_ENABLED=true
+
+# 3. CI/CD (GitHub Secrets → Actions)
+secrets.PROXY_USERNAME
+secrets.PROXY_PASSWORD
+```
+
+**Anti-Patterns** :
+- ❌ `git add .env` → Leak credentials publiquement
+- ❌ Hardcoder secrets : `API_KEY = "sk-xxx-yyy"` → Code source exposé
+- ❌ Partager `.env` via Slack/email → Insécure
+
+**Vérification** : `.env` dans `.gitignore` (ligne déjà présente)
+
+---
+
+### 7.2 Masquage Logs
+
+**Règle** : ✅ **ALWAYS mask sensitive data in structured logs**
+
+**✅ Correct** :
+```python
+logger.info(
+    "Proxy configured successfully",
+    extra={
+        "proxy_host": "pr.decodo.com",  # OK (public info)
+        "country": "FR",                 # OK
+    }
+)
+```
+
+**❌ INCORRECT - LEAK SECRETS** :
+```python
+# ❌ Password visible dans logs production
+logger.info(f"Proxy: {username}:{password}@pr.decodo.com")
+
+# ❌ API key dans logs
+logger.debug(f"Using API key: {api_key}")
+```
+
+**Référence** : §2.3 Structured Logging (L334-355) pour format complet `extra={}`
+
+---
+
+### 7.3 Secrets CI/CD
+
+**GitHub Actions** : Utiliser GitHub Secrets (Settings → Secrets and variables → Actions)
+
+**Exemple workflow** :
+```yaml
+env:
+  PROXY_USERNAME: ${{ secrets.PROXY_USERNAME }}
+  PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
+```
+
+**Règles** :
+- ✅ Secrets stockés dans GitHub UI (encrypted)
+- ✅ Jamais exposer secrets dans logs CI (`echo $SECRET` → masqué auto)
+- ❌ Jamais commit secrets dans `.github/workflows/*.yml`
+
+**Référence** : `.github/workflows/ci.yml` (workflow existant)
