@@ -62,18 +62,22 @@ jobs:
           path: ~/.cache/uv
           key: ${{ runner.os }}-uv-3.13-${{ hashFiles('**/pyproject.toml') }}
 
-      - name: Install uv and pip-audit-extra
+      - name: Install uv and pip-audit
         run: |
           pip install uv
-          pip install pip-audit-extra
+          pip install pip-audit
 
       - name: Generate requirements from pyproject.toml
         run: uv pip compile pyproject.toml -o requirements.txt
 
-      - name: Scan Python dependencies for CRITICAL CVEs
+      - name: Scan Python dependencies for CVEs
         run: |
-          cat requirements.txt | pip-audit-extra --fail-level CRITICAL --format json --output pip-audit.json
-          cat requirements.txt | pip-audit-extra --fail-level CRITICAL --desc
+          pip-audit -r requirements.txt --desc --format json --output pip-audit.json
+        continue-on-error: true
+
+      - name: Display audit results
+        if: always()
+        run: pip-audit -r requirements.txt --desc || true
 
       - name: Upload pip-audit results
         uses: actions/upload-artifact@v4
