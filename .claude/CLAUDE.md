@@ -760,54 +760,23 @@ uv run pytest tests/
 
 ## 7.2 Commandes Quotidiennes
 
-### Lancer l'Application
-
+### Développement
 ```bash
-# Mode développement (hot-reload)
-fastapi dev app/main.py
-
-# Mode production
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+fastapi dev app/main.py    # Hot-reload
 ```
 
----
-
-### Quality Checks
-
-**Voir section [Git > Pre-commit Checks](#83-pre-commit-checks) pour détails complets.**
-
+### Quality & Tests
 ```bash
-# All-in-one pre-commit
+# Pre-commit complet (voir sections 4.1, 4.2, 6.4)
 ruff check . --fix && ruff format . && mypy app/ && pytest tests/unit/
 ```
 
----
-
-### Tests
-
-**Voir section [Tests > Configuration & Commandes](#64-configuration--commandes) pour liste complète.**
-
-```bash
-# Tests unitaires (quotidien)
-pytest tests/unit/ -v
-
-# Coverage
-pytest --cov=app --cov-report=html
-```
-
----
+**Détails** : [4.1 Ruff](#41-ruff), [4.2 Mypy](#42-mypy), [6.4 Tests](#64-configuration--commandes)
 
 ### Docker
-
 ```bash
-# Build image
-docker build -t flight-search-api .
-
-# Run container
-docker run -p 8001:8000 --env-file .env flight-search-api
-
-# Run avec override env vars
-docker run -p 8001:8000 -e LOG_LEVEL=DEBUG -e PROXY_USERNAME=customer-XXX-country-FR flight-search-api
+# Commandes complètes : voir section 9. Docker
+docker build -t flight-search-api . && docker run -p 8001:8000 --env-file .env flight-search-api
 ```
 
 ---
@@ -828,31 +797,18 @@ git checkout -b feature/nom-descriptif
 
 ### Étape 2 : Développer avec TDD
 
-**Cycle Red-Green-Refactor pour chaque composant** (voir [Tests > Workflow TDD](#61-stratégie-tests--tdd) pour détails) :
-
+**Cycle Red-Green-Refactor** (détails [6.1 Stratégie TDD](#61-stratégie-tests--tdd)) :
 ```bash
-# 1. RED : Écrire tests → doivent échouer
-pytest tests/unit/test_nouveau_service.py -v
-
-# 2. GREEN : Implémenter feature minimale → tests passent
-pytest tests/unit/test_nouveau_service.py -v
-
-# 3. REFACTOR : Améliorer code → tests passent toujours
+pytest tests/unit/test_nouveau_service.py -v    # RED → GREEN → REFACTOR
 ```
 
-**Répéter pour tous les composants de la story.**
+Répéter pour tous composants story.
 
 ---
 
 ### Étape 3 : Tests Intégration
 
-Après tous les tests unitaires passés :
-
 ```bash
-# Écrire tests intégration (si API route)
-vim tests/integration/test_nouvelle_route.py
-
-# Run tests intégration
 pytest tests/integration/test_nouvelle_route.py -v
 ```
 
@@ -861,12 +817,11 @@ pytest tests/integration/test_nouvelle_route.py -v
 ### Étape 4 : Vérifications Complètes
 
 ```bash
-# Quality checks complets (voir section Git > Pre-commit Checks)
+# Quality checks (voir 4.1, 4.2, 6.4)
 ruff check . --fix && ruff format . && mypy app/ && pytest -v
 
-# Si tout passe → Commit
-git add .
-git commit -m "feat(services): add nouveau service"
+# Commit
+git add . && git commit -m "feat(services): add nouveau service"
 ```
 
 ---
@@ -1081,74 +1036,26 @@ git branch -d feature/initial-setup
 
 ## 8.3 Pre-commit Checks
 
-### Exécution Avant Chaque Commit
+### Commande Obligatoire
 
 ```bash
-# Exécuter manuellement (recommandé pendant dev)
-ruff check . && ruff format . && mypy app/ && pytest tests/unit/
-
-# Si succès → commit autorisé
-# Si échec → corriger avant commit
+ruff check . --fix && ruff format . && mypy app/ && pytest tests/unit/
 ```
 
----
+**Si succès** → Commit autorisé
+**Si échec** → Corriger avant commit
 
-### Checks Obligatoires
+### Détails Checks
 
-**1. Ruff Lint** : `ruff check .`
-- Vérifie erreurs code (pycodestyle, pyflakes, naming, etc.)
-- Auto-fix disponible : `ruff check . --fix`
-- Doit passer sans erreur (warnings tolérés selon config)
+1. **Ruff** : Voir [4.1 Ruff](#41-ruff)
+2. **Mypy** : Voir [4.2 Mypy](#42-mypy)
+3. **Tests** : Voir [6.4 Tests](#64-configuration--commandes)
 
-**2. Ruff Format** : `ruff format .`
-- Formate code selon standards (line length 88, quotes doubles)
-- Auto-applique formatage (pas juste check)
-- Doit passer sans changement après formatage
+### CI/CD
 
-**3. Mypy Type Check** : `mypy app/`
-- Vérifie cohérence types (strict mode)
-- Détecte erreurs potentielles à runtime
-- Doit passer sans erreur (0 issues)
-
-**4. Tests Unitaires** : `pytest tests/unit/`
-- Exécute tests rapides (pas d'intégration)
-- Coverage minimum 80% (Phase 3+)
-- Doit passer 100% des tests
-
----
-
-### Workflow Local
-
-```bash
-# 1. Développer feature
-# ... édition code ...
-
-# 2. Avant commit : Exécuter checks
-ruff check . --fix          # Auto-fix lint
-ruff format .               # Auto-format
-mypy app/                   # Type check
-pytest tests/unit/          # Tests rapides
-
-# 3. Si tous passent : Commit
-git add .
-git commit -m "feat(api): add endpoint"
-
-# 4. Push
-git push origin feature/ma-feature
-```
-
----
-
-### Automation (Phase 3.6+)
-
-- **CI GitHub Actions** : Exécute automatiquement sur PR
-- **Bloque merge** si checks échouent
-- **Pas de pre-commit hook local** (éviter friction dev)
-- **Responsabilité développeur** : Exécuter avant push
-
----
-
-**Règles** : Exécuter checks avant commit, jamais commit si échec, utiliser `--fix`, CI bloque PR si échec
+- ✅ CI GitHub Actions exécute automatiquement sur PR
+- ✅ **Bloque merge** si checks échouent
+- ❌ Pas de pre-commit hook local (éviter friction)
 
 ---
 
