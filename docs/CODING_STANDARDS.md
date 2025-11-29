@@ -33,6 +33,7 @@ Ce document définit les **standards détaillés de codage** (HOW) pour le proje
    - [2.1 Ruff - Linter & Formatter](#21-ruff---linter--formatter)
    - [2.2 Mypy - Type Checking Strict](#22-mypy---type-checking-strict)
    - [2.3 Structured Logging](#23-structured-logging)
+   - [2.4 Commandes Développement](#24-commandes-développement)
 3. [🧪 Tests & TDD](#-3-tests--tdd)
    - [3.1 Stratégie TDD Complète](#31-stratégie-tdd-complète)
    - [3.2 Types de Tests](#32-types-de-tests)
@@ -407,6 +408,42 @@ logger.info("Search completed")  # Pas de contexte
 ```
 
 **Configuration** : Voir `app/core/logger.py`
+
+---
+
+## 2.4 Commandes Développement
+
+### Outil de Gestion : uv
+
+Le projet utilise **uv** (package manager Python) pour gestion dépendances et exécution commandes.
+
+**Setup initial** :
+```bash
+uv sync --all-extras           # Installation dépendances
+uv run crawl4ai-setup           # Setup Playwright (requis)
+```
+
+### Serveur Développement
+
+```bash
+# Production-like (recommandé)
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+**⚠️ Important** : Auto-reload (`--reload`) incompatible avec Playwright sur certains OS (Python 3.13) → `NotImplementedError`. Utiliser sans reload.
+
+### Workflow Quotidien
+
+```bash
+# Pre-commit checks
+uv run ruff check . --fix && uv run ruff format . && uv run mypy app/ && uv run pytest tests/unit/
+
+# Tests
+uv run pytest tests/unit/ -v                  # Tests unitaires
+uv run pytest --cov=app --cov-report=html     # Coverage interactif
+```
+
+**CI** : Toutes commandes CI utilisent `uv run` (voir `.github/workflows/ci.yml`)
 
 ---
 
