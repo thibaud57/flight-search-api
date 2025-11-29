@@ -91,7 +91,7 @@ class TestSegmentFiltersLayoverRange:
         """Devrait rejeter max == min."""
         with pytest.raises(
             ValidationError,
-            match="max_layover_duration .* must be strictly greater than min_layover_duration",
+            match=r"max_layover_duration .* must be strictly greater than min_layover_duration",
         ):
             SegmentFilters(min_layover_duration="06:00", max_layover_duration="06:00")
 
@@ -99,7 +99,7 @@ class TestSegmentFiltersLayoverRange:
         """Devrait rejeter max < min (inversé)."""
         with pytest.raises(
             ValidationError,
-            match="max_layover_duration .* must be strictly greater than min_layover_duration",
+            match=r"max_layover_duration .* must be strictly greater than min_layover_duration",
         ):
             SegmentFilters(min_layover_duration="06:00", max_layover_duration="01:30")
 
