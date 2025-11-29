@@ -647,8 +647,8 @@
   - [x] Integration route `/search-kayak` uniquement (pas `/search-google-flights`)
 - [x] **Validation manuelle** : Filtres appliqués correctement sur route Kayak
 - [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(kayak): add per-segment filtering for Kayak route`
-- [ ] **PR** : feature/story-12 → develop
+- [x] **Commit** : `feat(kayak): add per-segment filtering for Kayak route`
+- [x] **PR** : feature/story-12 → develop (https://github.com/thibaud57/flight-search-api/pull/52)
 
 📝 **Output** : Story 12 complétée (5 story points) - Dernière story Epic 4
 
