@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 from app.core.constants import DURATION_PATTERN_HHMM
 from app.utils.duration import parse_duration
 
-MAX_DURATION_MINUTES = 1440
+MAX_DURATION_MINUTES = 2160
 MAX_LAYOVER_DURATION_MINUTES = 1440
 MAX_MIN_LAYOVER_DURATION_MINUTES = 720
 MIN_STOPS = 0
@@ -27,7 +27,7 @@ class SegmentFilters(BaseModel):
     @field_validator("max_duration", mode="after")
     @classmethod
     def validate_max_duration(cls, v: str | None) -> str | None:
-        """Valide format HH:MM et limite max 24h."""
+        """Valide format HH:MM et limite max 36h."""
         if v is None:
             return v
 
@@ -39,7 +39,7 @@ class SegmentFilters(BaseModel):
         minutes = parse_duration(v)
         if minutes > MAX_DURATION_MINUTES:
             raise ValueError(
-                f"Max duration must be <= {MAX_DURATION_MINUTES} minutes (24h), got {minutes}"
+                f"Max duration must be <= {MAX_DURATION_MINUTES} minutes (36h), got {minutes}"
             )
 
         return v

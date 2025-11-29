@@ -31,12 +31,12 @@ class TestSegmentFiltersDurationValidation:
         with pytest.raises(ValidationError, match="Invalid duration format"):
             SegmentFilters(max_duration="2:30")
 
-    def test_max_duration_invalid_exceeds_24h(self) -> None:
-        """Devrait rejeter max_duration > 24h."""
+    def test_max_duration_invalid_exceeds_36h(self) -> None:
+        """Devrait rejeter max_duration > 36h."""
         with pytest.raises(
-            ValidationError, match="Max duration must be <= 1440 minutes"
+            ValidationError, match=r"Max duration must be <= 2160 minutes"
         ):
-            SegmentFilters(max_duration="25:00")
+            SegmentFilters(max_duration="37:00")
 
     def test_min_layover_duration_invalid_format(self) -> None:
         """Devrait rejeter min_layover_duration format invalide."""
@@ -62,11 +62,11 @@ class TestSegmentFiltersMaxStops:
 class TestSegmentFiltersLimitesDuree:
     """Tests validation limites durée."""
 
-    def test_max_duration_24h_limit_valid(self) -> None:
-        """Devrait accepter max_duration=24:00 (limite max)."""
-        filters = SegmentFilters(max_duration="24:00")
+    def test_max_duration_36h_limit_valid(self) -> None:
+        """Devrait accepter max_duration=36:00 (limite max)."""
+        filters = SegmentFilters(max_duration="36:00")
 
-        assert filters.max_duration == "24:00"
+        assert filters.max_duration == "36:00"
 
     def test_min_layover_duration_12h_limit_valid(self) -> None:
         """Devrait accepter min_layover_duration=12:00 (limite max 12h)."""
