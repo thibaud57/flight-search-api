@@ -1,6 +1,7 @@
 """Exports services."""
 
 from app.services.combination_generator import CombinationGenerator
+from app.services.filter_service import FilterService
 from app.services.proxy_service import ProxyService
 from app.services.retry_strategy import RetryStrategy
 
@@ -16,6 +17,7 @@ __all__ = [
     "CombinationGenerator",
     "CrawlResult",
     "CrawlerService",
+    "FilterService",
     "GoogleFlightParser",
     "KayakFlightParser",
     "ProxyService",

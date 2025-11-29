@@ -1,3 +1,4 @@
+from app.models.filters import SegmentFilters
 from app.models.google_flight_dto import GoogleFlightDTO
 from app.models.internal import CombinationResult, DateCombination, FlightDTO
 from app.models.kayak_flight_dto import KayakFlightDTO, LayoverInfo
@@ -35,4 +36,5 @@ __all__ = [
     "SearchRequest",
     "SearchResponse",
     "SearchStats",
+    "SegmentFilters",
 ]

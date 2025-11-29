@@ -12,7 +12,9 @@ from app.exceptions import CaptchaDetectedError, NetworkError, ParsingError
 from app.models import (
     CombinationResult,
     DateCombination,
+    DateRange,
     FlightCombinationResult,
+    KayakFlightDTO,
     Provider,
     SearchRequest,
     SearchResponse,
@@ -24,6 +26,7 @@ from app.utils import generate_google_flights_url, generate_kayak_url
 if TYPE_CHECKING:
     from app.services.combination_generator import CombinationGenerator
     from app.services.crawler_service import CrawlerService, CrawlResult
+    from app.services.filter_service import FilterService
     from app.services.google_flight_parser import GoogleFlightParser
     from app.services.kayak_flight_parser import KayakFlightParser
 
@@ -39,12 +42,14 @@ class SearchService:
         crawler_service: CrawlerService,
         google_flight_parser: GoogleFlightParser,
         kayak_flight_parser: KayakFlightParser,
+        filter_service: FilterService,
     ) -> None:
         """Initialise service avec dependances injectees."""
         self._combination_generator = combination_generator
         self._crawler_service = crawler_service
         self._google_flight_parser = google_flight_parser
         self._kayak_flight_parser = kayak_flight_parser
+        self._filter_service = filter_service
         self._settings = get_settings()
 
     def _detect_provider(self, url: str) -> Provider:
@@ -75,7 +80,9 @@ class SearchService:
             request, combinations, provider=provider
         )
 
-        combination_results = self._parse_all_results(crawl_results, provider=provider)
+        combination_results = self._parse_all_results(
+            crawl_results, request.segments_date_ranges, provider=provider
+        )
 
         top_results = self._rank_and_select_top_10(combination_results)
 
@@ -157,6 +164,7 @@ class SearchService:
     def _parse_all_results(
         self,
         crawl_results: list[CrawlResultTuple],
+        date_ranges: list[DateRange],
         *,
         provider: Provider,
     ) -> list[CombinationResult]:
@@ -172,7 +180,7 @@ class SearchService:
 
             try:
                 parsed_results, success = self._parse_single_result(
-                    combo, result, provider=provider
+                    combo, result, date_ranges, provider=provider
                 )
                 combination_results.extend(parsed_results)
                 if success:
@@ -197,18 +205,22 @@ class SearchService:
         self,
         combo: DateCombination,
         result: CrawlResult,
+        date_ranges: list[DateRange],
         *,
         provider: Provider,
     ) -> tuple[list[CombinationResult], bool]:
         """Parse un resultat crawl et retourne (results, success)."""
         if provider == Provider.GOOGLE:
-            return self._parse_google_result(combo, result)
+            return self._parse_google_result(combo, result, date_ranges)
         if provider == Provider.KAYAK:
-            return self._parse_kayak_result(combo, result)
+            return self._parse_kayak_result(combo, result, date_ranges)
         raise ValueError(f"Unknown provider: {provider}")
 
     def _parse_google_result(
-        self, combo: DateCombination, result: CrawlResult
+        self,
+        combo: DateCombination,
+        result: CrawlResult,
+        date_ranges: list[DateRange],
     ) -> tuple[list[CombinationResult], bool]:
         """Parse resultat Google Flights."""
         flights = self._google_flight_parser.parse(result.html)
@@ -218,9 +230,12 @@ class SearchService:
         return [CombinationResult(date_combination=combo, flights=flights)], True
 
     def _parse_kayak_result(
-        self, combo: DateCombination, result: CrawlResult
+        self,
+        combo: DateCombination,
+        result: CrawlResult,
+        date_ranges: list[DateRange],
     ) -> tuple[list[CombinationResult], bool]:
-        """Parse resultat Kayak."""
+        """Parse resultat Kayak et applique filtres si presents."""
         if not result.poll_data:
             return [], False
 
@@ -232,14 +247,62 @@ class SearchService:
             flights = all_kayak_results[0]
             if not flights:
                 return [], False
-            return [CombinationResult(date_combination=combo, flights=flights)], True
 
-        results = [
-            CombinationResult(date_combination=combo, flights=result_flights)
-            for result_flights in all_kayak_results
-            if result_flights
-        ]
+            filtered_flights = self._apply_filters_to_segments(flights, date_ranges)
+            if not filtered_flights:
+                return [], False
+
+            return [
+                CombinationResult(date_combination=combo, flights=filtered_flights)
+            ], True
+
+        results = []
+        for result_flights in all_kayak_results:
+            if not result_flights:
+                continue
+
+            filtered_flights = self._apply_filters_to_segments(
+                result_flights, date_ranges
+            )
+
+            if filtered_flights:
+                results.append(
+                    CombinationResult(date_combination=combo, flights=filtered_flights)
+                )
+
         return results, bool(results)
+
+    def _apply_filters_to_segments(
+        self,
+        flights: list[KayakFlightDTO],
+        date_ranges: list[DateRange],
+    ) -> list[KayakFlightDTO]:
+        """Applique filtres par segment sur liste vols multi-segments."""
+        if len(flights) != len(date_ranges):
+            logger.warning(
+                "Mismatch between flights and date_ranges length",
+                extra={
+                    "flights_count": len(flights),
+                    "date_ranges_count": len(date_ranges),
+                },
+            )
+            return flights
+
+        filtered_flights: list[KayakFlightDTO] = []
+        for segment_index, (flight, date_range) in enumerate(
+            zip(flights, date_ranges, strict=False)
+        ):
+            if date_range.filters:
+                filtered_segment = self._filter_service.apply_filters(
+                    [flight], date_range.filters, segment_index
+                )
+                if not filtered_segment:
+                    return []
+                filtered_flights.append(filtered_segment[0])
+            else:
+                filtered_flights.append(flight)
+
+        return filtered_flights
 
     def _rank_and_select_top_10(
         self, results: list[CombinationResult]

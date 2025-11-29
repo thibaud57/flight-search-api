@@ -156,7 +156,7 @@ def kayak_flight_dto_factory():
         airline="Test Airline",
         departure_time="2026-01-14T10:00:00",
         arrival_time="2026-01-14T20:00:00",
-        duration="10h 0min",
+        duration="10:00",
         departure_airport="CDG",
         arrival_airport="NRT",
         num_layovers=0,
@@ -165,7 +165,7 @@ def kayak_flight_dto_factory():
         layovers = []
         if num_layovers > 0:
             layovers = [
-                LayoverInfo(airport=f"JF{i}", duration=f"{i + 1}h 0min")
+                LayoverInfo(airport=f"JF{i}", duration=f"{(i + 1):02d}:00")
                 for i in range(num_layovers)
             ]
 

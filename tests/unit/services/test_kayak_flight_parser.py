@@ -226,7 +226,7 @@ def test_parse_layovers_extraction():
     flight = results[0][0]
     assert len(flight.layovers) == 1
     assert flight.layovers[0].airport == "JFK"
-    assert flight.layovers[0].duration == "2h 0min"
+    assert flight.layovers[0].duration == "02:00"
 
 
 def test_parse_multiple_segments_per_leg():

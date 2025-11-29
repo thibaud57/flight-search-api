@@ -381,3 +381,68 @@ def test_search_kayak_captcha_error_returns_503(
     assert "detail" in data
     assert "captcha_type" in data
     assert data["captcha_type"] == "recaptcha"
+
+
+def test_search_kayak_with_filters_returns_200_filtered(
+    client_with_mock_search: TestClient, kayak_search_request_factory
+) -> None:
+    """POST avec filters dans date_range retourne 200 avec vols filtres."""
+    request_data = kayak_search_request_factory(as_dict=True)
+    request_data["segments_date_ranges"][0]["filters"] = {
+        "max_duration": "12:00",
+        "max_stops": 1,
+    }
+
+    response = client_with_mock_search.post(SEARCH_KAYAK_ENDPOINT, json=request_data)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "results" in data
+    assert "search_stats" in data
+
+
+def test_search_kayak_with_invalid_filter_format_returns_422(
+    client_with_mock_search: TestClient, kayak_search_request_factory
+) -> None:
+    """POST filters format invalide retourne 422 ValidationError."""
+    request_data = kayak_search_request_factory(as_dict=True)
+    request_data["segments_date_ranges"][0]["filters"] = {
+        "max_duration": "invalid_format",
+    }
+
+    response = client_with_mock_search.post(SEARCH_KAYAK_ENDPOINT, json=request_data)
+
+    assert response.status_code == 422
+    error_detail = response.json()["detail"]
+    assert any("duration" in str(err).lower() for err in error_detail)
+
+
+def test_search_kayak_without_filters_backward_compatible(
+    client_with_mock_search: TestClient, kayak_search_request_factory
+) -> None:
+    """POST sans filters backward compatible retourne 200."""
+    request_data = kayak_search_request_factory(as_dict=True)
+
+    response = client_with_mock_search.post(SEARCH_KAYAK_ENDPOINT, json=request_data)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "results" in data
+    assert len(data["results"]) == 10
+
+
+def test_search_kayak_layover_range_invalid_returns_422(
+    client_with_mock_search: TestClient, kayak_search_request_factory
+) -> None:
+    """POST layover range invalide retourne 422 ValidationError."""
+    request_data = kayak_search_request_factory(as_dict=True)
+    request_data["segments_date_ranges"][0]["filters"] = {
+        "min_layover_duration": "05:00",
+        "max_layover_duration": "03:00",
+    }
+
+    response = client_with_mock_search.post(SEARCH_KAYAK_ENDPOINT, json=request_data)
+
+    assert response.status_code == 422
+    error_detail = response.json()["detail"]
+    assert any("layover" in str(err).lower() for err in error_detail)

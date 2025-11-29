@@ -1,17 +1,44 @@
 ---
-title: "ARCHITECTURE - Vision d'ensemble"
+title: "ARCHITECTURE — Vision d'ensemble"
 description: "Architecture globale, diagrammes (composants, séquence), ADRs (6 décisions techniques). Consulter pour comprendre structure API async, flow de données, décisions architecturales (Crawl4AI vs SerpAPI, proxies, captcha, extraction CSS)."
-date: "2025-16-11"
+date: "2025-11-16"
 keywords: ["architecture", "design", "adr", "architecture-decision-record", "diagrams", "mermaid", "fastapi", "async", "crawl4ai", "proxies", "decodo", "scraping", "api", "flow", "components"]
 scope: ["docs", "code"]
 technologies: ["python", "fastapi", "crawl4ai", "pydantic", "tenacity"]
 ---
 
-# Vue d'ensemble
+# 🧭 Contexte Projet
 
 ## Objectif
 
 Fournir une API RESTful asynchrone permettant de rechercher les meilleures combinaisons de vols multi-destinations en scrapant Google Flights, avec gestion intelligente des proxies, détection de captchas et ranking des résultats.
+
+## Type de Projet
+
+**API RESTful Async** : Service backend stateless de scraping web intelligent avec anti-détection (proxies résidentiels + stealth mode).
+
+## Enjeux & Contraintes
+
+- **Coûts** : Optimiser coûts proxies (<50€/mois) et éviter coûts API LLM
+- **Rate Limits** : Gérer limites Google Flights via rotation proxies et retry intelligent
+- **Anti-Détection** : Éviter blocages Google (stealth mode + proxies résidentiels France)
+- **Performance** : Temps réponse <60s pour recherches multi-city complexes
+- **Scalabilité** : Architecture stateless pour scaling horizontal facile
+- **Maintenance** : Minimiser dépendance structure HTML Google (monitoring parsing failures)
+
+## Public Cible
+
+- **n8n workflows** : Automation tools cherchant intégration API vols
+- **Développeurs** : Cherchant alternative low-cost à SerpAPI
+- **Internes** : MVP proof-of-concept scraping intelligent
+
+---
+
+# 🏗️ Architecture Globale
+
+## Architecture — Approche Générale
+
+**Stateless API Async-First** : Monolithe modulaire avec service layer, sans base de données (Top 10 résultats en mémoire).
 
 ## Principes Architecturaux
 
@@ -21,7 +48,22 @@ Fournir une API RESTful asynchrone permettant de rechercher les meilleures combi
 4. **Stealth** : Anti-détection via proxies résidentiels + undetected browser
 5. **Cost-Efficient** : Extraction CSS (gratuit) vs LLM (payant)
 
-# Diagrammes
+## Composants Principaux (Haut Niveau)
+
+- **Frontend** : Aucun (API backend uniquement)
+- **Backend** : FastAPI async avec routes REST + Pydantic validation
+- **Données** : Stateless (Top 10 en mémoire, pas de DB)
+- **Processing** : AsyncWebCrawler parallèle + parsing CSS
+- **Sécurité** : Proxies résidentiels anti-détection + secrets .env
+- **Intégrations Externes** : Decodo Proxies, Crawl4AI, Google Flights
+
+## Patterns Utilisés
+
+- **Async/Await** : Crawling parallèle, I/O non-bloquant
+- **Retry Pattern** : Tenacity avec exponential backoff + jitter
+- **Service Layer** : Séparation logique business (SearchService, CrawlerService, ProxyService)
+- **Dependency Injection** : FastAPI DI pour Config, Logger
+- **Strategy Pattern** : Rotation proxies (round-robin)
 
 ## Diagramme de Composants
 
@@ -78,6 +120,80 @@ graph TB
     Config -.->|Settings| ProxyService
 ```
 
+---
+
+# 🌐 Architecture Technique
+
+## 💻 Backend
+
+### Runtime & Langage
+
+**Python 3.13** : Version moderne avec meilleures performances async et type hints (PEP 695).
+
+### Framework
+
+**FastAPI 0.121+** : Framework async moderne avec validation Pydantic v2, auto-documentation OpenAPI, et performances élevées.
+
+### Structure du Code
+
+**Service Layer Pattern** : Séparation claire responsabilités (API routes → Services → External APIs).
+
+```
+app/
+├── api/routes.py          # Routes FastAPI
+├── core/                  # Config + Logger
+├── models/                # Pydantic models (request/response)
+├── services/              # Business logic
+│   ├── search_service.py
+│   ├── crawler_service.py
+│   ├── proxy_service.py
+│   └── flight_parser.py
+└── utils/                 # Helpers
+```
+
+### API
+
+**REST** : Endpoints RESTful avec validation Pydantic stricte, responses JSON structurées.
+
+- `POST /api/v1/search-flights` : Recherche vols multi-city
+- `GET /health` : Health check production
+
+### Services Externes
+
+- **Decodo Proxies** : Proxies résidentiels France (anti-détection)
+- **Crawl4AI** : AsyncWebCrawler + Playwright intégré (scraping stealth)
+- **Google Flights** : Source données vols (scraping HTML)
+
+## 🗄️ Données (Base de Données)
+
+### Approche
+
+**Stateless - Top 10 en Mémoire** : Pas de base de données, résultats triés par prix et limités à Top 10 en mémoire (voir [ADR #003](./adrs/003-top10-memory-vs-db.md)).
+
+**Justification** :
+- Use case API stateless pour n8n → pas besoin persistance
+- Performance optimale (pas d'I/O DB)
+- Coûts $0 (pas d'hébergement DB)
+
+### Extensions Futures Possibles
+
+- **Redis Cache** : TTL 15min pour résultats identiques (optimisation coûts proxies)
+- **PostgreSQL Analytics** : Historique recherches, tendances prix (Phase 8+)
+
+## 🗃️ Données & Cache
+
+### Cache
+
+**Aucun (MVP)** : Pas de cache Redis pour MVP. Chaque recherche = crawling fresh data.
+
+**Extensions possibles** :
+- Redis avec TTL 15min pour même recherche (économie bandwidth)
+- Cache résultats identiques (même origine/destination/dates)
+
+---
+
+# 🔄 Flow de Données & Séquence
+
 ## Diagramme de Séquence - Recherche de Vol
 
 ```mermaid
@@ -132,11 +248,10 @@ sequenceDiagram
     FastAPI-->>Client: JSON Response
 ```
 
-# Flow de Données
+## Flow de Données Détaillé
 
-## Requête HTTP → Response JSON
+### Étape 1 : Réception & Validation
 
-**Étape 1 : Réception & Validation**
 ```
 Client → POST /api/v1/search-flights
 Body: {
@@ -153,7 +268,8 @@ Pydantic Validation:
 - Contraintes métier (max 5 destinations, etc.)
 ```
 
-**Étape 2 : Génération Combinaisons**
+### Étape 2 : Génération Combinaisons
+
 ```
 CombinationGenerator
 ↓
@@ -166,7 +282,8 @@ Génère toutes les permutations multi-city possibles:
 Output: List[Combination] (N! combinaisons)
 ```
 
-**Étape 3 : Crawling Parallèle**
+### Étape 3 : Crawling Parallèle
+
 ```
 Pour chaque combinaison:
   ↓
@@ -189,7 +306,8 @@ Pour chaque combinaison:
   Return HTML brut
 ```
 
-**Étape 4 : Parsing & Extraction**
+### Étape 4 : Parsing & Extraction
+
 ```
 FlightParser.parse_flights(html)
 ↓
@@ -200,7 +318,8 @@ JsonCssExtractionStrategy:
 Output: List[FlightResult] par combinaison
 ```
 
-**Étape 5 : Ranking & Sélection**
+### Étape 5 : Ranking & Sélection
+
 ```
 SearchService.rank_results()
 ↓
@@ -213,8 +332,9 @@ Critères de ranking:
 Sélection Top 10 résultats
 ```
 
-**Étape 6 : Response**
-```
+### Étape 6 : Response
+
+```json
 SearchResponse:
 {
   "results": [
@@ -245,319 +365,203 @@ SearchResponse:
 }
 ```
 
-# Architecture Decision Records (ADR)
+---
 
-## ADR #001 : Crawl4AI + Proxies vs SerpAPI
+# 🛠️ Infrastructure, Sécurité & Observabilité
 
-**Contexte** : Besoin de scraper Google Flights pour récupérer les prix et horaires de vols.
+## 🚀 Infrastructure
 
-**Options Considérées** :
+### Hébergement
 
-| Critère | Crawl4AI + Decodo Proxies | SerpAPI |
-|---------|---------------------------|---------|
-| **Coût** | ~4€/GB + proxy overhead | $50/mois (1000 requêtes) → $0.05/requête |
-| **Flexibilité** | 100% contrôle (extraction, retry, etc.) | API standardisée, moins flexible |
-| **Maintenance** | Haute (gestion captchas, sélecteurs CSS) | Faible (API stable) |
-| **Rate Limits** | Gérés manuellement (proxies, retry) | 1000 requêtes/mois (plan de base) |
-| **Scalabilité** | Excellente (add proxies) | Limitée par plan SerpAPI |
-| **Anti-détection** | Contrôle total (stealth, user-agents) | Géré par SerpAPI |
+**Dokploy (VPS)** : Déploiement Docker sur VPS avec UI Dokploy pour gestion secrets et monitoring.
 
-**Décision** : ✅ **Crawl4AI + Decodo Proxies**
+### Conteneurisation
+
+**Docker multi-stage** : Optimisé pour production (builder + runtime séparés), non-root user, healthcheck natif.
 
 **Justification** :
-- **ROI** : Pour 1000 recherches/mois, coût estimé ~10-15€ vs $50 SerpAPI
-- **Flexibilité** : Contrôle total sur extraction (CSS selectors spécifiques)
-- **Scalabilité** : Pas de limite artificielle, ajout proxies à la demande
-- **Learning** : Expérience scraping avancé (stealth, anti-bot)
+- Réduction taille image (~60% via multi-stage)
+- Sécurité (non-root user)
+- Monitoring intégré (healthcheck)
 
-**Conséquences** :
-- ✅ Coûts variables mais prévisibles
-- ⚠️ Maintenance sélecteurs CSS si Google change HTML
-- ⚠️ Gestion captchas manuelle (détection + retry)
+> **Détails implémentation** : Voir [CODING_STANDARDS.md §5 Docker](CODING_STANDARDS.md#-5-docker--containers) pour Dockerfile complet, commandes, et best practices.
 
-## ADR #002 : Decodo vs Oxylabs (Proxies Résidentiels)
+### CI/CD
 
-**Contexte** : Besoin de proxies résidentiels pour éviter détection Google Flights.
+**GitHub Actions** :
+- `.github/workflows/ci.yml` : Quality checks (ruff, mypy, pytest, coverage)
+- `.github/workflows/release.yml` : Auto-release sur tags `v*`
 
-**Options Considérées** :
+### Environnements
 
-| Critère | Decodo | Oxylabs |
-|---------|--------|---------|
-| **Prix** | ~4€/GB | ~10-15€/GB |
-| **Pool IP** | 10M+ IPs résidentiels | 100M+ IPs |
-| **France Targeting** | ✅ Natif (country-FR) | ✅ Natif |
-| **Rotation** | Automatique (sticky sessions disponibles) | Automatique |
-| **Support** | Email + Documentation | 24/7 + Account Manager |
-| **Bandwidth** | Pay-as-you-go | Plans fixes ou PAYG |
+- **Dev** : Local (`fastapi dev app/main.py`)
+- **Production** : Dokploy VPS (Docker container)
 
-**Décision** : ✅ **Decodo**
+### Sécurité Infrastructure
 
-**Justification** :
-- **Coût** : 60% moins cher qu'Oxylabs
-- **France Targeting** : Format auth simple (`customer-{key}-country-FR`)
-- **Pool IP** : 10M+ IPs largement suffisant pour MVP
-- **Documentation** : Claire et complète
+- **Secrets** : `.env` local, Dokploy UI production (jamais commit `.env`)
+- **Non-root user** : Docker container run as `nobody`
+- **Network** : Proxies Decodo (IP rotation anti-ban)
 
-**Conséquences** :
-- ✅ Coûts optimisés pour MVP
-- ⚠️ Support moins premium qu'Oxylabs (acceptable pour MVP)
-- ✅ Migration Oxylabs facile si besoin (même API format)
+### Scalabilité & Performance
 
-## ADR #003 : Top 10 en Mémoire (Pas de Base de Données)
+- **Scalabilité** : Stateless → scaling horizontal trivial (add containers)
+- **Load balancing** : Non nécessaire MVP (single container suffisant)
+- **Auto-scaling** : Non nécessaire MVP
+- **Optimisation** : Async I/O, crawling parallèle, bandwidth optimisé (ADR #006)
 
-**Contexte** : Stockage des résultats de recherche de vols.
+## 🔐 Sécurité Globale
 
-**Options Considérées** :
+### Stratégie Sécurité
 
-| Critère | En Mémoire (Top 10) | PostgreSQL | Redis |
-|---------|---------------------|------------|-------|
-| **Complexité** | Très faible | Moyenne | Moyenne |
-| **Performance** | Ultra-rapide | Rapide | Ultra-rapide |
-| **Persistance** | ❌ Non | ✅ Oui | ⚠️ Optionnelle |
-| **Coûts** | $0 | ~10€/mois | ~5€/mois |
-| **Historique** | ❌ Non | ✅ Oui | ⚠️ Limité |
-| **Scalabilité** | Stateless (parfait) | Stateful | Stateful |
+**OWASP Top 10** : Validation Pydantic stricte, secrets env vars, rate limiting possible Phase 7+.
 
-**Décision** : ✅ **Top 10 en Mémoire**
+### Authentification
 
-**Justification** :
-- **Use Case** : API stateless pour n8n → pas besoin persistance
-- **Performance** : Réponse instantanée, pas de I/O DB
-- **Simplicité** : Zéro infrastructure additionnelle
-- **Coûts** : $0 vs 5-10€/mois DB
-- **Scalabilité** : Stateless → scaling horizontal facile
+**Aucune (MVP)** : API publique pour MVP. Extensions possibles : API keys, JWT.
 
-**Conséquences** :
-- ✅ Architecture simplifiée
-- ✅ Déploiement minimal
-- ❌ Pas d'historique recherches (acceptable pour MVP)
-- ✅ Migration DB facile si besoin futur (ex: analytics)
+### Autorisation
 
-## ADR #004 : Tenacity pour Retry Logic
+**Aucune (MVP)** : Pas de RBAC nécessaire pour MVP.
 
-**Contexte** : Gestion des erreurs réseau et timeouts lors du scraping.
+### Protection API
 
-**Options Considérées** :
+- **Rate Limit** : Non implémenté MVP (possible Phase 7+ si abuse)
+- **CORS** : Configuré FastAPI si besoin frontend
+- **Validation** : Pydantic strict sur tous endpoints
 
-| Critère | Tenacity | backoff (lib) | Retry manuel |
-|---------|----------|---------------|--------------|
-| **Async Support** | ✅ Natif | ⚠️ Partiel | ✅ Custom |
-| **Wait Strategies** | 8+ stratégies | 3 stratégies | Custom |
-| **Configurabilité** | Excellente | Bonne | Totale |
-| **Maintenance** | Stable (9.1.2) | Stable | Custom code |
-| **Logging** | Callbacks natifs | Limité | Custom |
+### Protection Données
 
-**Décision** : ✅ **Tenacity**
+- **Secrets** : `.env` (local) + Dokploy UI (production)
+- **Chiffrement** : HTTPS via Dokploy reverse proxy
+- **Rotation** : Pas de clés à rotationner MVP (proxies Decodo fixes)
+
+## 📊 Observabilité
+
+### Logs
+
+**Structured JSON Logging** (`python-json-logger`) : Format JSON avec contexte métier riche (search_id, destinations, proxy_used, captcha_detected, etc.).
 
 **Justification** :
-- **Async-First** : Support `async def` natif
-- **Wait Strategies** : Exponential backoff + jitter (best practice)
-- **Configurabilité** : Retry conditions spécifiques (ex: retry network errors, pas 404)
-- **Logging** : Callbacks `before_sleep`, `after` pour structured logging
-- **Production-Ready** : Utilisé par Airflow, Celery, etc.
+- Machine-readable pour parsing Grafana/Loki
+- Contexte métier actionable pour debugging
+- Compatible stacks observabilité modernes
 
-**Configuration Recommandée** :
-```python
-@retry(
-    stop=stop_after_attempt(5),
-    wait=wait_random_exponential(multiplier=1, max=60),
-    retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError))
-)
-async def crawl_google_flights(url: str) -> str:
-    ...
-```
+**Stack** : stdout → Dokploy UI logs (visualisation temps réel).
 
-**Conséquences** :
-- ✅ Résilience réseau optimale
-- ✅ Logging détaillé des retries
-- ⚠️ Dépendance externe (minime, lib stable)
+> **Détails implémentation** : Voir [CODING_STANDARDS.md §2.3 Structured Logging](CODING_STANDARDS.md#23-structured-logging) pour configuration logger, exemples complets, et règles masquage secrets.
 
-## ADR #005 : Captcha Handling Strategy (MVP : Détection Only)
+### Monitoring
 
-**Contexte** : Google Flights peut afficher des captchas pour bloquer les bots.
-
-**Options Considérées** :
-
-| Approche | Coût | Complexité | Efficacité |
-|----------|------|------------|------------|
-| **Proxies résidentiels uniquement** | ~4€/GB | Faible | 90-95% bypass |
-| **Détection + Retry avec rotation IP** | ~4€/GB | Faible | 95-98% bypass |
-| **2Captcha (résolution auto)** | +$0.001-0.003/captcha | Moyenne | 99%+ bypass |
-| **hCaptcha solver** | +$0.001/captcha | Moyenne | 99%+ bypass |
-
-**Décision MVP** : ✅ **Détection + Retry avec Rotation IP**
-
-**Justification** :
-- **Proxies résidentiels Decodo** : Évitent déjà 90-95% des captchas
-- **Stealth mode Crawl4AI** : Anti-détection enterprise (undetected browser)
-- **Retry + Rotation IP** : Nouveau proxy → nouvelle session → contourne captcha temporaire
-- **ROI** : Coût $0 vs résolution captcha ($0.001-0.003 × volume)
-- **Monitoring** : Logger taux captcha pour décision data-driven
-
-**Détection Captcha** :
-```python
-def is_captcha_detected(html: str) -> bool:
-    captcha_patterns = [
-        "recaptcha",
-        "hcaptcha",
-        "g-recaptcha",
-        "captcha-container"
-    ]
-    return any(pattern in html.lower() for pattern in captcha_patterns)
-```
-
-**Stratégie Retry** :
-- Captcha détecté → Log warning + metrics
-- Rotation proxy automatique (ProxyService)
-- Retry avec nouveau proxy (tenacity)
-- Max 5 tentatives par combinaison
-
-**Post-MVP (Phase 7 - Optionnel)** :
-- **Trigger** : Si monitoring montre >5% de blocages captcha
-- **Solution** : Intégration 2Captcha en fallback
-- **Décision** : Data-driven après 1-2 semaines monitoring production
-
-**Conséquences** :
-- ✅ MVP rapide et économique
-- ✅ Monitoring en place pour décision éclairée
-- ⚠️ ~5% de recherches peuvent échouer (acceptable MVP)
-- ✅ Migration 2Captcha facile si nécessaire
-
-## ADR #006 : JsonCssExtractionStrategy vs LLMExtractionStrategy
-
-**Contexte** : Extraction des données de vols depuis le HTML Google Flights.
-
-**Options Considérées** :
-
-| Critère | JsonCssExtractionStrategy | LLMExtractionStrategy |
-|---------|---------------------------|----------------------|
-| **Coût** | ✅ $0 | ❌ ~$0.01-0.05 par page (OpenAI/Claude) |
-| **Performance** | ⚡ Ultra-rapide (<10ms) | 🐢 Lent (1-3s par page) |
-| **Déterminisme** | ✅ 100% reproductible | ⚠️ Non-déterministe |
-| **Maintenance** | ⚠️ Haute (sélecteurs CSS) | ✅ Faible (LLM adaptatif) |
-| **Scalabilité** | ✅ Excellente (1000+ pages/s) | ⚠️ Limitée (rate limits API) |
-| **Fiabilité** | ✅ Haute (si HTML stable) | ⚠️ Moyenne (hallucinations LLM) |
-
-**Décision** : ✅ **JsonCssExtractionStrategy**
-
-**Justification** :
-- **Coût** : $0 vs potentiellement $100-500/mois pour 10k+ recherches
-- **Performance** : 100-300x plus rapide que LLM
-- **Déterminisme** : Résultats identiques à chaque exécution
-- **HTML Google Flights** : Structure relativement stable
-- **MVP** : Prioriser vitesse et coût
-
-**Configuration CSS Selectors** :
-```python
-schema = {
-    "flights": {
-        "selector": ".flight-card",
-        "fields": {
-            "price": ".price-value",
-            "departure_time": ".departure-time",
-            "arrival_time": ".arrival-time",
-            "airline": ".airline-name",
-            "duration": ".flight-duration"
-        }
-    }
-}
-```
-
-**Stratégie Maintenance** :
-- Tests end-to-end réguliers
-- Monitoring parsing failures (alertes si >5%)
-- Fallback LLM uniquement si changement HTML majeur
-
-**Conséquences** :
-- ✅ Coûts opérationnels minimaux
-- ✅ Performance optimale
-- ⚠️ Maintenance sélecteurs CSS si Google change HTML
-- ✅ Fallback LLM possible si nécessaire (architecture modulaire)
-
-# Décisions Complémentaires
-
-## Logging Structuré (JSON)
-
-**Décision** : Utiliser `python-json-logger` pour logs structurés
-
-**Justification** :
-- Machine-readable (parsing facile)
-- Contexte métier riche (search_id, proxy_used, captcha_detected)
-- Compatible Grafana/Loki/CloudWatch
-
-## Configuration (Pydantic Settings)
-
-**Décision** : `pydantic-settings` pour env vars
-
-**Justification** :
-- Validation automatique
-- Type safety
-- Auto-documentation (.env.example)
-
-## Tests
-
-**Stratégie** :
-- **Unit** : Mocks Crawl4AI, Decodo, HTML responses
-- **Integration** : TestClient FastAPI
-- **Coverage** : Minimum 80%
-
-# Métriques & Monitoring
-
-## Métriques Clés
+**Métriques Clés** :
 
 | Métrique | Seuil Alerte | Action |
 |----------|--------------|--------|
-| **Taux captcha** | >5% | Évaluer intégration 2Captcha |
+| **Taux captcha** | >5% | Évaluer intégration 2Captcha (Phase 7) |
 | **Parsing failures** | >5% | Vérifier sélecteurs CSS |
 | **Proxy bandwidth** | >50GB/mois | Optimiser requêtes |
 | **Response time p95** | >60s | Optimiser parallélisation |
 
-## Logging Essentiel
+### Alerts
 
-```python
-logger.info(
-    "Flight search completed",
-    extra={
-        "search_id": uuid,
-        "combinations_checked": 120,
-        "successful_crawls": 115,
-        "captcha_detected": 5,
-        "top_price": 1250.00,
-        "execution_time": 45.2,
-        "bandwidth_consumed_mb": 24.5
-    }
-)
-```
+**MVP** : Monitoring manuel logs Dokploy UI. Extensions Phase 7+ : Grafana/Loki, webhooks alerting.
 
-# Évolutions Futures
+## 🧪 Tests
 
-## Phase 7 (Post-MVP) : Captcha Solving
+### Stratégie de Tests
 
-**Trigger** : Monitoring montre >5% taux captcha
+- **Tests unitaires** : Services isolés avec mocks (Crawl4AI, Decodo, HTML)
+- **Tests intégration** : FastAPI TestClient (routes end-to-end)
+- **Tests e2e** : Manuels (vraies URLs Google Flights, vraies clés Decodo)
+- **Coverage** : Minimum 80% (CI bloque si inférieur)
 
-**Solutions** :
-1. Intégration 2Captcha (résolution auto)
-2. Optimisation proxies (pools dédiés)
-3. Rate limiting intelligent
+### Tools
 
-## Extensions Possibles
+- **pytest** : Framework tests async
+- **pytest-asyncio** : Support async tests
+- **pytest-cov** : Coverage reporting
+- **Fixtures** : `tests/fixtures/` (DRY principe)
 
-- **Cache Redis** : Résultats temporaires (15min TTL)
-- **Analytics DB** : Historique recherches, tendances prix
-- **LLM Fallback** : Si Google change drastiquement HTML
-- **Webhooks** : Notifications recherches terminées
-- **Multi-Currency** : Support USD, GBP, etc.
+### Configuration
+
+**Pytest** : Configuration complète dans `pyproject.toml` (testpaths, asyncio auto, coverage 80% minimum).
+
+> **Détails configuration** : Voir [CODING_STANDARDS.md §3.4 Configuration Pytest](CODING_STANDARDS.md#34-configuration-pytest) pour configuration complète, commandes, et patterns de tests.
 
 ---
 
-# Ressources
+# 📝 ADRs & Décisions
+
+## Index ADRs
+
+- **[ADR #001](./adrs/001-crawl4ai-vs-serpapi.md)** : Crawl4AI + Proxies vs SerpAPI
+- **[ADR #002](./adrs/002-decodo-vs-oxylabs.md)** : Decodo vs Oxylabs (Proxies Résidentiels)
+- **[ADR #003](./adrs/003-top10-memory-vs-db.md)** : Top 10 en Mémoire vs Base de Données
+- **[ADR #004](./adrs/004-tenacity-retry.md)** : Tenacity pour Retry Logic
+- **[ADR #005](./adrs/005-captcha-detection-mvp.md)** : Captcha Handling Strategy (MVP : Détection Only)
+- **[ADR #006](./adrs/006-css-vs-llm-extraction.md)** : JsonCssExtractionStrategy vs LLMExtractionStrategy
+
+## Décisions Complémentaires
+
+### Logging Structuré (JSON)
+
+**Décision** : Utiliser `python-json-logger` pour logs structurés
+
+**Justification** :
+- Machine-readable (parsing facile pour Grafana/Loki)
+- Contexte métier riche (search_id, proxy_used, captcha_detected)
+- Compatible stacks observabilité modernes (CloudWatch, Loki, Datadog)
+
+### Configuration (Pydantic Settings)
+
+**Décision** : `pydantic-settings` pour env vars
+
+**Justification** :
+- Validation automatique types (.env → Python types)
+- Type safety (mypy strict compatible)
+- Auto-documentation (`.env.example` généré)
+- DX excellent (autocomplete IDE)
+
+---
+
+# 🚀 Évolutions Futures
+
+## Phase 7 (Post-MVP) : Captcha Solving
+
+**Trigger** : Monitoring montre >5% taux captcha persistant
+
+**Solutions** :
+1. Intégration 2Captcha (résolution auto)
+2. Optimisation proxies (pools dédiés moins utilisés)
+3. Rate limiting intelligent (throttling requests)
+
+**Coût estimé** : +$10-50/mois selon volume captchas
+
+## Extensions Possibles
+
+- **Cache Redis** : Résultats temporaires (15min TTL) → économie bandwidth proxies
+- **Analytics DB** : PostgreSQL pour historique recherches, tendances prix
+- **LLM Fallback** : Si Google change drastiquement HTML (voir ADR #006)
+- **Webhooks** : Notifications async recherches terminées
+- **Multi-Currency** : Support USD, GBP, JPY (actuellement EUR uniquement)
+- **API Keys** : Authentification simple via header `X-API-Key`
+- **Rate Limiting** : Protection abuse (ex: 100 req/hour par IP)
+
+---
+
+# 🔗 Ressources
 
 ## Documentation Officielle
 
 - **Mermaid Diagrams** : https://mermaid.js.org/
 - **C4 Model** : https://c4model.com/
+- **FastAPI** : https://fastapi.tiangolo.com/
+- **Crawl4AI** : https://docs.crawl4ai.com/
+- **Pydantic v2** : https://docs.pydantic.dev/latest/
 
 ## Ressources Complémentaires
 
 - **ADR GitHub** : https://adr.github.io/
 - **Architecture Decision Records** : https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions
+- **Decodo Proxies** : https://help.decodo.com/docs/introduction
+- **Tenacity** : https://tenacity.readthedocs.io/

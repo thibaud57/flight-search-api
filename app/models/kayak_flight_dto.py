@@ -32,3 +32,8 @@ class KayakFlightDTO(BaseModel):
     departure_airport: str | None = None
     arrival_airport: str | None = None
     layovers: list[LayoverInfo] = []
+
+    @property
+    def stops(self) -> int:
+        """Nombre d'escales calculé depuis layovers."""
+        return len(self.layovers)

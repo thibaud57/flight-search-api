@@ -10,10 +10,10 @@ from app.models import KayakFlightDTO, LayoverInfo
 
 def test_layover_info_creation():
     """Test création LayoverInfo valide."""
-    layover = LayoverInfo(airport="JFK", duration="2h 30min")
+    layover = LayoverInfo(airport="JFK", duration="02:30")
 
     assert layover.airport == "JFK"
-    assert layover.duration == "2h 30min"
+    assert layover.duration == "02:30"
 
 
 def test_layover_info_required_fields():
@@ -34,11 +34,11 @@ def test_layover_info_extra_forbid():
 
 def test_layover_info_serialization():
     """Test LayoverInfo sérialisation JSON."""
-    layover = LayoverInfo(airport="CDG", duration="1h 45min")
+    layover = LayoverInfo(airport="CDG", duration="01:45")
     json_data = layover.model_dump()
 
     assert json_data["airport"] == "CDG"
-    assert json_data["duration"] == "1h 45min"
+    assert json_data["duration"] == "01:45"
 
 
 # === KayakFlightDTO Tests ===
@@ -52,7 +52,7 @@ def test_kayak_flight_dto_creation(kayak_flight_dto_factory):
     assert dto.airline == "Test Airline"
     assert dto.departure_time == "2026-01-14T10:00:00"
     assert dto.arrival_time == "2026-01-14T20:00:00"
-    assert dto.duration == "10h 0min"
+    assert dto.duration == "10:00"
     assert dto.departure_airport == "CDG"
     assert dto.arrival_airport == "NRT"
     assert len(dto.layovers) == 0
@@ -65,7 +65,7 @@ def test_kayak_flight_dto_custom_values(kayak_flight_dto_factory):
         airline="Air France",
         departure_time="2026-01-15T08:30:00",
         arrival_time="2026-01-15T18:45:00",
-        duration="10h 15min",
+        duration="10:15",
         departure_airport="ORY",
         arrival_airport="HND",
     )
@@ -95,7 +95,7 @@ def test_kayak_flight_dto_price_optional():
         airline="Test",
         departure_time="2026-01-14T10:00:00",
         arrival_time="2026-01-14T20:00:00",
-        duration="10h",
+        duration="10:00",
     )
 
     assert dto.price is None
@@ -109,7 +109,7 @@ def test_kayak_flight_dto_optional_fields():
         airline="Test",
         departure_time="2026-01-14T10:00:00",
         arrival_time="2026-01-14T20:00:00",
-        duration="10h",
+        duration="10:00",
     )
 
     assert dto.departure_airport is None
@@ -123,9 +123,9 @@ def test_kayak_flight_dto_with_layovers(kayak_flight_dto_factory):
 
     assert len(dto.layovers) == 2
     assert dto.layovers[0].airport == "JF0"
-    assert dto.layovers[0].duration == "1h 0min"
+    assert dto.layovers[0].duration == "01:00"
     assert dto.layovers[1].airport == "JF1"
-    assert dto.layovers[1].duration == "2h 0min"
+    assert dto.layovers[1].duration == "02:00"
 
 
 def test_kayak_flight_dto_extra_forbid():
@@ -136,7 +136,7 @@ def test_kayak_flight_dto_extra_forbid():
             airline="Test",
             departure_time="2026-01-14T10:00:00",
             arrival_time="2026-01-14T20:00:00",
-            duration="10h",
+            duration="10:00",
             extra_field="invalid",
         )
 
@@ -161,7 +161,7 @@ def test_kayak_flight_dto_serialization_omits_none():
         airline="Test",
         departure_time="2026-01-14T10:00:00",
         arrival_time="2026-01-14T20:00:00",
-        duration="10h",
+        duration="10:00",
         departure_airport=None,
         arrival_airport=None,
     )
@@ -180,10 +180,10 @@ def test_kayak_flight_dto_deserialization():
         "airline": "Lufthansa",
         "departure_time": "2026-01-15T14:30:00",
         "arrival_time": "2026-01-15T22:15:00",
-        "duration": "7h 45min",
+        "duration": "07:45",
         "departure_airport": "FRA",
         "arrival_airport": "JFK",
-        "layovers": [{"airport": "LHR", "duration": "1h 30min"}],
+        "layovers": [{"airport": "LHR", "duration": "01:30"}],
     }
 
     dto = KayakFlightDTO(**data)
@@ -200,7 +200,7 @@ def test_kayak_flight_dto_layovers_default_empty():
         airline="Test",
         departure_time="2026-01-14T10:00:00",
         arrival_time="2026-01-14T20:00:00",
-        duration="10h",
+        duration="10:00",
     )
 
     assert dto.layovers == []
@@ -212,8 +212,50 @@ def test_kayak_flight_dto_datetime_iso_format():
         airline="Test",
         departure_time="2026-12-25T15:30:00",
         arrival_time="2026-12-26T09:45:00",
-        duration="18h 15min",
+        duration="18:15",
     )
 
     assert dto.departure_time == "2026-12-25T15:30:00"
     assert dto.arrival_time == "2026-12-26T09:45:00"
+
+
+def test_kayak_flight_dto_stops_property_no_layovers():
+    """Test property stops retourne 0 quand aucune escale."""
+    dto = KayakFlightDTO(
+        airline="Test",
+        departure_time="2026-01-14T10:00:00",
+        arrival_time="2026-01-14T20:00:00",
+        duration="10:00",
+        layovers=[],
+    )
+
+    assert dto.stops == 0
+
+
+def test_kayak_flight_dto_stops_property_one_layover():
+    """Test property stops retourne 1 avec une escale."""
+    dto = KayakFlightDTO(
+        airline="Test",
+        departure_time="2026-01-14T10:00:00",
+        arrival_time="2026-01-14T20:00:00",
+        duration="10:00",
+        layovers=[LayoverInfo(airport="JFK", duration="02:00")],
+    )
+
+    assert dto.stops == 1
+
+
+def test_kayak_flight_dto_stops_property_multiple_layovers():
+    """Test property stops retourne 2 avec deux escales."""
+    dto = KayakFlightDTO(
+        airline="Test",
+        departure_time="2026-01-14T10:00:00",
+        arrival_time="2026-01-14T20:00:00",
+        duration="10:00",
+        layovers=[
+            LayoverInfo(airport="JFK", duration="02:00"),
+            LayoverInfo(airport="ORD", duration="01:30"),
+        ],
+    )
+
+    assert dto.stops == 2
