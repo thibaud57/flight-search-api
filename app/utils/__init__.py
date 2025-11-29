@@ -1,10 +1,11 @@
 """Utilitaires du projet."""
 
-from app.core import DATE_PATTERN_YYYY_MM_DD
+from app.core.constants import DATE_PATTERN_YYYY_MM_DD
 from app.utils.browser_fingerprint import (
     build_browser_config_from_fingerprint,
     get_base_browser_config,
 )
+from app.utils.duration import format_duration, parse_duration
 from app.utils.google_flights_url import (
     GoogleFlightsUrlError,
     generate_google_flights_url,
@@ -22,7 +23,9 @@ __all__ = [
     "KayakUrlError",
     "build_browser_config_from_fingerprint",
     "capture_kayak_poll_data",
+    "format_duration",
     "generate_google_flights_url",
     "generate_kayak_url",
     "get_base_browser_config",
+    "parse_duration",
 ]

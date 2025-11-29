@@ -27,7 +27,7 @@ class TestBrowserFingerprint:
         """Test config par défaut sans params."""
         config = get_base_browser_config()
 
-        assert config.headless is False
+        assert config.headless is True
         assert config.viewport_width == 1920
         assert config.viewport_height == 1080
         assert config.enable_stealth is False

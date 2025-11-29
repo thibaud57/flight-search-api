@@ -1,47 +1,61 @@
-# Coding Standards — flight-search-api
+---
+title: "CODING_STANDARDS — Standards & Conventions"
+description: "Standards de code détaillés (HOW) : type hints PEP 695, imports via __init__.py, tooling (Ruff/Mypy strict), stratégie TDD complète (AAA/BDD patterns, fixtures factories, coverage ≥80%), Git workflow, Docker best practices, sécurité secrets. Complémentaire à CLAUDE.md (référence rapide)."
+date: "2025-01-28"
+keywords: ["coding-standards", "python", "pep-695", "ruff", "mypy", "tdd", "pytest", "fixtures", "conventional-commits", "docker", "security", "secrets", "logging", "async"]
+scope: ["docs"]
+technologies: ["python", "fastapi", "pydantic", "pytest", "ruff", "mypy", "docker", "git"]
+---
 
-**Version** : 1.0
-**Dernière mise à jour** : 2025-01-28
+# 🎯 Objectif & Relation avec CLAUDE.md
 
-> **Note** : Ce document contient les standards détaillés du projet. Pour une référence rapide, voir `.claude/CLAUDE.md`.
+Ce document définit les **standards détaillés de codage** (HOW) pour le projet. Il est complémentaire au fichier [`.claude/CLAUDE.md`](../.claude/CLAUDE.md) qui sert de référence rapide.
+
+**Distinction** :
+- **CLAUDE.md** : Référence concise (MUST DO, Gotchas, commandes essentielles) pour usage quotidien
+- **CODING_STANDARDS.md** : Règles détaillées avec exemples, justifications, configurations complètes
+
+**Public** : Développeurs du projet, contributeurs, reviewers PR
+
+**Prérequis** : Lire [ARCHITECTURE.md](ARCHITECTURE.md) pour comprendre le WHY avant le HOW
 
 ---
 
-## Table des Matières
+# Table des Matières
 
-1. [Standards Python](#1-standards-python)
+1. [💻 Standards Python](#-1-standards-python)
    - [1.1 Type Hints (PEP 695)](#11-type-hints-pep-695)
    - [1.2 Imports](#12-imports)
    - [1.3 Docstrings (PEP 257)](#13-docstrings-pep-257)
    - [1.4 Patterns Async](#14-patterns-async)
    - [1.5 Fichiers __init__.py](#15-fichiers-__init__py)
-2. [Tooling](#2-tooling)
+2. [🛠️ Tooling & Quality](#️-2-tooling--quality)
    - [2.1 Ruff - Linter & Formatter](#21-ruff---linter--formatter)
    - [2.2 Mypy - Type Checking Strict](#22-mypy---type-checking-strict)
    - [2.3 Structured Logging](#23-structured-logging)
-3. [Anti-Patterns](#3-anti-patterns)
-4. [Tests](#4-tests)
-   - [4.1 Stratégie TDD Complète](#41-stratégie-tdd-complète)
-   - [4.2 Types de Tests](#42-types-de-tests)
-   - [4.3 Fixtures & Factories](#43-fixtures--factories)
-   - [4.4 Configuration Pytest](#44-configuration-pytest)
-5. [Git & Workflow](#5-git--workflow)
-   - [5.1 Stratégie Branches](#51-stratégie-branches)
-   - [5.2 Conventional Commits](#52-conventional-commits)
-   - [5.3 Pre-commit Checks](#53-pre-commit-checks)
-6. [Docker](#6-docker)
-7. [Sécurité & Secrets](#7-sécurité--secrets)
-   - [7.1 Variables Environnement](#71-variables-environnement)
-   - [7.2 Masquage Logs](#72-masquage-logs)
-   - [7.3 Secrets CI/CD](#73-secrets-cicd)
+   - [2.4 Commandes Développement](#24-commandes-développement)
+3. [🧪 Tests & TDD](#-3-tests--tdd)
+   - [3.1 Stratégie TDD Complète](#31-stratégie-tdd-complète)
+   - [3.2 Types de Tests](#32-types-de-tests)
+   - [3.3 Fixtures & Factories](#33-fixtures--factories)
+   - [3.4 Configuration Pytest](#34-configuration-pytest)
+4. [🔄 Git & Workflow](#-4-git--workflow)
+   - [4.1 Stratégie Branches](#41-stratégie-branches)
+   - [4.2 Conventional Commits](#42-conventional-commits)
+   - [4.3 Pre-commit Checks](#43-pre-commit-checks)
+5. [🐳 Docker & Containers](#-5-docker--containers)
+6. [🔐 Sécurité & Secrets](#-6-sécurité--secrets)
+   - [6.1 Variables Environnement](#61-variables-environnement)
+   - [6.2 Masquage Logs](#62-masquage-logs)
+   - [6.3 Secrets CI/CD](#63-secrets-cicd)
 
 ---
 
-## 1. Standards Python
+# 💻 1. Standards Python
 
-### 1.1 Type Hints (PEP 695)
+## 1.1 Type Hints (PEP 695)
 
-#### Règles Obligatoires
+### Règles Obligatoires
 
 - ✅ **CRITICAL** : Utiliser PEP 695 partout (`class Response[T]:`, `def process[T](items: list[T]) -> T:`)
 - ✅ **CRITICAL** : Annoter TOUTES les signatures (args + return)
@@ -52,7 +66,7 @@
 - ✅ Type alias : `type JsonDict = dict[str, str | int | float | bool | None]`
 - ✅ Bounds : `class Processor[T: BaseModel]:` (upper bound) ou `TypeVar('T', str, int)` pour contraintes
 
-#### Exemples
+### Exemples
 
 ```python
 # Génériques PEP 695
@@ -90,13 +104,13 @@ return JSONResponse(status_code=503, content={...})
 
 **❌ Ne pas utiliser** : `Generic[T]`, `TypeVar`, `Optional`, `Union` (ancienne syntaxe pré-Python 3.10), magic numbers HTTP (`200`, `503`, etc.)
 
-**Références** : `docs/references/fastapi.md`, `pydantic-v2.md`
+**Références** : [docs/references/fastapi.md](references/fastapi.md), [pydantic-v2.md](references/pydantic-v2.md)
 
 ---
 
-### 1.2 Imports
+## 1.2 Imports
 
-#### Règle 1 : Imports au Niveau Module (WHERE)
+### Règle 1 : Imports au Niveau Module (WHERE)
 
 **Principe** : Déclarer TOUS les imports en haut du fichier, jamais dans les fonctions/méthodes.
 
@@ -128,7 +142,7 @@ def process_search(request):
     timestamp = datetime.now()
 ```
 
-#### Exceptions Autorisées
+### Exceptions Autorisées
 
 ```python
 # 1. Circular imports → TYPE_CHECKING block
@@ -149,7 +163,7 @@ def train_model():
 
 ---
 
-#### Règle 2 : Imports via `__init__.py` (HOW)
+### Règle 2 : Imports via `__init__.py` (HOW)
 
 **RÈGLE CRITIQUE** : ❌ **NEVER import from internal modules** — Always use `__init__.py` public API.
 
@@ -171,14 +185,14 @@ from app.services.search_service import SearchService
 from app.utils.url_builder import build_google_flights_url
 ```
 
-#### Avantages
+### Avantages
 
 - ✅ **Cohérence** : Un seul endroit définit l'API publique
 - ✅ **Refactoring facile** : Renommer/déplacer fichiers sans casser imports
 - ✅ **Lisibilité** : Imports concis et clairs
 - ✅ **Encapsulation** : Cache détails implémentation interne
 
-#### Structure Recommandée
+### Structure Recommandée
 
 ```python
 # app/models/__init__.py
@@ -201,7 +215,7 @@ __all__ = [
 
 ---
 
-### 1.3 Docstrings (PEP 257)
+## 1.3 Docstrings (PEP 257)
 
 **Règle : 1 ligne par défaut** (90% des cas) :
 ```python
@@ -209,28 +223,52 @@ def parse_price(html: str) -> float:
     """Extrait le prix depuis le HTML Google Flights."""
 ```
 
-#### Format Complet Si Nécessaire
+### Format Complet Si Nécessaire
 
 - ✅ Comportement non-évident (side-effects, mutations)
 - ✅ Exceptions importantes levées
 - ✅ Algorithmes complexes
 - ✅ API publiques (routes FastAPI)
 
+### Principes
+
 - ✅ 1 ligne par défaut (focus sur **POURQUOI**, pas **QUOI**)
 - ❌ Pas de verbosité (ne pas répéter ce que les types disent déjà)
+- ❌ **AUCUN commentaire inline** sauf demande explicite user
+
+**Justification anti-commentaires inline** :
+- Code doit être self-explanatory (noms explicites, types, docstrings)
+- Commentaires deviennent obsolètes rapidement
+- Augmente bruit visuel
 
 ```python
 # ✅ Concis
 def calculate_total(prices: list[float]) -> float:
     """Calcule le total pour affichage facture client."""
     return sum(prices)
+
+# ❌ Commentaire inline - extraire fonction
+price = float(html.select_one(".price").text.strip())  # Extract price from HTML
+
+# ✅ Alternative - nom de fonction explicite
+def extract_price(html: str) -> float:
+    """Extrait le prix depuis le HTML."""
+    return float(html.select_one(".price").text.strip())
 ```
+
+**Exceptions autorisées** :
+- ✅ User demande explicitement commentaires
+- ✅ TODO/FIXME temporaires (à résoudre avant merge)
+- ✅ Type hints complexes nécessitant clarification
+- ✅ Justification imports exceptionnels (circular, conditional)
+
+**Conséquence** : PR rejetée si commentaires inline non justifiés
 
 ---
 
-### 1.4 Patterns Async
+## 1.4 Patterns Async
 
-#### Règles Projet
+### Règles Projet
 
 - ✅ TOUJOURS utiliser `async with` pour AsyncWebCrawler
 - ✅ Retry logic avec tenacity (exponential backoff + jitter)
@@ -238,7 +276,7 @@ def calculate_total(prices: list[float]) -> float:
 - ✅ Capturer exceptions spécifiques (pas `except Exception:`)
 - ✅ Logger avant retry (`before_sleep` callback tenacity)
 
-#### Exemple Complet
+### Exemple Complet
 
 ```python
 from tenacity import retry, stop_after_attempt, wait_exponential, before_sleep_log
@@ -261,19 +299,19 @@ async def crawl_google_flights(url: str) -> str:
         return result.html
 ```
 
-#### Anti-Patterns
+### Anti-Patterns
 
 - ❌ Bloquer event loop avec code sync dans routes async
 - ❌ Retry sur 404 (erreur client, pas serveur)
 - ❌ Pas de timeout → risque hang
 
-**Références** : `docs/references/crawl4ai.md`, `tenacity.md`
+**Références** : [docs/references/crawl4ai.md](references/crawl4ai.md), [tenacity.md](references/tenacity.md)
 
 ---
 
-### 1.5 Fichiers __init__.py
+## 1.5 Fichiers __init__.py
 
-#### Code Applicatif (`app/`)
+### Code Applicatif (`app/`)
 
 ```python
 # Exports explicites avec __all__
@@ -283,7 +321,7 @@ __all__ = ["app"]
 - ✅ Définir `__all__` (API publique du package)
 - ✅ Facilite imports : `from app import app`
 
-#### Tests (`tests/`)
+### Tests (`tests/`)
 
 ```python
 # Vides (juste docstring)
@@ -294,18 +332,18 @@ __all__ = ["app"]
 
 ---
 
-## 2. Tooling
+# 🛠️ 2. Tooling & Quality
 
-### 2.1 Ruff - Linter & Formatter
+## 2.1 Ruff - Linter & Formatter
 
-#### Configuration
+### Configuration
 
 - Line length 88, Python 3.13, linters : E/F/I/N/UP/B/C4/SIM/RUF
 - Tests : `S101` (assert) autorisé, format : double quotes + spaces
 
 **Configuration** : Voir `pyproject.toml` sections `[tool.ruff]`, `[tool.ruff.lint]`, `[tool.ruff.format]`
 
-#### Commandes
+### Commandes
 
 ```bash
 ruff check .              # Lint
@@ -314,7 +352,7 @@ ruff format .             # Format
 ruff format . --check     # Check sans modifier
 ```
 
-#### Workflow
+### Workflow
 
 - ✅ **Pre-commit** : `ruff check . --fix && ruff format .` (obligatoire)
 - ✅ **CI bloque** si ruff échoue
@@ -322,9 +360,9 @@ ruff format . --check     # Check sans modifier
 
 ---
 
-### 2.2 Mypy - Type Checking Strict
+## 2.2 Mypy - Type Checking Strict
 
-#### Configuration
+### Configuration
 
 - `strict = true` sur `app/` (10 flags activés), relax sur `tests/`, ignore libs sans stubs
 
@@ -332,7 +370,7 @@ ruff format . --check     # Check sans modifier
 
 **Commande** : `mypy app/`
 
-#### Workflow
+### Workflow
 
 - ✅ **Strict mode OBLIGATOIRE** sur `app/` (10 flags activés automatiquement)
 - ✅ **CI bloque** si mypy échoue
@@ -349,9 +387,9 @@ result = external_lib.call()  # type: ignore
 
 ---
 
-### 2.3 Structured Logging
+## 2.3 Structured Logging
 
-#### Règles Projet
+### Règles Projet
 
 - ✅ Format JSON structuré avec `pythonjsonlogger`
 - ✅ TOUJOURS ajouter `extra={}` avec contexte métier (search_id, destinations, proxy_used, etc.)
@@ -359,7 +397,7 @@ result = external_lib.call()  # type: ignore
 - ✅ Logger : captcha detection, proxy rotation, parsing errors, Top 10 résultats
 - ✅ Pas de secrets dans logs (masquer API keys, passwords)
 
-#### Exemple
+### Exemple
 
 ```python
 # ✅ Correct
@@ -373,43 +411,47 @@ logger.info("Search completed")  # Pas de contexte
 
 ---
 
-## 3. Anti-Patterns
+## 2.4 Commandes Développement
 
-### Commentaires Inline Interdits
+### Outil de Gestion : uv
 
-**Règle stricte** : ❌ **AUCUN commentaire inline** sauf demande explicite user
+Le projet utilise **uv** (package manager Python) pour gestion dépendances et exécution commandes.
 
-**Pourquoi** :
-- Code doit être self-explanatory (noms explicites, types, docstrings)
-- Commentaires deviennent obsolètes rapidement
-- Augmente bruit visuel
-
-**Alternatives** :
-```python
-# ❌ Commentaire inline
-price = float(html.select_one(".price").text.strip())  # Extract price from HTML
-
-# ✅ Nom de fonction explicite
-def extract_price(html: str) -> float:
-    """Extrait le prix depuis le HTML."""
-    return float(html.select_one(".price").text.strip())
+**Setup initial** :
+```bash
+uv sync --all-extras           # Installation dépendances
+uv run crawl4ai-setup           # Setup Playwright (requis)
 ```
 
-**Exceptions autorisées** :
-- ✅ User demande explicitement commentaires
-- ✅ TODO/FIXME temporaires (à résoudre avant merge)
-- ✅ Type hints complexes nécessitant clarification
-- ✅ Justification imports exceptionnels (circular, conditional)
+### Serveur Développement
 
-**Conséquence** : PR rejetée si commentaires inline non justifiés
+```bash
+# Production-like (recommandé)
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+**⚠️ Important** : Auto-reload (`--reload`) incompatible avec Playwright sur certains OS (Python 3.13) → `NotImplementedError`. Utiliser sans reload.
+
+### Workflow Quotidien
+
+```bash
+# Pre-commit checks
+uv run ruff check . --fix && uv run ruff format . && uv run mypy app/ && uv run pytest tests/unit/
+
+# Tests
+uv run pytest tests/unit/ -v                  # Tests unitaires
+uv run pytest --cov=app --cov-report=html     # Coverage interactif
+```
+
+**CI** : Toutes commandes CI utilisent `uv run` (voir `.github/workflows/ci.yml`)
 
 ---
 
-## 4. Tests
+# 🧪 3. Tests & TDD
 
-### 4.1 Stratégie TDD Complète
+## 3.1 Stratégie TDD Complète
 
-#### Approche TDD (Test-Driven Development)
+### Approche TDD (Test-Driven Development)
 
 **Cycle Red-Green-Refactor** :
 1. **Red** : Écrire test qui échoue
@@ -425,7 +467,7 @@ def extract_price(html: str) -> float:
 - ❌ Ne JAMAIS commencer intégration si tests unitaires échouent
 - ❌ **CRITICAL** : Coverage minimum 80% (CI bloque si inférieur)
 
-#### Workflow TDD par Story
+### Workflow TDD par Story
 
 1. **Tests Unitaires** : Chaque composant (red → green → refactor) → Tous tests passent ✅
 2. **Tests Intégration** : End-to-end TestClient (si API route) → Tests passent ✅
@@ -435,9 +477,9 @@ def extract_price(html: str) -> float:
 
 ---
 
-### 4.2 Types de Tests
+## 3.2 Types de Tests
 
-#### 1. Tests Unitaires (`tests/unit/`)
+### 1. Tests Unitaires (`tests/unit/`)
 
 - Testent 1 fonction/classe isolée avec mocks (AsyncMock, MagicMock)
 - Rapides (<1s pour 100 tests), coverage minimum 80%
@@ -458,7 +500,7 @@ async def test_crawl_with_captcha(mock_crawler):
 
 ---
 
-#### 2. Tests Intégration (`tests/integration/`)
+### 2. Tests Intégration (`tests/integration/`)
 
 - TestClient FastAPI, mocks externes uniquement (Crawl4AI/Decodo), pas services internes
 
@@ -471,7 +513,7 @@ def test_search_flights_endpoint(client, mock_crawler):
 
 ---
 
-#### 3. Tests End-to-End (manuels, pas de CI)
+### 3. Tests End-to-End (manuels, pas de CI)
 
 **Caractéristiques** :
 - Testent flow complet avec vraies dépendances
@@ -483,9 +525,9 @@ def test_search_flights_endpoint(client, mock_crawler):
 
 ---
 
-### 4.3 Fixtures & Factories
+## 3.3 Fixtures & Factories
 
-#### Organisation (`tests/fixtures/`)
+### Organisation (`tests/fixtures/`)
 
 ```
 tests/fixtures/
@@ -513,7 +555,7 @@ def date_range_factory():
 
 ---
 
-### 4.4 Configuration Pytest
+## 3.4 Configuration Pytest
 
 - testpaths `tests/`, patterns `test_*.py`, coverage `--cov=app`, asyncio auto
 - Markers : `slow`, `integration`
@@ -536,9 +578,9 @@ pytest -n auto                         # Parallèle (speedup 4x)
 
 ---
 
-## 5. Git & Workflow
+# 🔄 4. Git & Workflow
 
-### 5.1 Stratégie Branches
+## 4.1 Stratégie Branches
 
 **Modèle GitFlow simplifié** :
 
@@ -550,7 +592,7 @@ develop (intégration)
 feature/* (développement)
 ```
 
-#### Branches Principales
+### Branches Principales
 
 **`master`** : Code en production, stable, uniquement via merge de `develop`
 - Protégée : pas de push direct
@@ -561,7 +603,7 @@ feature/* (développement)
 - Tests CI doivent passer avant merge
 - Base pour créer nouvelles features
 
-#### Branches de Travail
+### Branches de Travail
 
 **`feature/*`** : Développement de fonctionnalités
 - Nomenclature : `feature/nom-descriptif` (kebab-case)
@@ -586,7 +628,7 @@ git pull origin develop
 git branch -d feature/initial-setup
 ```
 
-#### Workflow Release
+### Workflow Release
 
 **Story (sous-phase)** : `/execute-plan-phase X.Y` → PR auto → Merger sur GitHub → Répéter
 
@@ -600,7 +642,7 @@ git branch -d feature/initial-setup
 
 ---
 
-### 5.2 Conventional Commits
+## 4.2 Conventional Commits
 
 **Format obligatoire** :
 
@@ -619,7 +661,7 @@ git branch -d feature/initial-setup
 - `fix(parser): handle missing price field`
 - `refactor(crawler): extract proxy config`
 
-#### Règles Projet
+### Règles Projet
 
 ✅ **Description impérative** : "add feature" (pas "added" ou "adds")
 ✅ **Minuscules** : `feat(api):` (pas `Feat(API):`)
@@ -631,7 +673,7 @@ git branch -d feature/initial-setup
 
 ---
 
-### 5.3 Pre-commit Checks
+## 4.3 Pre-commit Checks
 
 ```bash
 ruff check . --fix && ruff format . && mypy app/ && pytest tests/unit/
@@ -643,11 +685,11 @@ ruff check . --fix && ruff format . && mypy app/ && pytest tests/unit/
 
 ---
 
-## 6. Docker
+# 🐳 5. Docker & Containers
 
 **Dockerfile** : Disponible dans `/Dockerfile` (multi-stage, non-root user, healthcheck)
 
-### Commandes Essentielles
+## Commandes Essentielles
 
 ```bash
 # Build
@@ -666,7 +708,7 @@ docker logs -f flight-api
 docker stop flight-api && docker rm flight-api
 ```
 
-### Docker Compose
+## Docker Compose
 
 ```bash
 docker-compose up -d
@@ -674,7 +716,7 @@ docker-compose logs -f
 docker-compose down
 ```
 
-### Best Practices
+## Best Practices
 
 - ✅ Multi-stage builds (réduction taille ~60%)
 - ✅ Non-root user (sécurité)
@@ -682,13 +724,13 @@ docker-compose down
 - ✅ `.dockerignore` (exclure .git, tests)
 - ❌ Jamais hardcoder secrets dans Dockerfile
 
-**Documentation complète** : `docs/references/dokploy.md` (Dockerfile détaillé, troubleshooting, déploiement Dokploy, optimisations avancées)
+**Documentation complète** : [docs/references/dokploy.md](references/dokploy.md) (Dockerfile détaillé, troubleshooting, déploiement Dokploy, optimisations avancées)
 
 ---
 
-## 7. Sécurité & Secrets
+# 🔐 6. Sécurité & Secrets
 
-### 7.1 Variables Environnement
+## 6.1 Variables Environnement
 
 **RÈGLE CRITIQUE** : ❌ **NEVER commit `.env` to version control**
 
@@ -724,7 +766,7 @@ secrets.PROXY_PASSWORD
 
 ---
 
-### 7.2 Masquage Logs
+## 6.2 Masquage Logs
 
 **Règle** : ✅ **ALWAYS mask sensitive data in structured logs**
 
@@ -748,11 +790,11 @@ logger.info(f"Proxy: {username}:{password}@pr.decodo.com")
 logger.debug(f"Using API key: {api_key}")
 ```
 
-**Référence** : §2.3 Structured Logging (L338-359) pour format complet `extra={}`
+**Référence** : §2.3 Structured Logging pour format complet `extra={}`
 
 ---
 
-### 7.3 Secrets CI/CD
+## 6.3 Secrets CI/CD
 
 **GitHub Actions** : Utiliser GitHub Secrets (Settings → Secrets and variables → Actions)
 
@@ -769,3 +811,23 @@ env:
 - ❌ Jamais commit secrets dans `.github/workflows/*.yml`
 
 **Référence** : `.github/workflows/ci.yml` (workflow existant)
+
+---
+
+# 🔗 Ressources
+
+## Documentation Officielle
+
+- **Python PEP 695** : https://peps.python.org/pep-0695/
+- **PEP 257 (Docstrings)** : https://peps.python.org/pep-0257/
+- **Ruff** : https://docs.astral.sh/ruff/
+- **Mypy** : https://mypy.readthedocs.io/
+- **Pytest** : https://docs.pytest.org/
+- **FastAPI** : https://fastapi.tiangolo.com/
+- **Pydantic v2** : https://docs.pydantic.dev/latest/
+- **Crawl4AI** : https://docs.crawl4ai.com/
+- **Tenacity** : https://tenacity.readthedocs.io/
+- **Conventional Commits** : https://www.conventionalcommits.org/
+- **Keep a Changelog** : https://keepachangelog.com/
+- **Semantic Versioning** : https://semver.org/
+- **Docker Best Practices** : https://docs.docker.com/develop/dev-best-practices/

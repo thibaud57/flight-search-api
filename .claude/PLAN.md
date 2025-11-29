@@ -612,7 +612,7 @@
   - [x] Hook routing : `_after_goto_hook` route selon provider
   - [x] KayakConfig : Settings timeouts et sélecteurs
   - [x] `_wait_for_kayak_polling_complete()` : Détection fin polling via progressbar
-- [ ] **Validation manuelle** : Session établie, consent géré, network capture actif
+- [x] **Validation manuelle** : Session établie, consent géré, network capture actif
 - [x] **Quality checks** : ruff + mypy + coverage ≥ 80% (89%)
 - [x] **Commit** : `feat(kayak): add crawler service with session and consent handling`
 - [x] **PR** : feature/story-10 → develop
@@ -640,15 +640,15 @@
 
 **Branche** : `feature/story-12-segment-filters`
 
-- [ ] **Specs complètes** : `docs/specs/epic-4-kayak/story-12-segment-filters.md`
-- [ ] **Implémentation TDD** :
-  - [ ] SegmentFilters model : max_duration, max_stops, min_layover
-  - [ ] FilterService : Applique filtres per-segment sur résultats Kayak
-  - [ ] Integration route `/search-kayak` uniquement (pas `/search-google-flights`)
-- [ ] **Validation manuelle** : Filtres appliqués correctement sur route Kayak
-- [ ] **Quality checks** : ruff + mypy + coverage ≥ 80%
-- [ ] **Commit** : `feat(kayak): add per-segment filtering for Kayak route`
-- [ ] **PR** : feature/story-12 → develop
+- [x] **Specs complètes** : `docs/specs/epic-4-kayak/story-12-segment-filters.md`
+- [x] **Implémentation TDD** :
+  - [x] SegmentFilters model : max_duration, max_stops, min_layover
+  - [x] FilterService : Applique filtres per-segment sur résultats Kayak
+  - [x] Integration route `/search-kayak` uniquement (pas `/search-google-flights`)
+- [x] **Validation manuelle** : Filtres appliqués correctement sur route Kayak
+- [x] **Quality checks** : ruff + mypy + coverage ≥ 80%
+- [x] **Commit** : `feat(kayak): add per-segment filtering for Kayak route`
+- [x] **PR** : feature/story-12 → develop (https://github.com/thibaud57/flight-search-api/pull/52)
 
 📝 **Output** : Story 12 complétée (5 story points) - Dernière story Epic 4
 

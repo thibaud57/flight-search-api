@@ -29,8 +29,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-KAYAK_POLL_TIMEOUT_S = 60.0
-CONSENT_BUTTON_WAIT_TIMEOUT_MS = 10000
 RETRYABLE_HTTP_STATUS_CODES = (
     HTTPStatus.INTERNAL_SERVER_ERROR,
     HTTPStatus.BAD_GATEWAY,
@@ -39,7 +37,6 @@ RETRYABLE_HTTP_STATUS_CODES = (
     HTTPStatus.TOO_MANY_REQUESTS,
     HTTPStatus.FORBIDDEN,
 )
-
 SESSION_URLS = {
     Provider.GOOGLE: "https://www.google.com/travel/flights",
     Provider.KAYAK: "https://www.kayak.fr/flights",
@@ -279,8 +276,8 @@ class CrawlerService:
                 poll_data = self._kayak_poll_data
 
             is_result_valid = (
-                provider == Provider.KAYAK and poll_data is not None
-            ) or (provider == Provider.GOOGLE and html)
+                (poll_data is not None) if provider == Provider.KAYAK else bool(html)
+            )
 
             if not is_result_valid:
                 error_reason = (
@@ -357,9 +354,9 @@ class CrawlerService:
             override_navigator=True,
             wait_for=wait_for_selector,
             page_timeout=self._settings.crawler.crawl_page_timeout_ms,
-            delay_before_return_html=0.0
+            delay_before_return_html=self._settings.crawler.kayak_crawl_delay_s
             if provider == Provider.KAYAK
-            else self._settings.crawler.crawl_delay_s,
+            else self._settings.crawler.google_crawl_delay_s,
         )
 
     async def _crawl_after_goto_hook(
@@ -374,7 +371,7 @@ class CrawlerService:
         try:
             self._kayak_poll_data = await capture_kayak_poll_data(
                 page,
-                timeout=KAYAK_POLL_TIMEOUT_S,
+                timeout=self._settings.crawler.kayak_poll_timeout_s,
             )
         except Exception as e:
             logger.warning(
@@ -392,7 +389,7 @@ class CrawlerService:
         for selector in selectors:
             try:
                 accept_button = await page.wait_for_selector(
-                    selector, timeout=CONSENT_BUTTON_WAIT_TIMEOUT_MS
+                    selector, timeout=self._settings.crawler.consent_button_wait_timeout_ms
                 )
                 if accept_button:
                     await accept_button.click()
@@ -437,51 +434,26 @@ class CrawlerService:
         proxy_host: str,
         attempts: int = 0,
     ) -> Crawl4AICrawlResult:
-        """Execute crawl avec gestion centralisée des erreurs TimeoutError et RuntimeError.
-
-        Args:
-            crawler: Instance AsyncWebCrawler à utiliser
-            url: URL à crawler
-            run_config: Configuration du crawl
-            operation: Nom de l'opération ("session" ou "crawl")
-            provider: Provider utilisé
-            proxy_host: Host du proxy ou "no_proxy"
-            attempts: Nombre de tentatives (pour crawl), 0 pour session
-
-        Returns:
-            Résultat du crawl (Crawl4AICrawlResult)
-
-        Raises:
-            NetworkError: En cas de timeout ou erreur runtime
-        """
+        """Execute crawl avec gestion centralisée des erreurs TimeoutError et RuntimeError."""
         try:
             result = await asyncio.wait_for(
                 crawler.arun(url=url, config=run_config),
                 timeout=self._settings.crawler.crawl_global_timeout_s,
             )
             return result
-        except TimeoutError as err:
+        except (TimeoutError, RuntimeError) as err:
             error_context = {
                 "provider": provider.value,
                 "url": url,
                 "proxy_host": proxy_host,
             }
-            logger.error(
-                f"{operation.capitalize()} timeout",
-                extra=error_context,
-            )
-            raise NetworkError(url=url, status_code=None, attempts=attempts) from err
-        except RuntimeError as err:
-            error_context = {
-                "provider": provider.value,
-                "url": url,
-                "proxy_host": proxy_host,
-                "error": str(err),
-            }
-            logger.error(
-                f"{operation.capitalize()} failed - Runtime error",
-                extra=error_context,
-            )
+            if isinstance(err, RuntimeError):
+                error_context["error"] = str(err)
+                message = f"{operation.capitalize()} failed - Runtime error"
+            else:
+                message = f"{operation.capitalize()} timeout"
+
+            logger.error(message, extra=error_context)
             raise NetworkError(url=url, status_code=None, attempts=attempts) from err
 
     def _detect_captcha(self, html: str, url: str) -> None:

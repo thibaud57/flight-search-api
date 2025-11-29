@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from app.core import DATE_PATTERN_YYYY_MM_DD
+from app.core.constants import DATE_PATTERN_YYYY_MM_DD
 
 
 class KayakUrlError(Exception):

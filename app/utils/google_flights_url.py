@@ -7,7 +7,7 @@ import binascii
 import re
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-from app.core import DATE_PATTERN_YYYY_MM_DD
+from app.core.constants import DATE_PATTERN_YYYY_MM_DD
 
 
 class GoogleFlightsUrlError(Exception):

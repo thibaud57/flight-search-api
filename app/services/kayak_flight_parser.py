@@ -4,18 +4,13 @@ import logging
 from typing import Any
 
 from app.models import KayakFlightDTO, LayoverInfo
+from app.utils import format_duration
 
 logger = logging.getLogger(__name__)
 
 
 class KayakFlightParser:
     """Parser pour extraire vols depuis JSON API interne Kayak."""
-
-    def _format_duration(self, minutes: int) -> str:
-        """Convertit durée en minutes vers format 'Xh Ymin'."""
-        hours = minutes // 60
-        remaining_minutes = minutes % 60
-        return f"{hours}h {remaining_minutes}min"
 
     def parse(self, json_data: dict[str, Any]) -> list[list[KayakFlightDTO]]:
         """Parse JSON Kayak et retourne liste de résultats groupés par résultat."""
@@ -128,7 +123,7 @@ class KayakFlightParser:
         layovers = self._extract_layovers(leg_segments, segments_data)
 
         duration_minutes = leg.get("duration", 0)
-        duration_str = self._format_duration(duration_minutes)
+        duration_str = format_duration(duration_minutes)
 
         airline = first_segment.get("airline", "Unknown")
         departure_time = first_segment.get("departure", "")
@@ -156,7 +151,7 @@ class KayakFlightParser:
             layover_data = seg_info.get("layover")
             if layover_data and "duration" in layover_data:
                 layover_duration_minutes = layover_data["duration"]
-                layover_duration_str = self._format_duration(layover_duration_minutes)
+                layover_duration_str = format_duration(layover_duration_minutes)
 
                 next_segment_id = leg_segments[i + 1]["id"]
                 if next_segment_id in segments_data:

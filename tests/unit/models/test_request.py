@@ -10,6 +10,7 @@ from app.models import (
     GoogleSearchRequest,
     KayakSearchRequest,
     MultiCitySearchRequestBase,
+    SegmentFilters,
 )
 from tests.fixtures.helpers import (
     GOOGLE_FLIGHT_TEMPLATE_URL,
@@ -93,6 +94,47 @@ def test_date_range_future_only(date_range_factory):
         date_range_factory(start_offset=1, duration=6, past=True)
 
     assert "Start date must be today or in the future" in str(exc_info.value)
+
+
+def test_date_range_without_filters(date_range_factory):
+    """Test DateRange sans filters (backward compatible)."""
+    date_range = date_range_factory(start_offset=1, duration=6)
+
+    assert date_range.filters is None
+
+
+def test_date_range_with_valid_filters(date_range_factory):
+    """Test DateRange avec filters valides."""
+    date_dict = date_range_factory(start_offset=1, duration=6, as_dict=True)
+    date_range = DateRange(
+        **date_dict, filters=SegmentFilters(max_duration="12:00", max_stops=1)
+    )
+
+    assert date_range.filters is not None
+    assert date_range.filters.max_duration == "12:00"
+    assert date_range.filters.max_stops == 1
+
+
+def test_date_range_with_invalid_filters_format(date_range_factory):
+    """Test DateRange avec filters format invalide."""
+    date_dict = date_range_factory(start_offset=1, duration=6, as_dict=True)
+
+    with pytest.raises(ValidationError, match="Invalid duration format"):
+        DateRange(**date_dict, filters=SegmentFilters(max_duration="invalid"))
+
+
+def test_kayak_search_request_with_filters_in_date_ranges(kayak_search_request_factory):
+    """Test KayakSearchRequest avec filters dans date_ranges."""
+    date_dict = kayak_search_request_factory(as_dict=True)
+    date_dict["segments_date_ranges"][0]["filters"] = {
+        "max_duration": "12:00",
+        "max_stops": 1,
+    }
+
+    request = KayakSearchRequest(**date_dict)
+
+    assert request.segments_date_ranges[0].filters is not None
+    assert request.segments_date_ranges[0].filters.max_duration == "12:00"
 
 
 # === MultiCitySearchRequestBase Tests ===

@@ -29,6 +29,9 @@ class DateRange(BaseModel):
 
     start: str
     end: str
+    filters: Annotated[
+        "SegmentFilters | None", "Filtres optionnels pour ce segment"
+    ] = None
 
     @field_validator("start", "end", mode="before")
     @classmethod
@@ -180,3 +183,11 @@ class KayakSearchRequest(MultiCitySearchRequestBase):
 
 # Type alias pour le service (accepte les deux)
 type SearchRequest = GoogleSearchRequest | KayakSearchRequest
+
+# Rebuild models after SegmentFilters is defined (to resolve forward reference)
+from app.models.filters import SegmentFilters  # noqa: E402
+
+DateRange.model_rebuild()
+MultiCitySearchRequestBase.model_rebuild()
+GoogleSearchRequest.model_rebuild()
+KayakSearchRequest.model_rebuild()

@@ -7,7 +7,7 @@ API FastAPI scraping Google Flights multi-destinations. Python 3.13+, Crawl4AI +
 # 🔥 MUST DO (Règles Critiques)
 
 - **NEVER** commit `.env` → Secrets dans Dokploy UI prod uniquement
-- **ALWAYS** run pre-commit avant push : `ruff check . --fix && ruff format . && mypy app/ && pytest tests/unit/`
+- **ALWAYS** run pre-commit avant push : `uv run ruff check . --fix && uv run ruff format . && uv run mypy app/ && uv run pytest tests/unit/`
 - **NEVER** add inline comments → Code self-explanatory (noms explicites, types, docstrings)
 - **ALWAYS** use `async with AsyncWebCrawler(timeout=10)` → Default 30s trop long
 - **CRITICAL** : Type hints ALL functions (PEP 695 style : `list[T]`, `X | None`)
@@ -26,6 +26,7 @@ API FastAPI scraping Google Flights multi-destinations. Python 3.13+, Crawl4AI +
 - **Pydantic models** → ALWAYS add `model_config = ConfigDict(extra="forbid")`
 - **Logging** → ALWAYS include context : `logger.info("msg", extra={"search_id": id})`
 - **Circular imports** → Use `TYPE_CHECKING` block
+- **Playwright + reload** → Auto-reload (`--reload`) incompatible avec Playwright sur certains OS → Use `uvicorn` sans reload
 
 ---
 
@@ -59,9 +60,10 @@ API FastAPI scraping Google Flights multi-destinations. Python 3.13+, Crawl4AI +
 
 # ⚡ Commandes Essentielles
 
-**Dev** : `fastapi dev app/main.py`
-**Pre-commit** : `ruff check . --fix && ruff format . && mypy app/ && pytest tests/unit/`
-**Tests** : `pytest tests/unit/ -v` | `pytest --cov=app --cov-report=html`
+**Setup** : `uv sync --all-extras && uv run crawl4ai-setup`
+**Dev** : `uv run uvicorn app.main:app --host 127.0.0.1 --port 8000`
+**Pre-commit** : `uv run ruff check . --fix && uv run ruff format . && uv run mypy app/ && uv run pytest tests/unit/`
+**Tests** : `uv run pytest tests/unit/ -v` | `uv run pytest --cov=app --cov-report=html`
 **Docker** : `docker build -t flight-search-api . && docker run -p 8001:8000 --env-file .env flight-search-api`
 
-→ Sécurité & Secrets : [docs/CODING_STANDARDS.md](../docs/CODING_STANDARDS.md) §7
+→ Sécurité & Secrets : [docs/CODING_STANDARDS.md](../docs/CODING_STANDARDS.md) §6

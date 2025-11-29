@@ -20,13 +20,16 @@ logger = logging.getLogger(__name__)
 
 
 class CrawlerTimeouts(BaseModel):
-    """Timeouts crawler (constantes techniques optimisées Google Flights)."""
+    """Timeouts crawler (constantes techniques optimisées Google Flights + Kayak)."""
 
     model_config = ConfigDict(extra="forbid")
 
-    crawl_page_timeout_ms: int = 60000
-    crawl_delay_s: float = 5.0
     crawl_global_timeout_s: float = 70.0
+    crawl_page_timeout_ms: int = 60000
+    google_crawl_delay_s: float = 5.0
+    kayak_crawl_delay_s: float = 3.0
+    kayak_poll_timeout_s: float = 60.0
+    consent_button_wait_timeout_ms: int = 10000
 
 
 class Settings(BaseSettings):
