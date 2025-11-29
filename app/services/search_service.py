@@ -275,26 +275,26 @@ class SearchService:
     def _apply_filters_to_segments(
         self,
         flights: list[KayakFlightDTO],
-        date_ranges: list[DateRange],
+        segment_configs: list[DateRange],
     ) -> list[KayakFlightDTO]:
         """Applique filtres par segment sur liste vols multi-segments."""
-        if len(flights) != len(date_ranges):
+        if len(flights) != len(segment_configs):
             logger.warning(
-                "Mismatch between flights and date_ranges length",
+                "Mismatch between flights and segment_configs length",
                 extra={
                     "flights_count": len(flights),
-                    "date_ranges_count": len(date_ranges),
+                    "segment_configs_count": len(segment_configs),
                 },
             )
             return flights
 
         filtered_flights: list[KayakFlightDTO] = []
-        for segment_index, (flight, date_range) in enumerate(
-            zip(flights, date_ranges, strict=False)
+        for segment_index, (flight, config) in enumerate(
+            zip(flights, segment_configs, strict=False)
         ):
-            if date_range.filters:
+            if config.filters:
                 filtered_segment = self._filter_service.apply_filters(
-                    [flight], date_range.filters, segment_index
+                    [flight], config.filters, segment_index
                 )
                 if not filtered_segment:
                     return []
