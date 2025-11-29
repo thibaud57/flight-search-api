@@ -7,6 +7,12 @@ from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 from app.core.constants import DURATION_PATTERN_HHMM
 from app.utils.duration import parse_duration
 
+MAX_DURATION_MINUTES = 1440
+MAX_LAYOVER_DURATION_MINUTES = 1440
+MAX_MIN_LAYOVER_DURATION_MINUTES = 720
+MIN_STOPS = 0
+MAX_STOPS = 3
+
 
 class SegmentFilters(BaseModel):
     """Filtres applicables à un segment de voyage."""
@@ -31,9 +37,9 @@ class SegmentFilters(BaseModel):
             )
 
         minutes = parse_duration(v)
-        if minutes > 1440:
+        if minutes > MAX_DURATION_MINUTES:
             raise ValueError(
-                f"Max duration must be <= 1440 minutes (24h), got {minutes}"
+                f"Max duration must be <= {MAX_DURATION_MINUTES} minutes (24h), got {minutes}"
             )
 
         return v
@@ -51,9 +57,9 @@ class SegmentFilters(BaseModel):
             )
 
         minutes = parse_duration(v)
-        if minutes > 720:
+        if minutes > MAX_MIN_LAYOVER_DURATION_MINUTES:
             raise ValueError(
-                f"Min layover duration must be <= 720 minutes (12h), got {minutes}"
+                f"Min layover duration must be <= {MAX_MIN_LAYOVER_DURATION_MINUTES} minutes (12h), got {minutes}"
             )
 
         return v
@@ -71,9 +77,9 @@ class SegmentFilters(BaseModel):
             )
 
         minutes = parse_duration(v)
-        if minutes > 1440:
+        if minutes > MAX_LAYOVER_DURATION_MINUTES:
             raise ValueError(
-                f"Max layover duration must be <= 1440 minutes (24h), got {minutes}"
+                f"Max layover duration must be <= {MAX_LAYOVER_DURATION_MINUTES} minutes (24h), got {minutes}"
             )
 
         return v
@@ -85,8 +91,10 @@ class SegmentFilters(BaseModel):
         if v is None:
             return v
 
-        if v < 0 or v > 3:
-            raise ValueError(f"Max stops must be between 0 and 3, got {v}")
+        if v < MIN_STOPS or v > MAX_STOPS:
+            raise ValueError(
+                f"Max stops must be between {MIN_STOPS} and {MAX_STOPS}, got {v}"
+            )
 
         return v
 
